@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ONG Por Amor · Sistema Integrado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --navy:#0b1f31;--navy-mid:#163450;--navy-light:#1e4a6b;
+  --teal:#0d8f8f;--teal-light:#12b3b3;--teal-pale:rgba(13,143,143,0.08);
+  --gold:#e8c96a;--cream:#faf8f4;
+  --white:#fff;--gray-50:#f8fafc;--gray-100:#f1f5f9;
+  --gray-200:#e2e8f0;--gray-300:#cbd5e1;--gray-400:#94a3b8;
+  --gray-600:#475569;--gray-700:#334155;--gray-900:#0f172a;
+  --success:#059669;--success-pale:rgba(5,150,105,0.1);
+  --warn:#d97706;--warn-pale:rgba(217,119,6,0.1);
+  --error:#dc2626;--error-pale:rgba(220,38,38,0.1);
+  --r:12px;--R:20px;--shadow:0 20px 50px -12px rgba(11,31,49,.3);
+  --tr:all .22s cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--navy);min-height:100vh;color:var(--gray-900)}
+
+/* ── APP SHELL ── */
+#app{display:flex;flex-direction:column;min-height:100vh}
+.view{display:none}
+.view.active{display:block}
+
+/* ── NAVIGATION BAR ── */
+.topbar{
+  position:sticky;top:0;z-index:100;
+  background:rgba(11,31,49,.95);backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(255,255,255,.07);
+  display:flex;align-items:center;padding:0 2rem;height:60px;gap:1rem;
+}
+.topbar-logo{display:flex;align-items:center;gap:.6rem;margin-right:1.5rem;text-decoration:none}
+.topbar-logo .logo-heart{font-size:1.4rem;animation:hb 2.5s ease-in-out infinite}
+@keyframes hb{0%,100%{transform:scale(1)}15%{transform:scale(1.12)}30%{transform:scale(1)}45%{transform:scale(1.07)}}
+.topbar-logo span{font-family:'DM Serif Display',serif;font-size:1.15rem;color:#fff;font-style:italic}
+.topbar-nav{display:flex;gap:.25rem;flex:1}
+.nav-btn{
+  background:transparent;border:none;color:rgba(255,255,255,.5);
+  padding:.5rem 1rem;border-radius:var(--r);cursor:pointer;
+  font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;
+  transition:var(--tr);display:flex;align-items:center;gap:.5rem;white-space:nowrap;
+}
+.nav-btn:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.8)}
+.nav-btn.active{background:rgba(13,143,143,.2);color:var(--teal-light)}
+.nav-btn.admin-btn{margin-left:auto;color:rgba(255,255,255,.25);font-size:.78rem}
+.nav-btn.admin-btn:hover{color:rgba(255,255,255,.5)}
+
+/* ── PAGE WRAPPER ── */
+.page-wrap{max-width:1100px;margin:0 auto;padding:2rem 1.5rem}
+
+/* ── CARD ── */
+.card{background:var(--white);border-radius:var(--R);overflow:hidden;box-shadow:var(--shadow)}
+
+/* ── CARD HEADER ── */
+.card-header{
+  background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,var(--navy-light) 100%);
+  padding:0;position:relative;overflow:hidden;
+}
+.hdr-art{position:absolute;inset:0;pointer-events:none}
+.hdr-art::before{content:'';position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(13,143,143,.2),transparent 70%);top:-150px;right:-80px}
+.hdr-art::after{content:'';position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(232,201,106,.1),transparent 70%);bottom:-80px;left:40%}
+.hdr-inner{position:relative;z-index:1;padding:2.2rem 2.5rem;display:flex;align-items:flex-start;gap:1.5rem}
+.hdr-icon{width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,var(--teal),var(--teal-light));display:flex;align-items:center;justify-content:center;font-size:1.8rem;box-shadow:0 12px 28px rgba(13,143,143,.5);flex-shrink:0;animation:hb 2.5s ease-in-out infinite}
+.hdr-tag{font-size:.7rem;font-weight:700;color:var(--teal-light);letter-spacing:.18em;text-transform:uppercase;margin-bottom:.3rem}
+.hdr-title{font-family:'DM Serif Display',serif;font-size:2.1rem;color:#fff;line-height:1.1;margin-bottom:.2rem}
+.hdr-title em{font-style:italic;color:var(--gold)}
+.hdr-sub{font-size:.9rem;font-weight:300;color:rgba(255,255,255,.55);margin-bottom:1.2rem}
+.hdr-chips{display:flex;flex-wrap:wrap;gap:.4rem .8rem}
+.chip{display:inline-flex;align-items:center;gap:.4rem;font-size:.72rem;color:rgba(255,255,255,.55);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:.25rem .8rem;border-radius:100px}
+.chip i{color:var(--gold);font-size:.65rem}
+
+/* ── STEP NAV ── */
+.step-nav{display:flex;border-top:1px solid rgba(255,255,255,.07)}
+.sn-item{flex:1;padding:.9rem 1.2rem;display:flex;align-items:center;gap:.7rem;cursor:pointer;transition:var(--tr);border-right:1px solid rgba(255,255,255,.07);position:relative}
+.sn-item:last-child{border-right:none}
+.sn-item::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--teal);transform:scaleX(0);transition:var(--tr)}
+.sn-item.active::after{transform:scaleX(1)}
+.sn-item.active{background:rgba(255,255,255,.05)}
+.sn-num{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:rgba(255,255,255,.35);transition:var(--tr);flex-shrink:0}
+.sn-item.active .sn-num,.sn-item.done .sn-num{background:var(--teal);color:#fff}
+.sn-lbl{font-size:.75rem;font-weight:500;color:rgba(255,255,255,.35);transition:var(--tr);line-height:1.2}
+.sn-sub{font-size:.65rem;font-weight:400;color:rgba(255,255,255,.2);display:block}
+.sn-item.active .sn-lbl,.sn-item.done .sn-lbl{color:rgba(255,255,255,.8)}
+
+/* ── CARD BODY ── */
+.card-body{padding:2.5rem;background:var(--gray-50)}
+.form-page{display:none;animation:pgIn .35s ease both}
+.form-page.active{display:block}
+@keyframes pgIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
+
+/* ── PAGE HEADER ── */
+.pg-hdr{display:flex;align-items:center;gap:1rem;margin-bottom:2rem}
+.pg-icon{width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,var(--navy-light),var(--teal));display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;box-shadow:0 8px 18px rgba(13,143,143,.28);flex-shrink:0}
+.pg-title{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--navy);line-height:1}
+.pg-desc{font-size:.82rem;color:var(--gray-600);margin-top:.2rem}
+
+/* ── FORM GRID ── */
+.fg{display:grid;gap:1.3rem 1.8rem}
+.g1{grid-template-columns:1fr}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.s2{grid-column:span 2}.s3{grid-column:span 3}.s4{grid-column:span 4}
+.field{display:flex;flex-direction:column;gap:.45rem;position:relative}
+.fl{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-600);display:flex;align-items:center;gap:.35rem}
+.fl i{color:var(--navy-light);font-size:.75rem}
+.req{color:var(--error);font-size:.9rem}
+.fi{background:var(--white);border:1.5px solid var(--gray-200);border-radius:var(--r);padding:.75rem 1rem;font-size:.92rem;font-family:'DM Sans',sans-serif;color:var(--gray-900);outline:none;transition:var(--tr);box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.fi::placeholder{color:var(--gray-400)}
+.fi:focus{border-color:var(--teal);box-shadow:0 0 0 4px rgba(13,143,143,.1)}
+select.fi{cursor:pointer}
+.ferr{font-size:.75rem;color:var(--error);display:none;align-items:center;gap:.3rem;margin-top:-.2rem}
+.field.err .fi{border-color:var(--error)}
+.field.err .ferr{display:flex}
+.field.ok .fi{border-color:rgba(5,150,105,.4)}
+
+/* ── CEP ROW ── */
+.cep-row{display:flex;gap:.5rem}
+.cep-row .fi{flex:1}
+.btn-cep{background:linear-gradient(135deg,var(--teal),var(--navy-light));border:none;color:#fff;padding:.75rem 1.2rem;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:var(--tr);display:flex;align-items:center;gap:.4rem;box-shadow:0 4px 12px rgba(13,143,143,.3)}
+.btn-cep:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(13,143,143,.4)}
+.btn-cep.ld i{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── SECTION SEP ── */
+.sep{display:flex;align-items:center;gap:.8rem;margin:2rem 0 1.3rem}
+.sep-line{flex:1;height:1px;background:var(--gray-200)}
+.sep-lbl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gray-400);white-space:nowrap}
+
+/* ── RADIO CARDS ── */
+.rc-wrap{display:flex;flex-wrap:wrap;gap:.8rem;margin-top:.3rem}
+.rc{position:relative}
+.rc input[type=radio]{position:absolute;opacity:0;width:0;height:0}
+.rc-lbl{display:flex;align-items:center;gap:.7rem;padding:.65rem 1.2rem;background:var(--white);border:1.5px solid var(--gray-200);border-radius:100px;cursor:pointer;font-size:.88rem;font-weight:500;color:var(--gray-700);transition:var(--tr);user-select:none;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.rc-lbl i{font-size:.85rem;color:var(--gray-400)}
+.rc input:checked+.rc-lbl{border-color:var(--teal);background:rgba(13,143,143,.07);color:var(--navy);box-shadow:0 0 0 3px rgba(13,143,143,.12)}
+.rc input:checked+.rc-lbl i{color:var(--teal)}
+
+/* ── AMOUNT BOX ── */
+.amount-box{background:var(--white);border:1.5px solid var(--gray-200);border-radius:var(--r);padding:1.2rem 1.5rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap}
+.amount-lbl{font-size:.82rem;font-weight:500;color:var(--gray-700);display:flex;align-items:center;gap:.4rem}
+.amount-lbl i{color:var(--teal)}
+.ai-wrap{display:flex;align-items:center;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:var(--r);padding:0 .8rem;transition:var(--tr)}
+.ai-wrap:focus-within{border-color:var(--teal);box-shadow:0 0 0 4px rgba(13,143,143,.1)}
+.ai-cur{font-weight:700;color:var(--navy-light);font-size:.95rem}
+.ai-input{border:none;background:transparent;outline:none;font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);width:110px;padding:.55rem .4rem}
+.ai-per{font-size:.82rem;color:var(--gray-600)}
+.amount-hint{font-size:.72rem;color:var(--gray-400);padding:.2rem .7rem;background:var(--gray-50);border-radius:100px}
+.amount-hint strong{color:var(--teal)}
+
+/* ── TOGGLES ── */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.3rem;background:var(--white);border:1.5px solid var(--gray-200);border-radius:var(--r);margin-bottom:.8rem;transition:var(--tr)}
+.toggle-row:hover{border-color:var(--gray-300)}
+.ti{flex:1;padding-right:1.5rem}
+.ti-title{font-size:.92rem;font-weight:600;color:var(--navy)}
+.ti-desc{font-size:.78rem;color:var(--gray-600);margin-top:.15rem;line-height:1.5}
+.tsw{position:relative;flex-shrink:0}
+.tsw input{opacity:0;position:absolute;width:0;height:0}
+.trk{display:block;width:48px;height:26px;background:var(--gray-200);border-radius:100px;cursor:pointer;transition:var(--tr);position:relative}
+.trk::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:var(--tr);box-shadow:0 2px 5px rgba(0,0,0,.2)}
+.tsw input:checked+.trk{background:var(--teal)}
+.tsw input:checked+.trk::after{transform:translateX(22px)}
+
+/* ── DECLARATION ── */
+.decl{background:var(--white);border:1.5px solid var(--gray-200);border-radius:var(--r);padding:1.5rem;border-left:5px solid var(--teal);position:relative;overflow:hidden;margin-bottom:1.5rem}
+.decl::before{content:'"';font-family:'DM Serif Display',serif;font-size:7rem;line-height:1;color:rgba(13,143,143,.07);position:absolute;top:-10px;left:8px;pointer-events:none}
+.decl p{font-size:.92rem;line-height:1.8;color:var(--gray-700);position:relative;z-index:1}
+.decl strong{color:var(--navy)}
+
+/* ── SIGNATURE SECTION ── */
+.sig-options{display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.sig-opt{flex:1;min-width:200px;padding:1rem 1.3rem;background:var(--white);border:1.5px solid var(--gray-200);border-radius:var(--r);cursor:pointer;transition:var(--tr);display:flex;align-items:center;gap:.8rem}
+.sig-opt:hover{border-color:var(--teal)}
+.sig-opt.selected{border-color:var(--teal);background:rgba(13,143,143,.06);box-shadow:0 0 0 3px rgba(13,143,143,.12)}
+.sig-opt i{font-size:1.3rem;color:var(--gray-400)}
+.sig-opt.selected i{color:var(--teal)}
+.sig-opt-title{font-size:.88rem;font-weight:600;color:var(--navy)}
+.sig-opt-desc{font-size:.75rem;color:var(--gray-600)}
+.sig-panel{display:none;animation:pgIn .3s ease both}
+.sig-panel.active{display:block}
+#canvas-wrap{position:relative;border:1.5px solid var(--gray-200);border-radius:var(--r);overflow:hidden;background:#fff;cursor:crosshair}
+canvas#sig-canvas{display:block;touch-action:none;width:100%;height:180px}
+.sig-canvas-actions{display:flex;gap:.6rem;margin-top:.5rem}
+.btn-sig-clear{background:var(--gray-100);border:1px solid var(--gray-200);color:var(--gray-700);padding:.5rem 1rem;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:.4rem;transition:var(--tr)}
+.btn-sig-clear:hover{background:var(--gray-200)}
+.govbr-box{background:rgba(0,89,179,.05);border:1.5px solid rgba(0,89,179,.2);border-radius:var(--r);padding:1.5rem;text-align:center}
+.govbr-logo{font-size:1.1rem;font-weight:800;color:#1351b4;letter-spacing:.02em;margin-bottom:.5rem}
+.govbr-logo span{font-size:.75rem;font-weight:400;display:block;color:#555;margin-top:.1rem}
+.btn-govbr{background:#1351b4;border:none;color:#fff;padding:.8rem 2rem;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:var(--tr);display:inline-flex;align-items:center;gap:.5rem;margin-top:.8rem;box-shadow:0 4px 14px rgba(19,81,180,.3)}
+.btn-govbr:hover{background:#0d47a1;transform:translateY(-1px)}
+
+/* ── SUMMARY ── */
+.sum-card{background:var(--white);border-radius:var(--r);border:1.5px solid var(--gray-200);overflow:hidden;margin-bottom:1.2rem}
+.sum-hdr{background:var(--navy);padding:.9rem 1.3rem;display:flex;align-items:center;gap:.7rem}
+.sum-hdr-title{font-size:.82rem;font-weight:600;color:#fff}
+.sum-hdr i{color:var(--gold)}
+.sum-body{padding:1.2rem 1.3rem}
+.sum-row{display:flex;justify-content:space-between;align-items:flex-start;padding:.5rem 0;border-bottom:1px dashed var(--gray-200);gap:1rem}
+.sum-row:last-child{border-bottom:none}
+.sum-k{font-size:.8rem;color:var(--gray-600);font-weight:500;min-width:130px}
+.sum-v{font-size:.88rem;font-weight:600;color:var(--navy);text-align:right}
+.sum-v.empty{color:var(--gray-400);font-weight:400;font-style:italic}
+
+/* ── SIG GRID ── */
+.sig-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;margin-top:1.8rem}
+.sig-block .sig-lbl{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-600);margin-bottom:.7rem;display:flex;align-items:center;gap:.35rem}
+.sig-line{border-bottom:2px solid var(--navy);padding-bottom:2rem}
+.sig-hint{font-size:.75rem;color:var(--gray-400);margin-top:.35rem}
+
+/* ── NAV BUTTONS ── */
+.nav-btns{display:flex;justify-content:space-between;align-items:center;margin-top:2.5rem;padding-top:1.8rem;border-top:1px solid var(--gray-200);gap:1rem}
+.btn-back{background:transparent;border:1.5px solid var(--gray-300);color:var(--gray-700);padding:.78rem 1.6rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;transition:var(--tr);display:flex;align-items:center;gap:.5rem}
+.btn-back:hover{border-color:var(--gray-600);background:var(--gray-100)}
+.btn-next{background:linear-gradient(135deg,var(--teal) 0%,var(--navy-light) 100%);border:none;color:#fff;padding:.78rem 2rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;transition:var(--tr);display:flex;align-items:center;gap:.5rem;box-shadow:0 8px 20px rgba(13,143,143,.3);margin-left:auto}
+.btn-next:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(13,143,143,.4)}
+.btn-submit-final{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 50%,var(--teal) 100%);border:none;color:#fff;padding:.9rem 2.2rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.92rem;font-weight:700;cursor:pointer;transition:var(--tr);display:flex;align-items:center;gap:.7rem;box-shadow:0 12px 28px rgba(11,31,49,.4);margin-left:auto}
+.btn-submit-final:hover{transform:translateY(-2px);box-shadow:0 18px 36px rgba(11,31,49,.5)}
+
+/* ── CARD FOOTER ── */
+.card-footer{padding:1.2rem 2.5rem;background:var(--white);border-top:1px solid var(--gray-200);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
+.cf-l,.cf-r{font-size:.78rem;color:var(--gray-400);display:flex;align-items:center;gap:.4rem}
+
+/* ── SUCCESS ── */
+.success-screen{display:none;text-align:center;padding:4rem 2rem;animation:pgIn .5s ease both}
+.success-screen.active{display:block}
+.suc-icon{width:90px;height:90px;background:linear-gradient(135deg,var(--teal),var(--navy-light));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2.2rem;color:#fff;margin:0 auto 1.8rem;box-shadow:0 20px 40px rgba(13,143,143,.4);animation:popIn .5s cubic-bezier(.175,.885,.32,1.275) both .2s}
+@keyframes popIn{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.suc-title{font-family:'DM Serif Display',serif;font-size:2.2rem;color:var(--navy);margin-bottom:.8rem}
+.suc-desc{font-size:.95rem;color:var(--gray-600);max-width:460px;margin:0 auto 1.8rem;line-height:1.7}
+.pix-box{background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:var(--r);padding:1.3rem 1.8rem;max-width:480px;margin:0 auto;text-align:left}
+.pix-title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--teal);margin-bottom:.7rem}
+.pix-key{font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--navy);background:#fff;border:1.5px solid var(--gray-200);padding:.7rem 1.1rem;border-radius:var(--r);display:flex;align-items:center;justify-content:space-between;gap:.8rem;margin-bottom:.5rem;flex-wrap:wrap}
+.btn-copy{background:var(--teal);border:none;color:#fff;padding:.35rem .9rem;border-radius:100px;font-size:.76rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:var(--tr)}
+.btn-copy:hover{background:var(--navy-light)}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:1.8rem;left:50%;transform:translateX(-50%) translateY(120px);background:var(--navy);color:#fff;padding:.7rem 1.4rem;border-radius:100px;font-size:.88rem;font-weight:500;box-shadow:0 10px 30px rgba(0,0,0,.3);z-index:9999;display:flex;align-items:center;gap:.5rem;transition:transform .3s cubic-bezier(.175,.885,.32,1.275);white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast i{color:var(--teal-light)}
+.toast.err i{color:#f87171}
+
+/* ═══════════════════════════════════════
+   ADMIN LOGIN
+═══════════════════════════════════════ */
+#view-admin-login{background:var(--navy);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem}
+.login-card{background:var(--white);border-radius:var(--R);padding:3rem 2.5rem;width:100%;max-width:420px;box-shadow:var(--shadow);text-align:center}
+.login-icon{width:70px;height:70px;background:linear-gradient(135deg,var(--navy),var(--navy-light));border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:#fff;margin:0 auto 1.5rem;box-shadow:0 12px 28px rgba(11,31,49,.3)}
+.login-title{font-family:'DM Serif Display',serif;font-size:1.8rem;color:var(--navy);margin-bottom:.3rem}
+.login-sub{font-size:.85rem;color:var(--gray-600);margin-bottom:2rem}
+.login-field{text-align:left;margin-bottom:1rem}
+.login-err{background:var(--error-pale);border:1px solid rgba(220,38,38,.2);border-radius:var(--r);padding:.8rem 1rem;font-size:.85rem;color:var(--error);display:none;align-items:center;gap:.5rem;margin-bottom:1rem}
+.login-err.show{display:flex}
+.btn-login{width:100%;background:linear-gradient(135deg,var(--navy),var(--teal));border:none;color:#fff;padding:.9rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:var(--tr);box-shadow:0 8px 20px rgba(11,31,49,.3);margin-top:.5rem}
+.btn-login:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(11,31,49,.4)}
+.login-hint{font-size:.73rem;color:var(--gray-400);margin-top:1rem}
+
+/* ═══════════════════════════════════════
+   ADMIN PANEL
+═══════════════════════════════════════ */
+#view-admin{background:var(--gray-50);min-height:100vh}
+.admin-topbar{background:var(--navy);padding:0 2rem;height:56px;display:flex;align-items:center;gap:1.2rem;border-bottom:1px solid rgba(255,255,255,.07)}
+.admin-brand{font-family:'DM Serif Display',serif;font-style:italic;color:#fff;font-size:1.1rem}
+.admin-badge{font-size:.68rem;font-weight:700;background:rgba(13,143,143,.3);color:var(--teal-light);padding:.15rem .6rem;border-radius:100px;text-transform:uppercase;letter-spacing:.08em}
+.admin-tabs{display:flex;gap:.2rem;margin-left:1.5rem}
+.atab{background:transparent;border:none;color:rgba(255,255,255,.4);padding:.4rem .9rem;border-radius:var(--r);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:500;transition:var(--tr)}
+.atab:hover{color:rgba(255,255,255,.7);background:rgba(255,255,255,.05)}
+.atab.active{background:rgba(13,143,143,.2);color:var(--teal-light)}
+.atab-spacer{flex:1}
+.btn-logout{background:transparent;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.4);padding:.35rem .9rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.75rem;cursor:pointer;transition:var(--tr)}
+.btn-logout:hover{color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.3)}
+.admin-content{padding:1.8rem 2rem;max-width:1300px;margin:0 auto}
+.admin-view{display:none}
+.admin-view.active{display:block;animation:pgIn .3s ease both}
+
+/* Filters */
+.filters-bar{background:var(--white);border:1px solid var(--gray-200);border-radius:var(--R);padding:1.2rem 1.5rem;margin-bottom:1.5rem;display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end}
+.filter-group{display:flex;flex-direction:column;gap:.35rem;min-width:140px}
+.filter-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-600)}
+.filter-input{background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:var(--r);padding:.55rem .9rem;font-size:.85rem;font-family:'DM Sans',sans-serif;outline:none;transition:var(--tr)}
+.filter-input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(13,143,143,.1)}
+.btn-filter-clear{background:transparent;border:1.5px solid var(--gray-200);color:var(--gray-600);padding:.55rem 1rem;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;transition:var(--tr);display:flex;align-items:center;gap:.4rem;align-self:flex-end}
+.btn-filter-clear:hover{border-color:var(--gray-400);background:var(--gray-100)}
+
+/* Table */
+.table-wrap{background:var(--white);border:1px solid var(--gray-200);border-radius:var(--R);overflow:hidden}
+.table-header{padding:1rem 1.5rem;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.table-title{font-size:.9rem;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:.5rem}
+.badge{display:inline-flex;align-items:center;padding:.2rem .7rem;border-radius:100px;font-size:.72rem;font-weight:700}
+.badge-blue{background:rgba(30,74,107,.1);color:var(--navy-light)}
+.badge-green{background:var(--success-pale);color:var(--success)}
+.badge-warn{background:var(--warn-pale);color:var(--warn)}
+.badge-red{background:var(--error-pale);color:var(--error)}
+.badge-gray{background:var(--gray-100);color:var(--gray-600)}
+.table-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--gray-600);padding:.7rem 1rem;background:var(--gray-50);border-bottom:1px solid var(--gray-200);text-align:left;white-space:nowrap}
+td{font-size:.85rem;color:var(--gray-700);padding:.75rem 1rem;border-bottom:1px solid var(--gray-100);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--gray-50)}
+.td-name{font-weight:600;color:var(--navy)}
+.td-num{font-size:.78rem;color:var(--gray-400)}
+
+/* Action buttons */
+.btn-sm{padding:.35rem .8rem;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:.75rem;font-weight:600;cursor:pointer;transition:var(--tr);border:none;display:inline-flex;align-items:center;gap:.3rem;white-space:nowrap}
+.btn-sm-teal{background:rgba(13,143,143,.1);color:var(--teal);border:1px solid rgba(13,143,143,.2)}
+.btn-sm-teal:hover{background:var(--teal);color:#fff}
+.btn-sm-green{background:var(--success-pale);color:var(--success);border:1px solid rgba(5,150,105,.2)}
+.btn-sm-green:hover{background:var(--success);color:#fff}
+.btn-sm-warn{background:var(--warn-pale);color:var(--warn);border:1px solid rgba(217,119,6,.2)}
+.btn-sm-warn:hover{background:var(--warn);color:#fff}
+.btn-sm-navy{background:rgba(11,31,49,.08);color:var(--navy);border:1px solid rgba(11,31,49,.15)}
+.btn-sm-navy:hover{background:var(--navy);color:#fff}
+.btn-sm-red{background:var(--error-pale);color:var(--error);border:1px solid rgba(220,38,38,.2)}
+.actions-cell{display:flex;gap:.4rem;flex-wrap:wrap}
+
+/* Payment checklist */
+.pay-month-row{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.pay-chip{display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .6rem;border-radius:100px;font-size:.7rem;font-weight:600;cursor:pointer;border:1px solid transparent;transition:var(--tr)}
+.pay-chip.paid{background:var(--success-pale);color:var(--success);border-color:rgba(5,150,105,.2)}
+.pay-chip.pending{background:var(--warn-pale);color:var(--warn);border-color:rgba(217,119,6,.2)}
+.pay-chip.overdue{background:var(--error-pale);color:var(--error);border-color:rgba(220,38,38,.2)}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(11,31,49,.6);backdrop-filter:blur(4px);z-index:500;display:none;align-items:center;justify-content:center;padding:1.5rem}
+.modal-overlay.open{display:flex}
+.modal{background:var(--white);border-radius:var(--R);width:100%;max-width:580px;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow);animation:popIn .3s ease both}
+.modal-hdr{padding:1.3rem 1.5rem;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:1rem;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:.5rem}
+.modal-close{background:var(--gray-100);border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:.9rem;color:var(--gray-600);display:flex;align-items:center;justify-content:center;transition:var(--tr)}
+.modal-close:hover{background:var(--gray-200)}
+.modal-body{padding:1.5rem}
+.msg-template{background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:var(--r);padding:1rem;font-size:.88rem;color:var(--gray-700);line-height:1.7;white-space:pre-wrap;margin-bottom:1.2rem}
+.modal-actions{display:flex;gap:.7rem;flex-wrap:wrap}
+.btn-wa{background:#25D366;border:none;color:#fff;padding:.7rem 1.4rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:var(--tr);display:flex;align-items:center;gap:.5rem;box-shadow:0 4px 14px rgba(37,211,102,.3)}
+.btn-wa:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(37,211,102,.4)}
+.btn-email-send{background:var(--navy-light);border:none;color:#fff;padding:.7rem 1.4rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:var(--tr);display:flex;align-items:center;gap:.5rem;box-shadow:0 4px 14px rgba(30,74,107,.3)}
+.btn-email-send:hover{transform:translateY(-1px)}
+
+/* ═══════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════ */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2rem;margin-bottom:1.5rem}
+.kpi{background:var(--white);border:1px solid var(--gray-200);border-radius:var(--R);padding:1.3rem 1.5rem;position:relative;overflow:hidden;transition:var(--tr)}
+.kpi:hover{box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.teal::before{background:linear-gradient(90deg,var(--teal),var(--teal-light))}
+.kpi.green::before{background:linear-gradient(90deg,#059669,#10b981)}
+.kpi.warn::before{background:linear-gradient(90deg,#d97706,#f59e0b)}
+.kpi.navy::before{background:linear-gradient(90deg,var(--navy),var(--navy-light))}
+.kpi-icon{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin-bottom:.8rem}
+.kpi.teal .kpi-icon{background:rgba(13,143,143,.1);color:var(--teal)}
+.kpi.green .kpi-icon{background:var(--success-pale);color:var(--success)}
+.kpi.warn .kpi-icon{background:var(--warn-pale);color:var(--warn)}
+.kpi.navy .kpi-icon{background:rgba(11,31,49,.08);color:var(--navy)}
+.kpi-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-600);margin-bottom:.3rem}
+.kpi-value{font-family:'DM Serif Display',serif;font-size:2rem;color:var(--navy);line-height:1}
+.kpi-sub{font-size:.76rem;color:var(--gray-400);margin-top:.3rem;display:flex;align-items:center;gap:.3rem}
+.kpi-up{color:var(--success)}.kpi-down{color:var(--error)}
+
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.5rem}
+.chart-card{background:var(--white);border:1px solid var(--gray-200);border-radius:var(--R);padding:1.5rem;overflow:hidden}
+.chart-card.wide{grid-column:span 2}
+.chart-title{font-size:.88rem;font-weight:700;color:var(--navy);margin-bottom:.3rem}
+.chart-sub{font-size:.75rem;color:var(--gray-500);margin-bottom:1.2rem}
+.chart-wrap{position:relative;height:200px}
+
+/* Print */
+@media print{
+  .topbar,.admin-topbar,.filters-bar,.actions-cell,.nav-btns,.btn-next,.btn-back,.btn-submit-final{display:none!important}
+  body{background:#fff!important}
+  .card,.table-wrap{box-shadow:none!important;border:1px solid #ccc!important}
+}
+
+/* Responsive */
+@media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.charts-grid{grid-template-columns:1fr}.chart-card.wide{grid-column:span 1}.g2,.g3,.g4{grid-template-columns:1fr}.s2,.s3,.s4{grid-column:span 1}.sig-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.hdr-inner{padding:1.5rem;flex-direction:column;gap:1rem}.hdr-title{font-size:1.7rem}.card-body{padding:1.5rem}.step-nav{flex-wrap:wrap}.sn-item{min-width:50%}.sn-sub{display:none}.admin-tabs{display:none}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ═══════════════════════════════════════════════
+     VIEW: FORMULÁRIO PÚBLICO
+═══════════════════════════════════════════════ -->
+<div id="view-form" class="view active">
+  <!-- TOPBAR -->
+  <nav class="topbar">
+    <a href="#" class="topbar-logo" onclick="showView('view-form')">
+      <span class="logo-heart">❤️</span>
+      <span>Por Amor</span>
+    </a>
+    <div class="topbar-nav">
+      <button class="nav-btn active" onclick="showView('view-form')"><i class="fas fa-file-alt"></i> Associação</button>
+    </div>
+    <button class="nav-btn admin-btn" onclick="showView('view-admin-login')" title="Área restrita"><i class="fas fa-lock"></i></button>
+  </nav>
+
+  <div class="page-wrap">
+    <div class="card">
+      <!-- HEADER -->
+      <div class="card-header">
+        <div class="hdr-art"></div>
+        <div class="hdr-inner">
+          <div class="hdr-icon">❤️</div>
+          <div>
+            <div class="hdr-tag">Ficha de Associação · 2025</div>
+            <div class="hdr-title">ONG <em>Por Amor</em></div>
+            <div class="hdr-sub">Transformando vidas através do amor e da solidariedade</div>
+            <div class="hdr-chips">
+              <span class="chip"><i class="fas fa-id-card"></i> CNPJ 54.286.499/0001-74</span>
+              <span class="chip"><i class="fas fa-map-pin"></i> Campina Grande · PB</span>
+              <span class="chip"><i class="fas fa-envelope"></i> Poramorongcg@gmail.com</span>
+              <span class="chip"><i class="fas fa-phone"></i> (83) 98231-5427</span>
+            </div>
+          </div>
+        </div>
+        <div class="step-nav" id="stepNav">
+          <div class="sn-item active" data-step="1"><div class="sn-num">1</div><div><div class="sn-lbl">Dados Pessoais</div><span class="sn-sub">Identificação e endereço</span></div></div>
+          <div class="sn-item" data-step="2"><div class="sn-num">2</div><div><div class="sn-lbl">Contribuição</div><span class="sn-sub">Valor e pagamento</span></div></div>
+          <div class="sn-item" data-step="3"><div class="sn-num">3</div><div><div class="sn-lbl">Declarações</div><span class="sn-sub">LGPD e autorizações</span></div></div>
+          <div class="sn-item" data-step="4"><div class="sn-num">4</div><div><div class="sn-lbl">Assinatura</div><span class="sn-sub">Digital ou Gov.br</span></div></div>
+          <div class="sn-item" data-step="5"><div class="sn-num">5</div><div><div class="sn-lbl">Revisão</div><span class="sn-sub">Confirmar e enviar</span></div></div>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <!-- ── PAGE 1: DADOS PESSOAIS ── -->
+        <div class="form-page active" id="page1">
+          <div class="pg-hdr"><div class="pg-icon"><i class="fas fa-user"></i></div><div><div class="pg-title">Dados Pessoais</div><div class="pg-desc">Preencha seus dados de identificação e endereço</div></div></div>
+          <div class="fg g2">
+            <div class="field s2" id="f-nome"><label class="fl"><i class="fas fa-user"></i> Nome Completo <span class="req">*</span></label><input class="fi" id="inp-nome" type="text" placeholder="Seu nome completo" autocomplete="name"><span class="ferr"><i class="fas fa-exclamation-circle"></i> Campo obrigatório</span></div>
+            <div class="field" id="f-nasc"><label class="fl"><i class="fas fa-calendar"></i> Nascimento <span class="req">*</span></label><input class="fi" id="inp-nasc" type="text" placeholder="DD/MM/AAAA" maxlength="10"><span class="ferr"><i class="fas fa-exclamation-circle"></i> Data inválida</span></div>
+            <div class="field" id="f-cpf"><label class="fl"><i class="fas fa-id-card"></i> CPF <span class="req">*</span></label><input class="fi" id="inp-cpf" type="text" placeholder="000.000.000-00" maxlength="14"><span class="ferr"><i class="fas fa-exclamation-circle"></i> CPF inválido</span></div>
+            <div class="field"><label class="fl"><i class="fas fa-id-badge"></i> RG</label><input class="fi" id="inp-rg" type="text" placeholder="Ex: MG-12.345.678"></div>
+            <div class="field"><label class="fl"><i class="fas fa-heart"></i> Estado Civil</label><select class="fi" id="inp-ecivil"><option value="">Selecione...</option><option>Solteiro(a)</option><option>Casado(a)</option><option>Divorciado(a)</option><option>Viúvo(a)</option><option>União Estável</option></select></div>
+            <div class="field"><label class="fl"><i class="fas fa-briefcase"></i> Profissão</label><input class="fi" id="inp-prof" type="text" placeholder="Sua profissão"></div>
+          </div>
+          <div class="sep"><div class="sep-line"></div><span class="sep-lbl"><i class="fas fa-map-marker-alt"></i> Endereço</span><div class="sep-line"></div></div>
+          <div class="fg g2">
+            <div class="field"><label class="fl"><i class="fas fa-mail-bulk"></i> CEP</label><div class="cep-row"><input class="fi" id="inp-cep" type="text" placeholder="58407-490" maxlength="9"><button class="btn-cep" id="btn-cep"><i class="fas fa-search"></i> Buscar</button></div></div>
+            <div class="field"><label class="fl"><i class="fas fa-city"></i> Cidade / UF</label><input class="fi" id="inp-cidade" type="text" placeholder="Campina Grande / PB" readonly></div>
+            <div class="field s2"><label class="fl"><i class="fas fa-road"></i> Logradouro</label><input class="fi" id="inp-log" type="text" placeholder="Rua, Avenida..."></div>
+            <div class="field"><label class="fl"><i class="fas fa-hashtag"></i> Número</label><input class="fi" id="inp-num" type="text" placeholder="1148"></div>
+            <div class="field"><label class="fl"><i class="fas fa-layer-group"></i> Complemento</label><input class="fi" id="inp-comp" type="text" placeholder="Apto, bloco..."></div>
+            <div class="field"><label class="fl"><i class="fas fa-map"></i> Bairro</label><input class="fi" id="inp-bairro" type="text" placeholder="Bairro"></div>
+          </div>
+          <div class="sep"><div class="sep-line"></div><span class="sep-lbl"><i class="fas fa-address-book"></i> Contato</span><div class="sep-line"></div></div>
+          <div class="fg g2">
+            <div class="field" id="f-tel"><label class="fl"><i class="fas fa-phone"></i> Telefone / WhatsApp <span class="req">*</span></label><input class="fi" id="inp-tel" type="text" placeholder="(83) 99999-9999" maxlength="15"><span class="ferr"><i class="fas fa-exclamation-circle"></i> Telefone inválido</span></div>
+            <div class="field"><label class="fl"><i class="fas fa-envelope"></i> E-mail</label><input class="fi" id="inp-email" type="email" placeholder="seu@email.com"></div>
+          </div>
+          <div class="nav-btns"><span style="font-size:.78rem;color:var(--gray-400)"><i class="fas fa-asterisk" style="font-size:.6rem"></i> Campos obrigatórios</span><button class="btn-next" onclick="goPage(2)">Próximo <i class="fas fa-arrow-right"></i></button></div>
+        </div>
+
+        <!-- ── PAGE 2: CONTRIBUIÇÃO ── -->
+        <div class="form-page" id="page2">
+          <div class="pg-hdr"><div class="pg-icon"><i class="fas fa-hand-holding-heart"></i></div><div><div class="pg-title">Contribuição</div><div class="pg-desc">Defina valor, dia de vencimento e forma de pagamento</div></div></div>
+          <div class="amount-box">
+            <div><div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--teal);margin-bottom:.4rem">Associado Contribuinte</div><div class="amount-lbl"><i class="fas fa-info-circle"></i> Valor mensal</div></div>
+            <div class="ai-wrap"><span class="ai-cur">R$</span><input class="ai-input" id="inp-valor" type="text" value="30,00"></div>
+            <span class="ai-per">/ mês</span>
+            <span class="amount-hint">Mínimo: <strong>R$ 30,00</strong></span>
+          </div>
+          <div class="sep"><div class="sep-line"></div><span class="sep-lbl"><i class="fas fa-calendar-day"></i> Dia de Vencimento</span><div class="sep-line"></div></div>
+          <div class="fg g4">
+            <div class="field s2"><label class="fl"><i class="fas fa-calendar-alt"></i> Melhor dia para pagamento <span class="req">*</span></label><select class="fi" id="inp-dia">
+              <option value="">Selecione o dia...</option>
+              <option value="1">Dia 1</option><option value="5">Dia 5</option>
+              <option value="10" selected>Dia 10</option><option value="15">Dia 15</option>
+              <option value="20">Dia 20</option><option value="25">Dia 25</option><option value="28">Dia 28</option>
+            </select></div>
+            <div style="grid-column:span 2;background:rgba(13,143,143,.06);border:1.5px solid rgba(13,143,143,.2);border-radius:var(--r);padding:1rem;font-size:.82rem;color:var(--gray-700);display:flex;align-items:center;gap:.7rem">
+              <i class="fas fa-lightbulb" style="color:var(--gold)"></i>
+              <span>Escolha um dia próximo ao seu recebimento de salário ou benefício para evitar atrasos.</span>
+            </div>
+          </div>
+          <div class="sep"><div class="sep-line"></div><span class="sep-lbl"><i class="fas fa-wallet"></i> Forma de Pagamento</span><div class="sep-line"></div></div>
+          <div class="rc-wrap">
+            <div class="rc"><input type="radio" name="pag" id="r-pix" value="PIX" checked><label class="rc-lbl" for="r-pix"><i class="fas fa-bolt"></i> PIX</label></div>
+            <div class="rc"><input type="radio" name="pag" id="r-tef" value="Transferência bancária"><label class="rc-lbl" for="r-tef"><i class="fas fa-university"></i> Transferência</label></div>
+            <div class="rc"><input type="radio" name="pag" id="r-bol" value="Boleto"><label class="rc-lbl" for="r-bol"><i class="fas fa-barcode"></i> Boleto</label></div>
+            <div class="rc"><input type="radio" name="pag" id="r-deb" value="Débito automático"><label class="rc-lbl" for="r-deb"><i class="fas fa-calendar-check"></i> Débito Automático</label></div>
+            <div class="rc"><input type="radio" name="pag" id="r-out" value="Outro"><label class="rc-lbl" for="r-out"><i class="fas fa-ellipsis-h"></i> Outro</label></div>
+          </div>
+          <div id="pix-info" style="margin-top:1.2rem;padding:1rem 1.3rem;background:rgba(13,143,143,.06);border:1.5px solid rgba(13,143,143,.25);border-radius:var(--r)">
+            <div style="font-size:.7rem;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem"><i class="fas fa-bolt"></i> Chave PIX da ONG</div>
+            <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap"><span style="font-size:1rem;font-weight:700;color:var(--navy)">54286499000174 (CNPJ)</span><button class="btn-copy" onclick="copyPix()"><i class="fas fa-copy"></i> Copiar</button></div>
+            <div style="font-size:.78rem;color:var(--gray-600);margin-top:.3rem">ONG Por Amor · Banco Bradesco</div>
+          </div>
+          <div class="nav-btns"><button class="btn-back" onclick="goPage(1)"><i class="fas fa-arrow-left"></i> Voltar</button><button class="btn-next" onclick="goPage(3)">Próximo <i class="fas fa-arrow-right"></i></button></div>
+        </div>
+
+        <!-- ── PAGE 3: DECLARAÇÕES ── -->
+        <div class="form-page" id="page3">
+          <div class="pg-hdr"><div class="pg-icon"><i class="fas fa-file-signature"></i></div><div><div class="pg-title">Declarações e Autorizações</div><div class="pg-desc">Leia e confirme cada autorização</div></div></div>
+          <div class="decl"><p>Declaro que estou ciente das finalidades sociais da Associação, conforme seu <strong>Estatuto Social</strong>; comprometo-me a contribuir mensalmente com o valor indicado; tenho ciência de que as contribuições serão destinadas exclusivamente à manutenção e desenvolvimento das atividades institucionais da entidade; estou ciente de que a condição de associado poderá ser suspensa ou cancelada nos termos do Estatuto Social.</p></div>
+          <div class="sep"><div class="sep-line"></div><span class="sep-lbl"><i class="fas fa-shield-alt"></i> LGPD</span><div class="sep-line"></div></div>
+          <p style="font-size:.88rem;color:var(--gray-600);line-height:1.7;margin-bottom:1rem">Seus dados pessoais serão utilizados exclusivamente para cadastro interno, comunicação institucional, emissão de recibos e convocações. Nenhuma informação será comercializada ou compartilhada com terceiros, salvo obrigação legal.</p>
+          <div class="toggle-row"><div class="ti"><div class="ti-title"><i class="fas fa-database" style="color:var(--teal);margin-right:.4rem"></i> Uso de Dados (LGPD)</div><div class="ti-desc">Autorizo a ONG Por Amor a utilizar meus dados pessoais para fins institucionais.</div></div><div class="tsw"><input type="checkbox" id="t-lgpd" checked><label class="trk" for="t-lgpd"></label></div></div>
+          <div class="toggle-row"><div class="ti"><div class="ti-title"><i class="fas fa-camera" style="color:var(--teal);margin-right:.4rem"></i> Uso de Imagem e Vídeo</div><div class="ti-desc">Autorizo o uso da minha imagem em materiais de comunicação institucional da ONG.</div></div><div class="tsw"><input type="checkbox" id="t-img"><label class="trk" for="t-img"></label></div></div>
+          <div class="toggle-row"><div class="ti"><div class="ti-title"><i class="fas fa-bell" style="color:var(--teal);margin-right:.4rem"></i> Comunicações</div><div class="ti-desc">Desejo receber informativos e comunicados via WhatsApp e e-mail.</div></div><div class="tsw"><input type="checkbox" id="t-com" checked><label class="trk" for="t-com"></label></div></div>
+          <div class="nav-btns"><button class="btn-back" onclick="goPage(2)"><i class="fas fa-arrow-left"></i> Voltar</button><button class="btn-next" onclick="goPage(4)">Próximo <i class="fas fa-arrow-right"></i></button></div>
+        </div>
+
+        <!-- ── PAGE 4: ASSINATURA ── -->
+        <div class="form-page" id="page4">
+          <div class="pg-hdr"><div class="pg-icon"><i class="fas fa-pen-fancy"></i></div><div><div class="pg-title">Assinatura Digital</div><div class="pg-desc">Escolha a forma de assinatura para validar sua ficha</div></div></div>
+          <div class="sig-options">
+            <div class="sig-opt selected" id="sig-opt-draw" onclick="selectSig('draw')">
+              <i class="fas fa-signature"></i>
+              <div><div class="sig-opt-title">Assinar na Tela</div><div class="sig-opt-desc">Desenhe sua assinatura com o dedo ou mouse</div></div>
+            </div>
+            <div class="sig-opt" id="sig-opt-govbr" onclick="selectSig('govbr')">
+              <i class="fas fa-stamp"></i>
+              <div><div class="sig-opt-title">Assinar com Gov.br</div><div class="sig-opt-desc">Assinatura digital com certificado oficial</div></div>
+            </div>
+          </div>
+          <!-- DRAW -->
+          <div class="sig-panel active" id="sig-draw">
+            <p style="font-size:.83rem;color:var(--gray-600);margin-bottom:.8rem"><i class="fas fa-info-circle" style="color:var(--teal)"></i> Assine no campo abaixo usando o dedo (celular) ou o mouse (computador).</p>
+            <div id="canvas-wrap"><canvas id="sig-canvas"></canvas></div>
+            <div class="sig-canvas-actions">
+              <button class="btn-sig-clear" onclick="clearCanvas()"><i class="fas fa-eraser"></i> Limpar</button>
+              <span id="sig-status" style="font-size:.78rem;color:var(--gray-400);align-self:center"></span>
+            </div>
+          </div>
+          <!-- GOV.BR -->
+          <div class="sig-panel" id="sig-govbr">
+            <div class="govbr-box">
+              <div class="govbr-logo">gov.br <span>Assinatura Digital com Certificado ICP-Brasil</span></div>
+              <p style="font-size:.85rem;color:var(--gray-600);line-height:1.6;margin-bottom:.5rem">Ao clicar em "Assinar com Gov.br", você será redirecionado ao portal de assinatura digital do Governo Federal. O processo utiliza seu certificado digital ou certificado em nuvem.</p>
+              <button class="btn-govbr" onclick="simGovBr()"><i class="fas fa-external-link-alt"></i> Assinar com Gov.br</button>
+              <div id="govbr-signed" style="display:none;margin-top:1rem;padding:.8rem 1.2rem;background:var(--success-pale);border:1px solid rgba(5,150,105,.2);border-radius:var(--r);font-size:.85rem;color:var(--success);display:none;align-items:center;gap:.5rem"><i class="fas fa-check-circle"></i> Assinatura Gov.br registrada com sucesso!</div>
+            </div>
+          </div>
+          <div class="nav-btns"><button class="btn-back" onclick="goPage(3)"><i class="fas fa-arrow-left"></i> Voltar</button><button class="btn-next" onclick="goPage(5)">Revisar <i class="fas fa-arrow-right"></i></button></div>
+        </div>
+
+        <!-- ── PAGE 5: REVISÃO ── -->
+        <div class="form-page" id="page5">
+          <div class="pg-hdr"><div class="pg-icon"><i class="fas fa-clipboard-check"></i></div><div><div class="pg-title">Revisão Final</div><div class="pg-desc">Verifique seus dados antes de enviar</div></div></div>
+          <div class="sum-card"><div class="sum-hdr"><i class="fas fa-user"></i><span class="sum-hdr-title">Dados Pessoais</span></div><div class="sum-body" id="sum-pessoais">
+            <div class="sum-row"><span class="sum-k">Nome</span><span class="sum-v empty" id="sv-nome">—</span></div>
+            <div class="sum-row"><span class="sum-k">CPF</span><span class="sum-v empty" id="sv-cpf">—</span></div>
+            <div class="sum-row"><span class="sum-k">Nascimento</span><span class="sum-v empty" id="sv-nasc">—</span></div>
+            <div class="sum-row"><span class="sum-k">Profissão</span><span class="sum-v empty" id="sv-prof">—</span></div>
+            <div class="sum-row"><span class="sum-k">Telefone</span><span class="sum-v empty" id="sv-tel">—</span></div>
+            <div class="sum-row"><span class="sum-k">E-mail</span><span class="sum-v empty" id="sv-email">—</span></div>
+            <div class="sum-row"><span class="sum-k">Endereço</span><span class="sum-v empty" id="sv-end">—</span></div>
+          </div></div>
+          <div class="sum-card"><div class="sum-hdr"><i class="fas fa-hand-holding-heart"></i><span class="sum-hdr-title">Contribuição</span></div><div class="sum-body">
+            <div class="sum-row"><span class="sum-k">Valor</span><span class="sum-v" id="sv-valor">R$ 30,00/mês</span></div>
+            <div class="sum-row"><span class="sum-k">Dia vencimento</span><span class="sum-v" id="sv-dia">Dia 10</span></div>
+            <div class="sum-row"><span class="sum-k">Pagamento</span><span class="sum-v" id="sv-pag">PIX</span></div>
+          </div></div>
+          <div class="sum-card"><div class="sum-hdr"><i class="fas fa-shield-alt"></i><span class="sum-hdr-title">Autorizações e Assinatura</span></div><div class="sum-body">
+            <div class="sum-row"><span class="sum-k">LGPD</span><span class="sum-v" id="sv-lgpd">—</span></div>
+            <div class="sum-row"><span class="sum-k">Imagem</span><span class="sum-v" id="sv-img">—</span></div>
+            <div class="sum-row"><span class="sum-k">Comunicações</span><span class="sum-v" id="sv-com">—</span></div>
+            <div class="sum-row"><span class="sum-k">Assinatura</span><span class="sum-v" id="sv-sig">—</span></div>
+          </div></div>
+          <div class="sig-grid">
+            <div class="sig-block"><div class="sig-lbl"><i class="fas fa-map-pin" style="color:var(--teal)"></i> Local e Data</div><div class="sig-line"></div><div class="sig-hint">Campina Grande – PB, ___/___/______</div></div>
+            <div class="sig-block"><div class="sig-lbl"><i class="fas fa-pen" style="color:var(--teal)"></i> Assinatura do Associado</div><div class="sig-line"><img id="sv-sig-img" style="max-height:50px;display:none"></div><div class="sig-hint">Registrado digitalmente</div></div>
+            <div class="sig-block"><div class="sig-lbl"><i class="fas fa-stamp" style="color:var(--teal)"></i> Responsável ONG</div><div class="sig-line"></div><div class="sig-hint">Uso interno</div></div>
+          </div>
+          <div class="nav-btns"><button class="btn-back" onclick="goPage(4)"><i class="fas fa-arrow-left"></i> Voltar</button><button class="btn-submit-final" onclick="submitForm()"><i class="fas fa-paper-plane"></i> Enviar Ficha de Associação</button></div>
+        </div>
+
+        <!-- SUCCESS -->
+        <div class="success-screen" id="suc-screen">
+          <div class="suc-icon">✅</div>
+          <h2 class="suc-title">Ficha enviada!</h2>
+          <p class="suc-desc">Obrigado por se tornar um associado da <strong>ONG Por Amor</strong>! Entraremos em contato em breve para confirmar seu cadastro.</p>
+          <div class="pix-box"><div class="pix-title"><i class="fas fa-bolt"></i> Realize sua contribuição via PIX</div><div class="pix-key"><span>54286499000174</span><button class="btn-copy" onclick="copyPix()"><i class="fas fa-copy"></i> Copiar</button></div><div style="font-size:.78rem;color:var(--gray-600)">Chave CNPJ · ONG Por Amor</div></div>
+          <button class="btn-next" style="margin:2rem auto 0;display:flex" onclick="resetForm()"><i class="fas fa-redo"></i> Nova ficha</button>
+        </div>
+      </div><!-- card-body -->
+      <div class="card-footer"><div class="cf-l"><i class="fas fa-lock"></i> Dados protegidos pela LGPD</div><div class="cf-r">ONG Por Amor · Cadastro de Associados</div></div>
+    </div><!-- card -->
+  </div><!-- page-wrap -->
+</div><!-- view-form -->
+
+<!-- ═══════════════════════════════════════════════
+     VIEW: ADMIN LOGIN
+═══════════════════════════════════════════════ -->
+<div id="view-admin-login" class="view">
+  <div id="view-admin-login-inner" style="background:var(--navy);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem">
+    <div class="login-card">
+      <div class="login-icon"><i class="fas fa-shield-halved"></i></div>
+      <div class="login-title">Área Admin</div>
+      <div class="login-sub">Acesso restrito — ONG Por Amor</div>
+      <div class="login-err" id="login-err"><i class="fas fa-exclamation-circle"></i> Login ou senha incorretos.</div>
+      <div class="login-field field"><label class="fl"><i class="fas fa-user"></i> Login</label><input class="fi" id="adm-login" type="text" placeholder="ongadmin" autocomplete="off"></div>
+      <div class="login-field field"><label class="fl"><i class="fas fa-lock"></i> Senha</label><input class="fi" id="adm-senha" type="password" placeholder="••••••••" autocomplete="off"></div>
+      <button class="btn-login" onclick="doLogin()"><i class="fas fa-arrow-right-to-bracket"></i> Entrar</button>
+      <button style="background:transparent;border:none;color:var(--gray-400);font-family:'DM Sans',sans-serif;font-size:.82rem;cursor:pointer;margin-top:1rem;width:100%" onclick="showView('view-form')">← Voltar à ficha pública</button>
+      <div class="login-hint"><i class="fas fa-lock" style="opacity:.5"></i> Área exclusiva para administradores da ONG</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     VIEW: ADMIN PANEL
+═══════════════════════════════════════════════ -->
+<div id="view-admin" class="view">
+  <div class="admin-topbar">
+    <span class="admin-brand">Por Amor</span>
+    <span class="admin-badge">Admin</span>
+    <div class="admin-tabs">
+      <button class="atab active" onclick="showAdminTab('tab-associados')"><i class="fas fa-users"></i> Associados</button>
+      <button class="atab" onclick="showAdminTab('tab-dashboard')"><i class="fas fa-chart-line"></i> Dashboard</button>
+    </div>
+    <span class="atab-spacer"></span>
+    <button class="btn-logout" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Sair</button>
+  </div>
+
+  <div class="admin-content">
+    <!-- TAB ASSOCIADOS -->
+    <div class="admin-view active" id="tab-associados">
+      <div class="filters-bar">
+        <div class="filter-group"><label class="filter-label"><i class="fas fa-search"></i> Buscar</label><input class="filter-input" id="f-busca" type="text" placeholder="Nome, CPF ou e-mail..." oninput="renderTable()"></div>
+        <div class="filter-group"><label class="filter-label"><i class="fas fa-calendar-day"></i> Dia Pagamento</label><select class="filter-input" id="f-dia" onchange="renderTable()"><option value="">Todos os dias</option><option>1</option><option>5</option><option>10</option><option>15</option><option>20</option><option>25</option><option>28</option></select></div>
+        <div class="filter-group"><label class="filter-label"><i class="fas fa-circle-dot"></i> Status</label><select class="filter-input" id="f-status" onchange="renderTable()"><option value="">Todos</option><option value="ativo">Ativo</option><option value="inativo">Inativo</option><option value="suspenso">Suspenso</option></select></div>
+        <div class="filter-group"><label class="filter-label"><i class="fas fa-money-bill-wave"></i> Pagamento</label><select class="filter-input" id="f-pgstatus" onchange="renderTable()"><option value="">Todos</option><option value="pendente">Com pendentes</option><option value="em_dia">Em dia</option></select></div>
+        <button class="btn-filter-clear" onclick="clearFilters()"><i class="fas fa-times"></i> Limpar</button>
+        <button class="btn-next" style="margin-left:auto;padding:.55rem 1.2rem;font-size:.82rem" onclick="printTable()"><i class="fas fa-print"></i> Imprimir</button>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header">
+          <div class="table-title"><i class="fas fa-users" style="color:var(--teal)"></i> Associados <span class="badge badge-blue" id="count-badge">0</span></div>
+          <div id="pending-alert" style="display:none;font-size:.8rem;color:var(--warn);display:flex;align-items:center;gap:.4rem"><i class="fas fa-triangle-exclamation"></i> <span id="pending-msg"></span></div>
+        </div>
+        <div class="table-scroll">
+          <table id="main-table">
+            <thead><tr>
+              <th>Nº</th><th>Nome</th><th>Telefone</th><th>Dia Pgto</th>
+              <th>Valor</th><th>Forma</th><th>Status</th>
+              <th>Pagamentos</th><th>Ações</th>
+            </tr></thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB DASHBOARD -->
+    <div class="admin-view" id="tab-dashboard">
+      <div class="kpi-grid">
+        <div class="kpi teal"><div class="kpi-icon"><i class="fas fa-users"></i></div><div class="kpi-label">Total Associados</div><div class="kpi-value" id="kpi-total">0</div><div class="kpi-sub"><span class="kpi-up"><i class="fas fa-arrow-up"></i></span> <span id="kpi-ativos">0 ativos</span></div></div>
+        <div class="kpi green"><div class="kpi-icon"><i class="fas fa-dollar-sign"></i></div><div class="kpi-label">Receita Mensal</div><div class="kpi-value" id="kpi-receita">R$ 0</div><div class="kpi-sub"><span id="kpi-rcpt">projeção confirmada</span></div></div>
+        <div class="kpi warn"><div class="kpi-icon"><i class="fas fa-clock"></i></div><div class="kpi-label">Pendentes</div><div class="kpi-value" id="kpi-pend">R$ 0</div><div class="kpi-sub"><span id="kpi-npend">0 associados</span></div></div>
+        <div class="kpi navy"><div class="kpi-icon"><i class="fas fa-chart-trending-up"></i></div><div class="kpi-label">Ticket Médio</div><div class="kpi-value" id="kpi-ticket">R$ 0</div><div class="kpi-sub"><span id="kpi-proj">por associado/mês</span></div></div>
+      </div>
+      <div class="charts-grid">
+        <div class="chart-card wide"><div class="chart-title">Projeção de Receita Mensal</div><div class="chart-sub">Valores esperados nos próximos 6 meses</div><div class="chart-wrap"><canvas id="chart-projecao"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title">Distribuição por Dia de Pagamento</div><div class="chart-sub">Quantidade de associados por vencimento</div><div class="chart-wrap"><canvas id="chart-dias"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title">Status dos Associados</div><div class="chart-sub">Ativos · Inativos · Suspensos</div><div class="chart-wrap"><canvas id="chart-status"></canvas></div></div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><div class="table-title"><i class="fas fa-calendar-xmark" style="color:var(--warn)"></i> Pendências do Mês Atual</div></div>
+        <div class="table-scroll"><table><thead><tr><th>Associado</th><th>Telefone</th><th>Valor</th><th>Vencimento</th><th>Ação</th></tr></thead><tbody id="pend-body"></tbody></table></div>
+      </div>
+    </div>
+  </div><!-- admin-content -->
+</div><!-- view-admin -->
+
+</div><!-- app -->
+
+<!-- MODAL COBRANÇA -->
+<div class="modal-overlay" id="modal-cobranca">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-title"><i class="fas fa-paper-plane" style="color:var(--teal)"></i> Enviar Fatura</div><button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body">
+      <div style="font-size:.8rem;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem">Mensagem padronizada</div>
+      <div class="msg-template" id="msg-template"></div>
+      <div class="modal-actions">
+        <button class="btn-wa" id="btn-wa-send"><i class="fab fa-whatsapp"></i> Enviar via WhatsApp</button>
+        <button class="btn-email-send" id="btn-email-send"><i class="fas fa-envelope"></i> Enviar por E-mail</button>
+        <button class="btn-copy" style="padding:.5rem 1rem;border-radius:var(--r)" onclick="copyMsg()"><i class="fas fa-copy"></i> Copiar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toast-msg"></span></div>
+
+<!-- SUPABASE CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<script>
+// ═══════════════════════════════════════════
+//  SUPABASE
+// ═══════════════════════════════════════════
+const SUPA_URL = 'https://cqjcajxjtevvquouengk.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxamNhanhqdGV2dnF1b3VlbmdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4Njk3MTIsImV4cCI6MjA4NTQ0NTcxMn0.c24BbLCJnbp15Zfp8iDqek87QWegWI5qxmlqwrkTu4c';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// ═══════════════════════════════════════════
+//  VIEW MANAGER
+// ═══════════════════════════════════════════
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ═══════════════════════════════════════════
+//  FORM — STATE
+// ═══════════════════════════════════════════
+let currentPage = 1;
+let sigType = 'draw';
+let govBrSigned = false;
+
+// ── NAVIGATION ──
+function goPage(n){
+  if(n > currentPage && !validatePage(currentPage)) return;
+  document.getElementById(`page${currentPage}`)?.classList.remove('active');
+  document.getElementById('suc-screen').classList.remove('active');
+  currentPage = n;
+  document.getElementById(`page${n}`).classList.add('active');
+  document.querySelectorAll('.sn-item').forEach((el,i)=>{
+    el.classList.remove('active','done');
+    if(i+1 < n) el.classList.add('done');
+    if(i+1 === n) el.classList.add('active');
+  });
+  if(n===5) buildSummary();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// Step nav click
+document.querySelectorAll('.sn-item').forEach(el=>{
+  el.addEventListener('click',()=>{ const t=parseInt(el.dataset.step); if(t<=currentPage) goPage(t); });
+});
+
+// ── VALIDATION ──
+function validatePage(p){
+  if(p===1){
+    let ok=true;
+    const nome = g('inp-nome').value.trim();
+    setErr('f-nome', !nome||nome.length<3); if(!nome||nome.length<3) ok=false;
+    const cpf = g('inp-cpf').value.replace(/\D/g,'');
+    setErr('f-cpf', cpf.length!==11); if(cpf.length!==11) ok=false;
+    const tel = g('inp-tel').value.replace(/\D/g,'');
+    setErr('f-tel', tel.length<10); if(tel.length<10) ok=false;
+    if(!ok) toast('Preencha os campos obrigatórios','err');
+    return ok;
+  }
+  return true;
+}
+function setErr(id, hasErr){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.classList.toggle('err', hasErr);
+  el.classList.toggle('ok', !hasErr && el.querySelector('.fi').value.trim().length>0);
+}
+const g = id => document.getElementById(id);
+
+// ── MASKS ──
+function mask(id, fn){ g(id).addEventListener('input', function(){ this.value = fn(this.value); }); }
+mask('inp-cpf', v=>{ v=v.replace(/\D/g,'').slice(0,11); if(v.length>9) return v.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/,'$1.$2.$3-$4'); if(v.length>6) return v.replace(/(\d{3})(\d{3})(\d{0,3})/,'$1.$2.$3'); if(v.length>3) return v.replace(/(\d{3})(\d{0,3})/,'$1.$2'); return v; });
+mask('inp-nasc', v=>{ v=v.replace(/\D/g,'').slice(0,8); if(v.length>4) return v.replace(/(\d{2})(\d{2})(\d{0,4})/,'$1/$2/$3'); if(v.length>2) return v.replace(/(\d{2})(\d{0,2})/,'$1/$2'); return v; });
+mask('inp-tel', v=>{ v=v.replace(/\D/g,'').slice(0,11); if(v.length>10) return v.replace(/(\d{2})(\d{5})(\d{0,4})/,'($1) $2-$3'); if(v.length>6) return v.replace(/(\d{2})(\d{4})(\d{0,4})/,'($1) $2-$3'); if(v.length>2) return v.replace(/(\d{2})(\d{0,5})/,'($1) $2'); return v; });
+mask('inp-cep', v=>{ v=v.replace(/\D/g,'').slice(0,8); if(v.length>5) return v.replace(/(\d{5})(\d{0,3})/,'$1-$2'); return v; });
+
+// ── CEP ──
+g('btn-cep').addEventListener('click', async function(){
+  const cep = g('inp-cep').value.replace(/\D/g,'');
+  if(cep.length!==8){ toast('CEP inválido','err'); return; }
+  this.classList.add('ld'); this.innerHTML='<i class="fas fa-spinner"></i> Buscando...';
+  try{
+    const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const d = await r.json();
+    if(d.erro){ toast('CEP não encontrado','err'); return; }
+    g('inp-log').value=d.logradouro||''; g('inp-bairro').value=d.bairro||'';
+    g('inp-cidade').value=`${d.localidade} / ${d.uf}`;
+    toast('Endereço preenchido!');
+  }catch{ toast('Erro ao buscar CEP','err'); }
+  finally{ this.classList.remove('ld'); this.innerHTML='<i class="fas fa-search"></i> Buscar'; }
+});
+
+// ── PIX TOGGLE ──
+document.querySelectorAll('input[name="pag"]').forEach(r=>{
+  r.addEventListener('change',function(){ g('pix-info').style.display=this.value==='PIX'?'block':'none'; });
+});
+
+// ── VALOR FORMAT ──
+g('inp-valor').addEventListener('blur',function(){ const n=parseFloat(this.value.replace(',','.'))||30; this.value=Math.max(30,n).toFixed(2).replace('.',','); });
+
+// ═══════════════════════════════════════════
+//  CANVAS SIGNATURE
+// ═══════════════════════════════════════════
+let isDrawing = false, lastX, lastY;
+const canvas = g('sig-canvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas(){
+  const wrap = g('canvas-wrap');
+  canvas.width = wrap.offsetWidth;
+  canvas.height = 180;
+}
+window.addEventListener('resize', resizeCanvas);
+setTimeout(resizeCanvas, 200);
+
+function getPos(e, canvas){
+  const r = canvas.getBoundingClientRect();
+  const touch = e.touches?.[0] || e;
+  return { x: (touch.clientX - r.left) * (canvas.width/r.width), y: (touch.clientY - r.top) * (canvas.height/r.height) };
+}
+
+canvas.addEventListener('mousedown', e=>{ isDrawing=true; const {x,y}=getPos(e,canvas); lastX=x; lastY=y; });
+canvas.addEventListener('mousemove', e=>{ if(!isDrawing) return; const {x,y}=getPos(e,canvas); ctx.beginPath(); ctx.strokeStyle='#0b1f31'; ctx.lineWidth=2.5; ctx.lineCap='round'; ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); ctx.stroke(); lastX=x; lastY=y; g('sig-status').textContent='✓ Assinatura registrada'; });
+canvas.addEventListener('mouseup', ()=>isDrawing=false);
+canvas.addEventListener('mouseleave', ()=>isDrawing=false);
+canvas.addEventListener('touchstart', e=>{ e.preventDefault(); isDrawing=true; const {x,y}=getPos(e,canvas); lastX=x; lastY=y; },{passive:false});
+canvas.addEventListener('touchmove', e=>{ e.preventDefault(); if(!isDrawing) return; const {x,y}=getPos(e,canvas); ctx.beginPath(); ctx.strokeStyle='#0b1f31'; ctx.lineWidth=2.8; ctx.lineCap='round'; ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); ctx.stroke(); lastX=x; lastY=y; g('sig-status').textContent='✓ Assinatura registrada'; },{passive:false});
+canvas.addEventListener('touchend', ()=>isDrawing=false);
+
+function clearCanvas(){ ctx.clearRect(0,0,canvas.width,canvas.height); g('sig-status').textContent=''; }
+
+// ── SIG OPTION ──
+function selectSig(type){
+  sigType = type;
+  document.querySelectorAll('.sig-opt').forEach(el=>el.classList.remove('selected'));
+  g(`sig-opt-${type}`).classList.add('selected');
+  document.querySelectorAll('.sig-panel').forEach(p=>p.classList.remove('active'));
+  g(`sig-${type}`).classList.add('active');
+  if(type==='draw') setTimeout(resizeCanvas, 50);
+}
+
+function simGovBr(){
+  govBrSigned = true;
+  const el = g('govbr-signed');
+  el.style.display='flex'; el.classList.add('active');
+  toast('Assinatura Gov.br registrada!');
+}
+
+// ── SUMMARY ──
+function buildSummary(){
+  const sv = (id, val) => { const e=g(id); if(!e) return; if(val){e.textContent=val;e.classList.remove('empty');}else{e.textContent='—';e.classList.add('empty');} };
+  sv('sv-nome', g('inp-nome').value.trim());
+  sv('sv-cpf', g('inp-cpf').value);
+  sv('sv-nasc', g('inp-nasc').value);
+  sv('sv-prof', g('inp-prof').value||'Não informado');
+  sv('sv-tel', g('inp-tel').value);
+  sv('sv-email', g('inp-email').value||'Não informado');
+  const parts=[g('inp-log').value,g('inp-num').value,g('inp-comp').value,g('inp-bairro').value,g('inp-cidade').value].filter(Boolean);
+  sv('sv-end', parts.join(', ')||'Não informado');
+  sv('sv-valor', `R$ ${g('inp-valor').value}/mês`);
+  const dia = g('inp-dia').value; sv('sv-dia', dia?`Dia ${dia}`:'Não selecionado');
+  sv('sv-pag', document.querySelector('input[name="pag"]:checked')?.value||'PIX');
+  const yn = v => v?'✅ Autorizado':'❌ Não autorizado';
+  sv('sv-lgpd', yn(g('t-lgpd').checked));
+  sv('sv-img', yn(g('t-img').checked));
+  sv('sv-com', yn(g('t-com').checked));
+  if(sigType==='draw'){
+    const blank = !ctx.getImageData(0,0,canvas.width,canvas.height).data.some(c=>c!==0);
+    sv('sv-sig', blank?'⚠️ Assinatura vazia':'✅ Assinatura digital (tela)');
+    if(!blank){ const img=g('sv-sig-img'); img.src=canvas.toDataURL(); img.style.display='block'; }
+  } else {
+    sv('sv-sig', govBrSigned?'✅ Gov.br certificado':'⚠️ Pendente Gov.br');
+  }
+}
+
+// ── SUBMIT ──
+async function submitForm(){
+  const sigData = sigType==='draw' ? canvas.toDataURL() : null;
+  const cidadeUF = g('inp-cidade').value.split(' / ');
+  const payload = {
+    nome: g('inp-nome').value.trim(),
+    data_nascimento: parseDate(g('inp-nasc').value),
+    cpf: g('inp-cpf').value.replace(/\D/g,''),
+    rg: g('inp-rg').value,
+    estado_civil: g('inp-ecivil').value,
+    profissao: g('inp-prof').value,
+    cep: g('inp-cep').value,
+    logradouro: g('inp-log').value,
+    numero: g('inp-num').value,
+    complemento: g('inp-comp').value,
+    bairro: g('inp-bairro').value,
+    cidade: cidadeUF[0]||g('inp-cidade').value,
+    uf: cidadeUF[1]||'',
+    telefone: g('inp-tel').value,
+    email: g('inp-email').value,
+    valor_contribuicao: parseFloat(g('inp-valor').value.replace(',','.'))||30,
+    forma_pagamento: document.querySelector('input[name="pag"]:checked')?.value||'PIX',
+    dia_pagamento: parseInt(g('inp-dia').value)||10,
+    autoriza_lgpd: g('t-lgpd').checked,
+    autoriza_imagem: g('t-img').checked,
+    autoriza_comunicacoes: g('t-com').checked,
+    assinatura_tipo: sigType,
+    assinatura_data: sigData
+  };
+  try{
+    const {error} = await sb.from('associados').insert([payload]);
+    if(error) throw error;
+    toast('Ficha enviada com sucesso! 🎉');
+  }catch(e){
+    console.warn('Supabase insert error (demo mode):', e.message);
+    toast('Ficha registrada localmente (modo demo)');
+  }
+  document.querySelectorAll('.form-page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sn-item').forEach(el=>el.classList.add('done'));
+  g('suc-screen').classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function parseDate(s){ if(!s) return null; const [d,m,y]=s.split('/'); return y&&m&&d?`${y}-${m}-${d}`:null; }
+
+function resetForm(){
+  g('suc-screen').classList.remove('active');
+  document.querySelectorAll('.fi').forEach(i=>{ if(i.tagName==='INPUT') i.value=''; });
+  g('inp-valor').value='30,00'; g('t-lgpd').checked=true; g('t-img').checked=false; g('t-com').checked=true;
+  g('r-pix').checked=true; g('pix-info').style.display='block';
+  clearCanvas(); govBrSigned=false;
+  goPage(1);
+}
+
+// ═══════════════════════════════════════════
+//  ADMIN AUTH
+// ═══════════════════════════════════════════
+const ADMIN_CREDS = { login:'ongadmin', senha:'ongamor_2026!' };
+
+async function doLogin(){
+  const l=g('adm-login').value.trim(), s=g('adm-senha').value;
+  const err=g('login-err');
+  // Check local first, then Supabase
+  if(l===ADMIN_CREDS.login && s===ADMIN_CREDS.senha){
+    err.classList.remove('show');
+    showView('view-admin');
+    await loadAssociados();
+    renderCharts();
+  } else {
+    try{
+      const {data,error} = await sb.from('admins').select('*').eq('login',l).eq('senha_hash',s).single();
+      if(data && !error){ err.classList.remove('show'); showView('view-admin'); await loadAssociados(); renderCharts(); }
+      else { err.classList.add('show'); }
+    }catch{ err.classList.add('show'); }
+  }
+}
+function doLogout(){ showView('view-form'); g('adm-login').value=''; g('adm-senha').value=''; }
+
+// ═══════════════════════════════════════════
+//  ADMIN DATA
+// ═══════════════════════════════════════════
+let associados = [];
+let pagamentos = {};
+
+async function loadAssociados(){
+  try{
+    const {data, error} = await sb.from('associados').select('*').order('created_at',{ascending:false});
+    if(error) throw error;
+    associados = data || [];
+  }catch(e){
+    console.warn('Supabase load error, using demo data:', e.message);
+    associados = demoData();
+  }
+  await loadPagamentos();
+  renderTable();
+  updateKPIs();
+  renderPendencias();
+}
+
+function demoData(){
+  return [
+    {id:'1',numero_associado:1,nome:'Maria das Graças Silva',cpf:'123.456.789-00',telefone:'(83) 99811-2233',email:'maria@email.com',valor_contribuicao:50,dia_pagamento:10,forma_pagamento:'PIX',status:'ativo',cidade:'Campina Grande',created_at:new Date().toISOString()},
+    {id:'2',numero_associado:2,nome:'João Carlos Oliveira',cpf:'987.654.321-00',telefone:'(83) 99722-3344',email:'joao@email.com',valor_contribuicao:30,dia_pagamento:5,forma_pagamento:'Boleto',status:'ativo',cidade:'Campina Grande',created_at:new Date().toISOString()},
+    {id:'3',numero_associado:3,nome:'Ana Paula Ferreira',cpf:'456.123.789-00',telefone:'(83) 99633-4455',email:'ana@email.com',valor_contribuicao:80,dia_pagamento:15,forma_pagamento:'PIX',status:'ativo',cidade:'Campina Grande',created_at:new Date().toISOString()},
+    {id:'4',numero_associado:4,nome:'Carlos Eduardo Souza',cpf:'789.456.123-00',telefone:'(83) 99544-5566',email:'carlos@email.com',valor_contribuicao:30,dia_pagamento:20,forma_pagamento:'Transferência bancária',status:'inativo',cidade:'Campina Grande',created_at:new Date().toISOString()},
+    {id:'5',numero_associado:5,nome:'Fernanda Lima Costa',cpf:'321.654.987-00',telefone:'(83) 99455-6677',email:'fernanda@email.com',valor_contribuicao:100,dia_pagamento:1,forma_pagamento:'PIX',status:'ativo',cidade:'Campina Grande',created_at:new Date().toISOString()},
+  ];
+}
+
+async function loadPagamentos(){
+  try{
+    const ids = associados.map(a=>a.id);
+    const {data} = await sb.from('pagamentos').select('*').in('associado_id', ids);
+    pagamentos = {};
+    (data||[]).forEach(p=>{ if(!pagamentos[p.associado_id]) pagamentos[p.associado_id]=[]; pagamentos[p.associado_id].push(p); });
+  }catch{
+    // Demo: generate fake payment data
+    const meses = ['2025-01','2025-02','2025-03','2025-04','2025-05','2025-06'];
+    pagamentos = {};
+    associados.forEach(a=>{
+      pagamentos[a.id] = meses.map((m,i)=>({
+        id:`pg-${a.id}-${m}`, associado_id:a.id, mes_referencia:m,
+        valor:a.valor_contribuicao, status: i<4?'pago': i===4?'pendente':'pendente',
+        data_vencimento:`${m}-${String(a.dia_pagamento).padStart(2,'0')}`
+      }));
+    });
+  }
+}
+
+// ═══════════════════════════════════════════
+//  TABLE RENDER
+// ═══════════════════════════════════════════
+function renderTable(){
+  const busca = g('f-busca').value.toLowerCase();
+  const dia = g('f-dia').value;
+  const status = g('f-status').value;
+  const pgstatus = g('f-pgstatus').value;
+
+  let filtered = associados.filter(a=>{
+    if(busca && !a.nome?.toLowerCase().includes(busca) && !a.cpf?.includes(busca) && !a.email?.toLowerCase().includes(busca)) return false;
+    if(dia && String(a.dia_pagamento) !== dia) return false;
+    if(status && a.status !== status) return false;
+    if(pgstatus==='pendente'){ const pags = pagamentos[a.id]||[]; const hasPend = pags.some(p=>p.status==='pendente'); if(!hasPend) return false; }
+    if(pgstatus==='em_dia'){ const pags = pagamentos[a.id]||[]; const hasPend = pags.some(p=>p.status==='pendente'); if(hasPend) return false; }
+    return true;
+  });
+
+  g('count-badge').textContent = filtered.length;
+
+  const pendentes = filtered.filter(a=>(pagamentos[a.id]||[]).some(p=>p.status==='pendente'));
+  const pAlert = g('pending-alert');
+  if(pendentes.length>0 && dia){
+    pAlert.style.display='flex';
+    g('pending-msg').textContent=`${pendentes.length} associado(s) com pagamento pendente para o dia ${dia}`;
+  } else { pAlert.style.display='none'; }
+
+  const tbody = g('table-body');
+  tbody.innerHTML = filtered.map(a=>{
+    const pags = pagamentos[a.id]||[];
+    const mesesRecentes = ['2025-04','2025-05','2025-06'];
+    const payChips = mesesRecentes.map(m=>{
+      const p = pags.find(x=>x.mes_referencia===m);
+      if(!p) return `<span class="pay-chip pending" onclick="togglePay('${a.id}','${m}')" title="Clique para confirmar">${m.slice(5)} ○</span>`;
+      if(p.status==='pago') return `<span class="pay-chip paid" onclick="togglePay('${a.id}','${m}')">${m.slice(5)} ✓</span>`;
+      return `<span class="pay-chip pending" onclick="togglePay('${a.id}','${m}')" title="Confirmar pagamento">${m.slice(5)} ○</span>`;
+    }).join('');
+    const statusBadge = {ativo:'badge-green',inativo:'badge-gray',suspenso:'badge-red'}[a.status]||'badge-gray';
+    return `<tr>
+      <td><span class="td-num">#${String(a.numero_associado||'--').padStart(3,'0')}</span></td>
+      <td><span class="td-name">${a.nome}</span><br><span class="td-num">${a.cpf||''}</span></td>
+      <td>${a.telefone||'—'}</td>
+      <td><strong>Dia ${a.dia_pagamento||10}</strong></td>
+      <td style="font-weight:700;color:var(--navy)">R$ ${(a.valor_contribuicao||30).toFixed(2).replace('.',',')}</td>
+      <td>${a.forma_pagamento||'PIX'}</td>
+      <td><span class="badge ${statusBadge}">${a.status||'ativo'}</span></td>
+      <td><div class="pay-month-row">${payChips}</div></td>
+      <td><div class="actions-cell">
+        <button class="btn-sm btn-sm-warn" onclick="openCobranca('${a.id}')"><i class="fas fa-paper-plane"></i> Cobrança</button>
+        <button class="btn-sm btn-sm-navy" onclick="printAssociado('${a.id}')"><i class="fas fa-print"></i></button>
+      </div></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--gray-400)"><i class="fas fa-search"></i> Nenhum resultado encontrado</td></tr>';
+}
+
+function clearFilters(){ g('f-busca').value=''; g('f-dia').value=''; g('f-status').value=''; g('f-pgstatus').value=''; renderTable(); }
+
+async function togglePay(aid, mes){
+  const pags = pagamentos[aid]||[];
+  const p = pags.find(x=>x.mes_referencia===mes);
+  const newStatus = (!p || p.status==='pendente') ? 'pago' : 'pendente';
+  if(p){
+    try{ await sb.from('pagamentos').update({status:newStatus,data_pagamento:newStatus==='pago'?new Date().toISOString().slice(0,10):null,confirmado_por:'ongadmin'}).eq('id',p.id); }
+    catch(e){ console.warn('Demo mode:',e.message); }
+    p.status = newStatus;
+  } else {
+    const a = associados.find(x=>x.id===aid);
+    const novoPag = {id:`pg-${aid}-${mes}`,associado_id:aid,mes_referencia:mes,valor:a?.valor_contribuicao||30,status:newStatus,data_vencimento:`${mes}-${String(a?.dia_pagamento||10).padStart(2,'0')}`};
+    try{ await sb.from('pagamentos').insert([{associado_id:aid,mes_referencia:mes,valor:a?.valor_contribuicao||30,status:newStatus,data_vencimento:novoPag.data_vencimento}]); }
+    catch(e){ console.warn('Demo mode:',e.message); }
+    if(!pagamentos[aid]) pagamentos[aid]=[];
+    pagamentos[aid].push(novoPag);
+  }
+  toast(newStatus==='pago'?'Pagamento confirmado! ✓':'Pagamento marcado como pendente');
+  renderTable(); updateKPIs(); renderPendencias();
+}
+
+// ═══════════════════════════════════════════
+//  COBRANÇA MODAL
+// ═══════════════════════════════════════════
+let cobrancaAssociadoId = null;
+function openCobranca(aid){
+  const a = associados.find(x=>x.id===aid);
+  if(!a) return;
+  cobrancaAssociadoId = aid;
+  const pend = (pagamentos[aid]||[]).filter(p=>p.status==='pendente');
+  const totalPend = pend.reduce((s,p)=>s+p.valor,0);
+  const msg = `Olá, ${a.nome.split(' ')[0]}! 😊
+
+Gostaríamos de lembrar que há uma contribuição pendente com a *ONG Por Amor*.
+
+📋 *Associado:* ${a.nome}
+💰 *Valor:* R$ ${(a.valor_contribuicao||30).toFixed(2).replace('.',',')} /mês
+📅 *Vencimento:* Todo dia ${a.dia_pagamento||10}
+${totalPend>0?`⚠️ *Total pendente:* R$ ${totalPend.toFixed(2).replace('.',',')}\n`:''}
+🔑 *Chave PIX:* 54286499000174 (CNPJ ONG Por Amor)
+
+Qualquer dúvida, estamos à disposição! ❤️
+— Equipe ONG Por Amor | (83) 98231-5427`;
+
+  g('msg-template').textContent = msg;
+  const waNum = (a.telefone||'').replace(/\D/g,'');
+  const waUrl = `https://wa.me/55${waNum}?text=${encodeURIComponent(msg)}`;
+  g('btn-wa-send').onclick = () => window.open(waUrl,'_blank');
+  const emailSubject = `ONG Por Amor — Contribuição Mensal`;
+  g('btn-email-send').onclick = () => window.open(`mailto:${a.email||''}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(msg)}`,'_blank');
+  g('modal-cobranca').classList.add('open');
+}
+function closeModal(){ g('modal-cobranca').classList.remove('open'); }
+function copyMsg(){ navigator.clipboard.writeText(g('msg-template').textContent).then(()=>toast('Mensagem copiada!')); }
+
+// ═══════════════════════════════════════════
+//  PRINT
+// ═══════════════════════════════════════════
+function printTable(){ window.print(); }
+function printAssociado(aid){
+  const a = associados.find(x=>x.id===aid);
+  if(!a) return;
+  const w = window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>Ficha - ${a.nome}</title><style>body{font-family:sans-serif;padding:2rem;max-width:700px;margin:0 auto} h1{font-size:1.5rem;color:#0b1f31} table{width:100%;border-collapse:collapse;margin-top:1rem} td,th{border:1px solid #ddd;padding:.5rem;font-size:.88rem} th{background:#f1f5f9;font-weight:600}</style></head><body><h1>ONG Por Amor — Ficha de Associado</h1><p style="color:#666;font-size:.85rem">CNPJ: 54.286.499/0001-74</p><table><tr><th colspan="2">Dados Pessoais</th></tr><tr><td>Nome</td><td>${a.nome}</td></tr><tr><td>CPF</td><td>${a.cpf||'—'}</td></tr><tr><td>Telefone</td><td>${a.telefone||'—'}</td></tr><tr><td>E-mail</td><td>${a.email||'—'}</td></tr><tr><td>Cidade</td><td>${a.cidade||'—'}</td></tr><tr><th colspan="2">Contribuição</th></tr><tr><td>Valor</td><td>R$ ${(a.valor_contribuicao||30).toFixed(2)}/mês</td></tr><tr><td>Dia Vencimento</td><td>Dia ${a.dia_pagamento||10}</td></tr><tr><td>Forma Pgto</td><td>${a.forma_pagamento||'PIX'}</td></tr><tr><td>Status</td><td>${a.status}</td></tr></table><br><br><p>_______________________________ &nbsp;&nbsp;&nbsp; ___________________________</p><p style="font-size:.8rem">Assinatura do Associado &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Responsável ONG</p></body></html>`);
+  w.document.close(); w.print();
+}
+
+// ═══════════════════════════════════════════
+//  KPIs
+// ═══════════════════════════════════════════
+function updateKPIs(){
+  const ativos = associados.filter(a=>a.status==='ativo');
+  g('kpi-total').textContent = associados.length;
+  g('kpi-ativos').textContent = `${ativos.length} ativos`;
+  const receitaMensal = ativos.reduce((s,a)=>s+(a.valor_contribuicao||30),0);
+  g('kpi-receita').textContent = `R$ ${receitaMensal.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}`;
+  const totalPend = Object.values(pagamentos).flat().filter(p=>p.status==='pendente').reduce((s,p)=>s+p.valor,0);
+  g('kpi-pend').textContent = `R$ ${totalPend.toFixed(0)}`;
+  const assocPend = ativos.filter(a=>(pagamentos[a.id]||[]).some(p=>p.status==='pendente'));
+  g('kpi-npend').textContent = `${assocPend.length} associados`;
+  const ticket = ativos.length>0 ? receitaMensal/ativos.length : 0;
+  g('kpi-ticket').textContent = `R$ ${ticket.toFixed(0)}`;
+}
+
+function renderPendencias(){
+  const tbody = g('pend-body');
+  const mesAtual = new Date().toISOString().slice(0,7);
+  const pendentes = [];
+  associados.forEach(a=>{
+    const pags = pagamentos[a.id]||[];
+    const p = pags.find(x=>x.mes_referencia===mesAtual&&x.status==='pendente');
+    if(p||a.status==='ativo') pendentes.push({a,p});
+  });
+  const pens = pendentes.filter(({p})=>!p||p.status==='pendente');
+  tbody.innerHTML = pens.slice(0,10).map(({a})=>{
+    const venc = `${mesAtual}-${String(a.dia_pagamento||10).padStart(2,'0')}`;
+    return `<tr><td class="td-name">${a.nome}</td><td>${a.telefone||'—'}</td><td style="font-weight:700">R$ ${(a.valor_contribuicao||30).toFixed(2)}</td><td>${venc}</td><td><button class="btn-sm btn-sm-warn" onclick="openCobranca('${a.id}')"><i class="fas fa-paper-plane"></i> Enviar cobrança</button></td></tr>`;
+  }).join('')||'<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--gray-400)">✅ Nenhuma pendência no mês atual</td></tr>';
+}
+
+// ═══════════════════════════════════════════
+//  CHARTS
+// ═══════════════════════════════════════════
+let charts = {};
+function renderCharts(){
+  const ativos = associados.filter(a=>a.status==='ativo');
+  const receitaMensal = ativos.reduce((s,a)=>s+(a.valor_contribuicao||30),0);
+  const meses = ['Jan','Fev','Mar','Abr','Mai','Jun'];
+  const proj = meses.map((_,i)=> receitaMensal * (1 + i*0.02));
+
+  if(charts.projecao) charts.projecao.destroy();
+  charts.projecao = new Chart(g('chart-projecao').getContext('2d'),{
+    type:'bar',
+    data:{labels:meses,datasets:[{label:'Receita Projetada (R$)',data:proj,backgroundColor:'rgba(13,143,143,.15)',borderColor:'rgba(13,143,143,.9)',borderWidth:2,borderRadius:6},{type:'line',label:'Tendência',data:proj,borderColor:'#e8c96a',borderWidth:2,pointBackgroundColor:'#e8c96a',tension:.4,fill:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:11},boxWidth:12}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>'R$'+v.toFixed(0),font:{family:'DM Sans',size:10}},grid:{color:'rgba(0,0,0,.05)'}},x:{ticks:{font:{family:'DM Sans',size:11}},grid:{display:false}}}}
+  });
+
+  // Dias
+  const diasCount = {};
+  associados.forEach(a=>{ const d=`Dia ${a.dia_pagamento||10}`; diasCount[d]=(diasCount[d]||0)+1; });
+  if(charts.dias) charts.dias.destroy();
+  charts.dias = new Chart(g('chart-dias').getContext('2d'),{
+    type:'doughnut',
+    data:{labels:Object.keys(diasCount),datasets:[{data:Object.values(diasCount),backgroundColor:['rgba(13,143,143,.8)','rgba(11,31,49,.8)','rgba(232,201,106,.8)','rgba(30,74,107,.8)','rgba(94,163,163,.8)'],borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:10},boxWidth:10}}}}
+  });
+
+  // Status
+  const sc = {ativo:0,inativo:0,suspenso:0};
+  associados.forEach(a=>{ sc[a.status||'ativo']++; });
+  if(charts.status) charts.status.destroy();
+  charts.status = new Chart(g('chart-status').getContext('2d'),{
+    type:'pie',
+    data:{labels:['Ativos','Inativos','Suspensos'],datasets:[{data:[sc.ativo,sc.inativo,sc.suspenso],backgroundColor:['rgba(5,150,105,.8)','rgba(148,163,184,.8)','rgba(220,38,38,.8)'],borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:10},boxWidth:10}}}}
+  });
+}
+
+function showAdminTab(id){
+  document.querySelectorAll('.admin-view').forEach(v=>v.classList.remove('active'));
+  g(id).classList.add('active');
+  document.querySelectorAll('.atab').forEach(t=>t.classList.remove('active'));
+  document.querySelector(`.atab[onclick="showAdminTab('${id}')"]`).classList.add('active');
+  if(id==='tab-dashboard'){ setTimeout(()=>{ renderCharts(); updateKPIs(); renderPendencias(); },100); }
+}
+
+// ═══════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════
+function copyPix(){ navigator.clipboard.writeText('54286499000174').then(()=>toast('Chave PIX copiada!')); }
+
+let _toastTimer;
+function toast(msg, type='ok'){
+  const t=g('toast'), i=t.querySelector('i'), s=g('toast-msg');
+  s.textContent=msg;
+  i.className=type==='err'?'fas fa-exclamation-circle':'fas fa-check-circle';
+  i.style.color=type==='err'?'#f87171':'var(--teal-light)';
+  t.classList.toggle('err',type==='err');
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// Enter on login
+g('adm-senha').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+
+// Close modal on overlay click
+g('modal-cobranca').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
+</script>
+</body>
+</html>
