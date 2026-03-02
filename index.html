@@ -801,44 +801,117 @@ mask('inp-nasc', v=>{ v=v.replace(/\D/g,'').slice(0,8); if(v.length>4) return v.
 mask('inp-tel', v=>{ v=v.replace(/\D/g,'').slice(0,11); if(v.length>10) return v.replace(/(\d{2})(\d{5})(\d{0,4})/,'($1) $2-$3'); if(v.length>6) return v.replace(/(\d{2})(\d{4})(\d{0,4})/,'($1) $2-$3'); if(v.length>2) return v.replace(/(\d{2})(\d{0,5})/,'($1) $2'); return v; });
 mask('inp-cep', v=>{ v=v.replace(/\D/g,'').slice(0,8); if(v.length>5) return v.replace(/(\d{5})(\d{0,3})/,'$1-$2'); return v; });
 
-// ── CEP ──
-g('btn-cep').addEventListener('click', async function(e){
-  e.preventDefault(); // Evita que a página recarregue sem querer
+// ── CEP ── (VERSÃO MELHORADA COM JSONP)
+g('btn-cep').addEventListener('click', async function(e) {
+  e.preventDefault();
   
-  const cep = g('inp-cep').value.replace(/\D/g,'');
+  const cep = g('inp-cep').value.replace(/\D/g, '');
   
-  if(cep.length !== 8){ 
-    toast('CEP inválido', 'err'); 
-    return; 
+  if (cep.length !== 8) {
+    toast('CEP inválido (deve ter 8 dígitos)', 'err');
+    return;
   }
   
-  this.classList.add('ld'); 
+  this.classList.add('ld');
+  const originalText = this.innerHTML;
   this.innerHTML = '<i class="fas fa-spinner"></i> Buscando...';
   
+  // Tentativa 1: ViaCEP (API padrão)
   try {
-    const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-    const d = await r.json();
+    const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
     
-    if(d.erro){ 
-      toast('CEP não encontrado', 'err'); 
-      return; 
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    g('inp-log').value = d.logradouro || ''; 
-    g('inp-bairro').value = d.bairro || '';
-    g('inp-cidade').value = `${d.localidade} / ${d.uf}`;
+    const data = await response.json();
     
-    toast('Endereço preenchido!');
+    if (data.erro) {
+      toast('CEP não encontrado na base dos Correios', 'err');
+      return;
+    }
     
-  } catch (err) { // ← CORREÇÃO AQUI: alterei de (error) para (err)
-    console.error("Erro ViaCEP:", err);
-    toast('Erro de conexão ao buscar CEP', 'err'); 
-  } finally { 
-    this.classList.remove('ld'); 
-    this.innerHTML = '<i class="fas fa-search"></i> Buscar'; 
+    // Preencher os campos
+    g('inp-log').value = data.logradouro || '';
+    g('inp-bairro').value = data.bairro || '';
+    g('inp-cidade').value = `${data.localidade} / ${data.uf}`;
+    
+    toast('Endereço preenchido com sucesso!');
+    
+  } catch (error) {
+    console.error('Erro na busca de CEP:', error);
+    
+    // Tentativa 2: Fallback para API alternativa (BrasilAPI)
+    try {
+      toast('Tentando API alternativa...', 'err');
+      
+      const fallbackResponse = await fetch(`https://brasilapi.com.br/api/cep/v1/${cep}`);
+      
+      if (!fallbackResponse.ok) {
+        throw new Error(`Fallback HTTP error! status: ${fallbackResponse.status}`);
+      }
+      
+      const fallbackData = await fallbackResponse.json();
+      
+      g('inp-log').value = fallbackData.street || '';
+      g('inp-bairro').value = fallbackData.neighborhood || '';
+      g('inp-cidade').value = `${fallbackData.city} / ${fallbackData.state}`;
+      
+      toast('Endereço preenchido via BrasilAPI!');
+      
+    } catch (fallbackError) {
+      console.error('Erro também na API fallback:', fallbackError);
+      
+      // Tentativa 3: JSONP como último recurso (ViaCEP com JSONP)
+      try {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          const callbackName = `viacep_callback_${Date.now()}`;
+          
+          window[callbackName] = function(data) {
+            if (data.erro) {
+              reject(new Error('CEP não encontrado'));
+            } else {
+              g('inp-log').value = data.logradouro || '';
+              g('inp-bairro').value = data.bairro || '';
+              g('inp-cidade').value = `${data.localidade} / ${data.uf}`;
+              resolve();
+            }
+            delete window[callbackName];
+            document.body.removeChild(script);
+          };
+          
+          script.src = `https://viacep.com.br/ws/${cep}/json/?callback=${callbackName}`;
+          script.onerror = () => {
+            delete window[callbackName];
+            document.body.removeChild(script);
+            reject(new Error('Falha no carregamento do script JSONP'));
+          };
+          
+          document.body.appendChild(script);
+          
+          // Timeout de 5 segundos
+          setTimeout(() => {
+            if (window[callbackName]) {
+              delete window[callbackName];
+              document.body.removeChild(script);
+              reject(new Error('Timeout na requisição JSONP'));
+            }
+          }, 5000);
+        });
+        
+        toast('Endereço preenchido via JSONP!');
+        
+      } catch (jsonpError) {
+        console.error('Todas as tentativas falharam:', jsonpError);
+        toast('Não foi possível buscar o CEP. Tente novamente ou preencha manualmente.', 'err');
+      }
+    }
+  } finally {
+    this.classList.remove('ld');
+    this.innerHTML = originalText;
   }
 });
-
 // ── PIX TOGGLE ──
 document.querySelectorAll('input[name="pag"]').forEach(r=>{
   r.addEventListener('change',function(){ g('pix-info').style.display=this.value==='PIX'?'block':'none'; });
