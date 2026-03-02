@@ -857,7 +857,7 @@ g('btn-cep').addEventListener('click', async function(e) {
       g('inp-bairro').value = fallbackData.neighborhood || '';
       g('inp-cidade').value = `${fallbackData.city} / ${fallbackData.state}`;
       
-      toast('Endereço preenchido via BrasilAPI!');
+     ;
       
     } catch (fallbackError) {
       console.error('Erro também na API fallback:', fallbackError);
