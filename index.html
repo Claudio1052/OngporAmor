@@ -499,7 +499,7 @@ tr:hover td{background:var(--gray-50)}
           <div id="pix-info" style="margin-top:1.2rem;padding:1rem 1.3rem;background:rgba(13,143,143,.06);border:1.5px solid rgba(13,143,143,.25);border-radius:var(--r)">
             <div style="font-size:.7rem;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem"><i class="fas fa-bolt"></i> Chave PIX da ONG</div>
             <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap"><span style="font-size:1rem;font-weight:700;color:var(--navy)">(83) 98231-5427 (Celular)</span><button class="btn-copy" onclick="copyPix()"><i class="fas fa-copy"></i> Copiar</button></div>
-            <div style="font-size:.78rem;color:var(--gray-600);margin-top:.3rem">ONG Por Amor · Chave Celular</div>
+            <div style="font-size:.78rem;color:var(--gray-600);margin-top:.3rem">ONG Por Amor · Banco Bradesco</div>
           </div>
           <div class="nav-btns"><button class="btn-back" onclick="goPage(1)"><i class="fas fa-arrow-left"></i> Voltar</button><button class="btn-next" onclick="goPage(3)">Próximo <i class="fas fa-arrow-right"></i></button></div>
         </div>
@@ -802,8 +802,7 @@ mask('inp-tel', v=>{ v=v.replace(/\D/g,'').slice(0,11); if(v.length>10) return v
 mask('inp-cep', v=>{ v=v.replace(/\D/g,'').slice(0,8); if(v.length>5) return v.replace(/(\d{5})(\d{0,3})/,'$1-$2'); return v; });
 
 // ── CEP ──
-g('btn-cep').addEventListener('click', async function(e){
-  if(e) e.preventDefault();
+g('btn-cep').addEventListener('click', async function(){
   const cep = g('inp-cep').value.replace(/\D/g,'');
   if(cep.length!==8){ toast('CEP inválido','err'); return; }
   this.classList.add('ld'); this.innerHTML='<i class="fas fa-spinner"></i> Buscando...';
@@ -811,18 +810,11 @@ g('btn-cep').addEventListener('click', async function(e){
     const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
     const d = await r.json();
     if(d.erro){ toast('CEP não encontrado','err'); return; }
-    g('inp-log').value = d.logradouro || ''; 
-    g('inp-bairro').value = d.bairro || '';
-    g('inp-cidade').value = `${d.localidade} / ${d.uf}`;
+    g('inp-log').value=d.logradouro||''; g('inp-bairro').value=d.bairro||'';
+    g('inp-cidade').value=`${d.localidade} / ${d.uf}`;
     toast('Endereço preenchido!');
-  }catch(err){ 
-    console.error(err);
-    toast('Erro ao buscar CEP','err'); 
-  }
-  finally{ 
-    this.classList.remove('ld'); 
-    this.innerHTML='<i class="fas fa-search"></i> Buscar'; 
-  }
+  }catch{ toast('Erro ao buscar CEP','err'); }
+  finally{ this.classList.remove('ld'); this.innerHTML='<i class="fas fa-search"></i> Buscar'; }
 });
 
 // ── PIX TOGGLE ──
@@ -1144,13 +1136,10 @@ function getMesAtual(){
   const d=new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
 }
-
-// Mostra o mês atual + os 11 meses para frente (1 ano no total)
-function getMesesFuturos(n=12){
-  const hoje = new Date();
-  return Array.from({length:n},(_,i)=>{
-    const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+function getMesesDoAno(){
+  const anoAtual = new Date().getFullYear();
+  return Array.from({length:12}, (_, i) => {
+    return `${anoAtual}-${String(i+1).padStart(2,'0')}`;
   });
 }
 
@@ -1182,7 +1171,7 @@ function renderTable(){
     g('pending-msg').textContent=`${pendentes.length} associado(s) com pagamento PENDENTE para o dia ${dia} no mês atual`;
   } else { pAlert.style.display='none'; }
 
-  const meses = getMesesFuturos(12);
+  const meses = getMesesDoAno();
   const tbody = g('table-body');
   tbody.innerHTML = filtered.map(a=>{
     const pags = pagamentos[a.id]||[];
