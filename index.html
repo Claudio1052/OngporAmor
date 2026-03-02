@@ -505,8 +505,8 @@ tr:hover td{background:var(--gray-50)}
           </div>
           <div id="pix-info" style="margin-top:1.2rem;padding:1rem 1.3rem;background:rgba(13,143,143,.06);border:1.5px solid rgba(13,143,143,.25);border-radius:var(--r)">
             <div style="font-size:.7rem;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem"><i class="fas fa-bolt"></i> Chave PIX da ONG</div>
-            <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap"><span style="font-size:1rem;font-weight:700;color:var(--navy)">(83) 98231-5427 (Telefone)</span><button class="btn-copy" onclick="copyPix()"><i class="fas fa-copy"></i> Copiar</button></div>
-            <div style="font-size:.78rem;color:var(--gray-600);margin-top:.3rem">ONG Por Amor · Chave PIX: Telefone</div>
+            <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap"><span style="font-size:1rem;font-weight:700;color:var(--navy)">54286499000174 (CNPJ)</span><button class="btn-copy" onclick="copyPix()"><i class="fas fa-copy"></i> Copiar</button></div>
+            <div style="font-size:.78rem;color:var(--gray-600);margin-top:.3rem">ONG Por Amor · Banco Bradesco</div>
           </div>
           <div class="nav-btns"><button class="btn-back" onclick="goPage(1)"><i class="fas fa-arrow-left"></i> Voltar</button><button class="btn-next" onclick="goPage(3)">Próximo <i class="fas fa-arrow-right"></i></button></div>
         </div>
@@ -580,7 +580,7 @@ tr:hover td{background:var(--gray-50)}
           <div class="suc-icon">✅</div>
           <h2 class="suc-title">Ficha enviada!</h2>
           <p class="suc-desc">Obrigado por se tornar um associado da <strong>ONG Por Amor</strong>! Entraremos em contato em breve para confirmar seu cadastro.</p>
-          <div class="pix-box"><div class="pix-title"><i class="fas fa-bolt"></i> Realize sua contribuição via PIX</div><div class="pix-key"><span>(83) 98231-5427</span><button class="btn-copy" onclick="copyPix()"><i class="fas fa-copy"></i> Copiar</button></div><div style="font-size:.78rem;color:var(--gray-600)">Chave Telefone · ONG Por Amor</div></div>
+          <div class="pix-box"><div class="pix-title"><i class="fas fa-bolt"></i> Realize sua contribuição via PIX</div><div class="pix-key"><span>54286499000174</span><button class="btn-copy" onclick="copyPix()"><i class="fas fa-copy"></i> Copiar</button></div><div style="font-size:.78rem;color:var(--gray-600)">Chave CNPJ · ONG Por Amor</div></div>
           <button class="btn-next" style="margin:2rem auto 0;display:flex" onclick="resetForm()"><i class="fas fa-redo"></i> Nova ficha</button>
         </div>
       </div><!-- card-body -->
@@ -839,77 +839,17 @@ mask('inp-cep', v=>{ v=v.replace(/\D/g,'').slice(0,8); if(v.length>5) return v.r
 // ── CEP ──
 g('btn-cep').addEventListener('click', async function(){
   const cep = g('inp-cep').value.replace(/\D/g,'');
-  if(cep.length!==8){ 
-    toast('CEP inválido - digite 8 números','err'); 
-    return; 
-  }
-  
-  // Mostrar loading
-  this.classList.add('ld'); 
-  this.innerHTML='<i class="fas fa-spinner"></i> Buscando...';
-  this.disabled = true;
-  
+  if(cep.length!==8){ toast('CEP inválido','err'); return; }
+  this.classList.add('ld'); this.innerHTML='<i class="fas fa-spinner"></i> Buscando...';
   try{
-    // Usando fetch com timeout e headers apropriados
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000); // timeout 8 segundos
-    
-    const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`, {
-      signal: controller.signal,
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    clearTimeout(timeoutId);
-    
-    if (!r.ok) {
-      throw new Error(`HTTP error! status: ${r.status}`);
-    }
-    
+    const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
     const d = await r.json();
-    
-    if(d.erro){ 
-      toast('CEP não encontrado na base dos Correios','err'); 
-      return; 
-    }
-    
-    // Preencher campos
-    g('inp-log').value = d.logradouro || '';
-    g('inp-bairro').value = d.bairro || '';
-    
-    // Montar cidade/UF
-    let cidadeUF = '';
-    if (d.localidade) {
-      cidadeUF = d.localidade;
-      if (d.uf) cidadeUF += ` / ${d.uf}`;
-    }
-    g('inp-cidade').value = cidadeUF;
-    
-    // Se tiver complemento, preencher
-    if (d.complemento) {
-      g('inp-comp').value = d.complemento;
-    }
-    
-    toast('Endereço preenchido com sucesso! ✅');
-    
-  } catch(error) {
-    console.error('Erro detalhado:', error);
-    
-    if (error.name === 'AbortError') {
-      toast('Tempo esgotado - tente novamente','err');
-    } else if (error.message.includes('Failed to fetch')) {
-      toast('Erro de conexão - verifique sua internet','err');
-    } else {
-      toast('Erro ao buscar CEP: ' + (error.message || 'tente novamente'),'err');
-    }
-  } finally {
-    // Restaurar botão
-    this.classList.remove('ld'); 
-    this.innerHTML='<i class="fas fa-search"></i> Buscar';
-    this.disabled = false;
-  }
+    if(d.erro){ toast('CEP não encontrado','err'); return; }
+    g('inp-log').value=d.logradouro||''; g('inp-bairro').value=d.bairro||'';
+    g('inp-cidade').value=`${d.localidade} / ${d.uf}`;
+    toast('Endereço preenchido!');
+  }catch{ toast('Erro ao buscar CEP','err'); }
+  finally{ this.classList.remove('ld'); this.innerHTML='<i class="fas fa-search"></i> Buscar'; }
 });
 
 // ── PIX TOGGLE ──
@@ -1231,9 +1171,7 @@ function getMesAtual(){
   const d=new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
 }
-
-// Função para gerar últimos 12 meses
-function getUltimosMeses(n=12){
+function getUltimosMeses(n=3){
   const hoje = new Date();
   return Array.from({length:n},(_,i)=>{
     const d = new Date(hoje.getFullYear(), hoje.getMonth()-(n-1-i), 1);
@@ -1269,18 +1207,15 @@ function renderTable(){
     g('pending-msg').textContent=`${pendentes.length} associado(s) com pagamento PENDENTE para o dia ${dia} no mês atual`;
   } else { pAlert.style.display='none'; }
 
-  // Gerar últimos 12 meses
-  const meses = getUltimosMeses(12);
+  const meses = getUltimosMeses(3);
   const tbody = g('table-body');
   tbody.innerHTML = filtered.map(a=>{
     const pags = pagamentos[a.id]||[];
     const payChips = meses.map(m=>{
       const p = pags.find(x=>x.mes_referencia===m);
-      // Formatar como MM/YY (ex: 01/26, 02/26)
-      const [ano, mes] = m.split('-');
-      const mesLabel = `${mes}/${ano.slice(-2)}`;
+      const mesLabel = m.slice(5)+'/'+m.slice(2,4);
       if(!p||p.status==='pendente'){
-        const isOverdue = m < mesAtual;
+        const isOverdue = m<mesAtual;
         const cls = isOverdue?'overdue':'pending';
         return `<span class="pay-chip ${cls}" onclick="togglePay('${a.id}','${m}')" title="Clique para confirmar pagamento de ${mesLabel}">${mesLabel} ○</span>`;
       }
@@ -1436,8 +1371,8 @@ Gostaríamos de lembrar que há uma contribuição em aberto com a *ONG Por Amor
 💰 *Valor mensal:* R$ ${(a.valor_contribuicao||30).toFixed(2).replace('.',',')}
 📅 *Vencimento:* Todo dia ${a.dia_pagamento||10}${totalPend>0?`\n⚠️ *Total pendente:* R$ ${totalPend.toFixed(2).replace('.',',')}`:''}
 
-🔑 *Chave PIX:* (83) 98231-5427
-🏷️ *Tipo:* Telefone — ONG Por Amor
+🔑 *Chave PIX:* 54286499000174
+🏷️ *Tipo:* CNPJ — ONG Por Amor
 
 Após o pagamento, envie o comprovante para confirmar. Qualquer dúvida, estamos à disposição! ❤️
 — Equipe ONG Por Amor | (83) 98231-5427`;
@@ -1463,7 +1398,7 @@ function printAssociado(aid){
   const hoje = new Date();
   const dataImpressao = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
   const statusColor = {ativo:'#059669',inativo:'#94a3b8',suspenso:'#dc2626'}[a.status]||'#94a3b8';
-  const pagRows = pags.map(p=>`<tr><td>${p.mes_referencia.slice(5,7)}/${p.mes_referencia.slice(2,4)}</td><td>R$ ${(p.valor||0).toFixed(2)}</td><td>${p.data_vencimento||'—'}</td><td style="color:${p.status==='pago'?'#059669':'#d97706'};font-weight:700">${p.status==='pago'?'✓ Pago':'○ Pendente'}</td></tr>`).join('');
+  const pagRows = pags.map(p=>`<tr><td>${p.mes_referencia}</td><td>R$ ${(p.valor||0).toFixed(2)}</td><td>${p.data_vencimento||'—'}</td><td style="color:${p.status==='pago'?'#059669':'#d97706'};font-weight:700">${p.status==='pago'?'✓ Pago':'○ Pendente'}</td></tr>`).join('');
   const sigSrc = a.assinatura_data||'';
 
   const w = window.open('','_blank');
@@ -1603,7 +1538,7 @@ function showAdminTab(id){
 // ═══════════════════════════════════════════
 //  UTILS
 // ═══════════════════════════════════════════
-function copyPix(){ navigator.clipboard.writeText('(83) 98231-5427').then(()=>toast('Chave PIX copiada!')); }
+function copyPix(){ navigator.clipboard.writeText('54286499000174').then(()=>toast('Chave PIX copiada!')); }
 
 let _toastTimer;
 function toast(msg, type='ok'){
