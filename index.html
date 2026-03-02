@@ -802,19 +802,42 @@ mask('inp-tel', v=>{ v=v.replace(/\D/g,'').slice(0,11); if(v.length>10) return v
 mask('inp-cep', v=>{ v=v.replace(/\D/g,'').slice(0,8); if(v.length>5) return v.replace(/(\d{5})(\d{0,3})/,'$1-$2'); return v; });
 
 // ── CEP ──
-g('btn-cep').addEventListener('click', async function(){
+// ── CEP ──
+g('btn-cep').addEventListener('click', async function(e){
+  e.preventDefault(); // Evita que a página recarregue sem querer
+  
   const cep = g('inp-cep').value.replace(/\D/g,'');
-  if(cep.length!==8){ toast('CEP inválido','err'); return; }
-  this.classList.add('ld'); this.innerHTML='<i class="fas fa-spinner"></i> Buscando...';
-  try{
+  
+  if(cep.length !== 8){ 
+    toast('CEP inválido', 'err'); 
+    return; 
+  }
+  
+  this.classList.add('ld'); 
+  this.innerHTML = '<i class="fas fa-spinner"></i> Buscando...';
+  
+  try {
     const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
     const d = await r.json();
-    if(d.erro){ toast('CEP não encontrado','err'); return; }
-    g('inp-log').value=d.logradouro||''; g('inp-bairro').value=d.bairro||'';
-    g('inp-cidade').value=`${d.localidade} / ${d.uf}`;
+    
+    if(d.erro){ 
+      toast('CEP não encontrado', 'err'); 
+      return; 
+    }
+    
+    g('inp-log').value = d.logradouro || ''; 
+    g('inp-bairro').value = d.bairro || '';
+    g('inp-cidade').value = `${d.localidade} / ${d.uf}`;
+    
     toast('Endereço preenchido!');
-  }catch{ toast('Erro ao buscar CEP','err'); }
-  finally{ this.classList.remove('ld'); this.innerHTML='<i class="fas fa-search"></i> Buscar'; }
+    
+  } catch (error) { // Adicionado o (error) aqui para garantir compatibilidade
+    console.error("Erro ViaCEP:", error);
+    toast('Erro de conexão ao buscar CEP', 'err'); 
+  } finally { 
+    this.classList.remove('ld'); 
+    this.innerHTML = '<i class="fas fa-search"></i> Buscar'; 
+  }
 });
 
 // ── PIX TOGGLE ──
