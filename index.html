@@ -802,7 +802,6 @@ mask('inp-tel', v=>{ v=v.replace(/\D/g,'').slice(0,11); if(v.length>10) return v
 mask('inp-cep', v=>{ v=v.replace(/\D/g,'').slice(0,8); if(v.length>5) return v.replace(/(\d{5})(\d{0,3})/,'$1-$2'); return v; });
 
 // ── CEP ──
-// ── CEP ──
 g('btn-cep').addEventListener('click', async function(e){
   e.preventDefault(); // Evita que a página recarregue sem querer
   
@@ -831,8 +830,8 @@ g('btn-cep').addEventListener('click', async function(e){
     
     toast('Endereço preenchido!');
     
-  } catch (error) { // Adicionado o (error) aqui para garantir compatibilidade
-    console.error("Erro ViaCEP:", error);
+  } catch (err) { // ← CORREÇÃO AQUI: alterei de (error) para (err)
+    console.error("Erro ViaCEP:", err);
     toast('Erro de conexão ao buscar CEP', 'err'); 
   } finally { 
     this.classList.remove('ld'); 
