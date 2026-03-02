@@ -839,17 +839,77 @@ mask('inp-cep', v=>{ v=v.replace(/\D/g,'').slice(0,8); if(v.length>5) return v.r
 // ── CEP ──
 g('btn-cep').addEventListener('click', async function(){
   const cep = g('inp-cep').value.replace(/\D/g,'');
-  if(cep.length!==8){ toast('CEP inválido','err'); return; }
-  this.classList.add('ld'); this.innerHTML='<i class="fas fa-spinner"></i> Buscando...';
+  if(cep.length!==8){ 
+    toast('CEP inválido - digite 8 números','err'); 
+    return; 
+  }
+  
+  // Mostrar loading
+  this.classList.add('ld'); 
+  this.innerHTML='<i class="fas fa-spinner"></i> Buscando...';
+  this.disabled = true;
+  
   try{
-    const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    // Usando fetch com timeout e headers apropriados
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // timeout 8 segundos
+    
+    const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`, {
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!r.ok) {
+      throw new Error(`HTTP error! status: ${r.status}`);
+    }
+    
     const d = await r.json();
-    if(d.erro){ toast('CEP não encontrado','err'); return; }
-    g('inp-log').value=d.logradouro||''; g('inp-bairro').value=d.bairro||'';
-    g('inp-cidade').value=`${d.localidade} / ${d.uf}`;
-    toast('Endereço preenchido!');
-  }catch{ toast('Erro ao buscar CEP','err'); }
-  finally{ this.classList.remove('ld'); this.innerHTML='<i class="fas fa-search"></i> Buscar'; }
+    
+    if(d.erro){ 
+      toast('CEP não encontrado na base dos Correios','err'); 
+      return; 
+    }
+    
+    // Preencher campos
+    g('inp-log').value = d.logradouro || '';
+    g('inp-bairro').value = d.bairro || '';
+    
+    // Montar cidade/UF
+    let cidadeUF = '';
+    if (d.localidade) {
+      cidadeUF = d.localidade;
+      if (d.uf) cidadeUF += ` / ${d.uf}`;
+    }
+    g('inp-cidade').value = cidadeUF;
+    
+    // Se tiver complemento, preencher
+    if (d.complemento) {
+      g('inp-comp').value = d.complemento;
+    }
+    
+    toast('Endereço preenchido com sucesso! ✅');
+    
+  } catch(error) {
+    console.error('Erro detalhado:', error);
+    
+    if (error.name === 'AbortError') {
+      toast('Tempo esgotado - tente novamente','err');
+    } else if (error.message.includes('Failed to fetch')) {
+      toast('Erro de conexão - verifique sua internet','err');
+    } else {
+      toast('Erro ao buscar CEP: ' + (error.message || 'tente novamente'),'err');
+    }
+  } finally {
+    // Restaurar botão
+    this.classList.remove('ld'); 
+    this.innerHTML='<i class="fas fa-search"></i> Buscar';
+    this.disabled = false;
+  }
 });
 
 // ── PIX TOGGLE ──
