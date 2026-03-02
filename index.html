@@ -400,11 +400,7 @@ tr:hover td{background:var(--gray-50)}
 <body>
 <div id="app">
 
-<!-- ═══════════════════════════════════════════════
-     VIEW: FORMULÁRIO PÚBLICO
-═══════════════════════════════════════════════ -->
 <div id="view-form" class="view active">
-  <!-- TOPBAR -->
   <nav class="topbar">
     <a href="#" class="topbar-logo" onclick="showView('view-form')">
       <img src="https://cqjcajxjtevvquouengk.supabase.co/storage/v1/object/public/IMAGENS/LOGOMARCA.png" class="logo-img" alt="ONG Por Amor">
@@ -418,7 +414,6 @@ tr:hover td{background:var(--gray-50)}
 
   <div class="page-wrap">
     <div class="card">
-      <!-- HEADER -->
       <div class="card-header">
         <div class="hdr-art"></div>
         <div class="hdr-inner">
@@ -445,7 +440,6 @@ tr:hover td{background:var(--gray-50)}
       </div>
 
       <div class="card-body">
-        <!-- ── PAGE 1: DADOS PESSOAIS ── -->
         <div class="form-page active" id="page1">
           <div class="pg-hdr"><div class="pg-icon"><i class="fas fa-user"></i></div><div><div class="pg-title">Dados Pessoais</div><div class="pg-desc">Preencha seus dados de identificação e endereço</div></div></div>
           <div class="fg g2">
@@ -473,7 +467,6 @@ tr:hover td{background:var(--gray-50)}
           <div class="nav-btns"><span style="font-size:.78rem;color:var(--gray-400)"><i class="fas fa-asterisk" style="font-size:.6rem"></i> Campos obrigatórios</span><button class="btn-next" onclick="goPage(2)">Próximo <i class="fas fa-arrow-right"></i></button></div>
         </div>
 
-        <!-- ── PAGE 2: CONTRIBUIÇÃO ── -->
         <div class="form-page" id="page2">
           <div class="pg-hdr"><div class="pg-icon"><i class="fas fa-hand-holding-heart"></i></div><div><div class="pg-title">Contribuição</div><div class="pg-desc">Defina valor, dia de vencimento e forma de pagamento</div></div></div>
           <div class="amount-box">
@@ -505,13 +498,12 @@ tr:hover td{background:var(--gray-50)}
           </div>
           <div id="pix-info" style="margin-top:1.2rem;padding:1rem 1.3rem;background:rgba(13,143,143,.06);border:1.5px solid rgba(13,143,143,.25);border-radius:var(--r)">
             <div style="font-size:.7rem;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem"><i class="fas fa-bolt"></i> Chave PIX da ONG</div>
-            <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap"><span style="font-size:1rem;font-weight:700;color:var(--navy)">54286499000174 (CNPJ)</span><button class="btn-copy" onclick="copyPix()"><i class="fas fa-copy"></i> Copiar</button></div>
-            <div style="font-size:.78rem;color:var(--gray-600);margin-top:.3rem">ONG Por Amor · Banco Bradesco</div>
+            <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap"><span style="font-size:1rem;font-weight:700;color:var(--navy)">(83) 98231-5427 (Celular)</span><button class="btn-copy" onclick="copyPix()"><i class="fas fa-copy"></i> Copiar</button></div>
+            <div style="font-size:.78rem;color:var(--gray-600);margin-top:.3rem">ONG Por Amor · Chave Celular</div>
           </div>
           <div class="nav-btns"><button class="btn-back" onclick="goPage(1)"><i class="fas fa-arrow-left"></i> Voltar</button><button class="btn-next" onclick="goPage(3)">Próximo <i class="fas fa-arrow-right"></i></button></div>
         </div>
 
-        <!-- ── PAGE 3: DECLARAÇÕES ── -->
         <div class="form-page" id="page3">
           <div class="pg-hdr"><div class="pg-icon"><i class="fas fa-file-signature"></i></div><div><div class="pg-title">Declarações e Autorizações</div><div class="pg-desc">Leia e confirme cada autorização</div></div></div>
           <div class="decl"><p>Declaro que estou ciente das finalidades sociais da Associação, conforme seu <strong>Estatuto Social</strong>; comprometo-me a contribuir mensalmente com o valor indicado; tenho ciência de que as contribuições serão destinadas exclusivamente à manutenção e desenvolvimento das atividades institucionais da entidade; estou ciente de que a condição de associado poderá ser suspensa ou cancelada nos termos do Estatuto Social.</p></div>
@@ -523,7 +515,6 @@ tr:hover td{background:var(--gray-50)}
           <div class="nav-btns"><button class="btn-back" onclick="goPage(2)"><i class="fas fa-arrow-left"></i> Voltar</button><button class="btn-next" onclick="goPage(4)">Próximo <i class="fas fa-arrow-right"></i></button></div>
         </div>
 
-        <!-- ── PAGE 4: ASSINATURA ── -->
         <div class="form-page" id="page4">
           <div class="pg-hdr"><div class="pg-icon"><i class="fas fa-pen-fancy"></i></div><div><div class="pg-title">Assinatura Digital</div><div class="pg-desc">Assine com o dedo (celular) ou mouse (computador) no campo abaixo</div></div></div>
           <div style="background:rgba(13,143,143,.05);border:1.5px solid rgba(13,143,143,.15);border-radius:var(--r);padding:1rem 1.3rem;margin-bottom:1.2rem;display:flex;align-items:center;gap:.8rem;font-size:.85rem;color:var(--gray-700)">
@@ -544,7 +535,6 @@ tr:hover td{background:var(--gray-50)}
           <div class="nav-btns"><button class="btn-back" onclick="goPage(3)"><i class="fas fa-arrow-left"></i> Voltar</button><button class="btn-next" onclick="goPage(5)">Revisar <i class="fas fa-arrow-right"></i></button></div>
         </div>
 
-        <!-- ── PAGE 5: REVISÃO ── -->
         <div class="form-page" id="page5">
           <div class="pg-hdr"><div class="pg-icon"><i class="fas fa-clipboard-check"></i></div><div><div class="pg-title">Revisão Final</div><div class="pg-desc">Verifique seus dados antes de enviar</div></div></div>
           <div class="sum-card"><div class="sum-hdr"><i class="fas fa-user"></i><span class="sum-hdr-title">Dados Pessoais</span></div><div class="sum-body" id="sum-pessoais">
@@ -575,24 +565,15 @@ tr:hover td{background:var(--gray-50)}
           <div class="nav-btns"><button class="btn-back" onclick="goPage(4)"><i class="fas fa-arrow-left"></i> Voltar</button><button class="btn-submit-final" onclick="submitForm()"><i class="fas fa-paper-plane"></i> Enviar Ficha de Associação</button></div>
         </div>
 
-        <!-- SUCCESS -->
         <div class="success-screen" id="suc-screen">
           <div class="suc-icon">✅</div>
           <h2 class="suc-title">Ficha enviada!</h2>
           <p class="suc-desc">Obrigado por se tornar um associado da <strong>ONG Por Amor</strong>! Entraremos em contato em breve para confirmar seu cadastro.</p>
-          <div class="pix-box"><div class="pix-title"><i class="fas fa-bolt"></i> Realize sua contribuição via PIX</div><div class="pix-key"><span>54286499000174</span><button class="btn-copy" onclick="copyPix()"><i class="fas fa-copy"></i> Copiar</button></div><div style="font-size:.78rem;color:var(--gray-600)">Chave CNPJ · ONG Por Amor</div></div>
+          <div class="pix-box"><div class="pix-title"><i class="fas fa-bolt"></i> Realize sua contribuição via PIX</div><div class="pix-key"><span>(83) 98231-5427</span><button class="btn-copy" onclick="copyPix()"><i class="fas fa-copy"></i> Copiar</button></div><div style="font-size:.78rem;color:var(--gray-600)">Chave Celular · ONG Por Amor</div></div>
           <button class="btn-next" style="margin:2rem auto 0;display:flex" onclick="resetForm()"><i class="fas fa-redo"></i> Nova ficha</button>
         </div>
-      </div><!-- card-body -->
-      <div class="card-footer"><div class="cf-l"><i class="fas fa-lock"></i> Dados protegidos pela LGPD</div><div class="cf-r">ONG Por Amor · Cadastro de Associados</div></div>
-    </div><!-- card -->
-  </div><!-- page-wrap -->
-</div><!-- view-form -->
-
-<!-- ═══════════════════════════════════════════════
-     VIEW: ADMIN LOGIN
-═══════════════════════════════════════════════ -->
-<div id="view-admin-login" class="view">
+      </div><div class="card-footer"><div class="cf-l"><i class="fas fa-lock"></i> Dados protegidos pela LGPD</div><div class="cf-r">ONG Por Amor · Cadastro de Associados</div></div>
+    </div></div></div><div id="view-admin-login" class="view">
   <div id="view-admin-login-inner" style="background:var(--navy);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem">
     <div class="login-card">
       <div class="login-icon"><i class="fas fa-shield-halved"></i></div>
@@ -608,9 +589,6 @@ tr:hover td{background:var(--gray-50)}
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════
-     VIEW: ADMIN PANEL
-═══════════════════════════════════════════════ -->
 <div id="view-admin" class="view">
   <div class="admin-topbar">
     <span class="admin-brand">
@@ -627,7 +605,6 @@ tr:hover td{background:var(--gray-50)}
   </div>
 
   <div class="admin-content">
-    <!-- TAB ASSOCIADOS -->
     <div class="admin-view active" id="tab-associados">
       <div class="filters-bar">
         <div class="filter-group"><label class="filter-label"><i class="fas fa-search"></i> Buscar</label><input class="filter-input" id="f-busca" type="text" placeholder="Nome, CPF ou e-mail..." oninput="renderTable()"></div>
@@ -656,7 +633,6 @@ tr:hover td{background:var(--gray-50)}
       </div>
     </div>
 
-    <!-- TAB DASHBOARD -->
     <div class="admin-view" id="tab-dashboard">
       <div class="kpi-grid">
         <div class="kpi teal"><div class="kpi-icon"><i class="fas fa-users"></i></div><div class="kpi-label">Total Associados</div><div class="kpi-value" id="kpi-total">0</div><div class="kpi-sub"><span class="kpi-up"><i class="fas fa-arrow-up"></i></span> <span id="kpi-ativos">0 ativos</span></div></div>
@@ -674,13 +650,7 @@ tr:hover td{background:var(--gray-50)}
         <div class="table-scroll"><table><thead><tr><th>Associado</th><th>Telefone</th><th>Valor</th><th>Vencimento</th><th>Ação</th></tr></thead><tbody id="pend-body"></tbody></table></div>
       </div>
     </div>
-  </div><!-- admin-content -->
-</div><!-- view-admin -->
-
-</div><!-- app -->
-
-<!-- MODAL COBRANÇA -->
-<div class="modal-overlay" id="modal-cobranca">
+  </div></div></div><div class="modal-overlay" id="modal-cobranca">
   <div class="modal">
     <div class="modal-hdr"><div class="modal-title"><i class="fas fa-paper-plane" style="color:var(--teal)"></i> Enviar Fatura</div><button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button></div>
     <div class="modal-body">
@@ -695,7 +665,6 @@ tr:hover td{background:var(--gray-50)}
   </div>
 </div>
 
-<!-- MODAL EDITAR ASSOCIADO -->
 <div class="modal-overlay" id="modal-edit">
   <div class="modal" style="max-width:640px">
     <div class="modal-hdr"><div class="modal-title"><i class="fas fa-pen" style="color:var(--teal)"></i> Editar Associado</div><button class="modal-close" onclick="closeEdit()"><i class="fas fa-times"></i></button></div>
@@ -732,7 +701,6 @@ tr:hover td{background:var(--gray-50)}
   </div>
 </div>
 
-<!-- MODAL CONFIRMAR EXCLUSÃO -->
 <div class="modal-overlay" id="modal-delete">
   <div class="modal" style="max-width:440px">
     <div class="modal-hdr"><div class="modal-title"><i class="fas fa-trash" style="color:var(--error)"></i> Excluir Associado</div><button class="modal-close" onclick="closeDelete()"><i class="fas fa-times"></i></button></div>
@@ -748,7 +716,6 @@ tr:hover td{background:var(--gray-50)}
   </div>
 </div>
 
-<!-- POPUP LOGIN -->
 <div class="popup-overlay" id="popup-overlay" onclick="this.classList.remove('open')">
   <div class="popup-box">
     <div class="popup-icon-wrap" id="popup-icon"></div>
@@ -758,10 +725,8 @@ tr:hover td{background:var(--gray-50)}
   </div>
 </div>
 
-<!-- TOAST -->
 <div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toast-msg"></span></div>
 
-<!-- SUPABASE CDN -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <script>
@@ -837,7 +802,8 @@ mask('inp-tel', v=>{ v=v.replace(/\D/g,'').slice(0,11); if(v.length>10) return v
 mask('inp-cep', v=>{ v=v.replace(/\D/g,'').slice(0,8); if(v.length>5) return v.replace(/(\d{5})(\d{0,3})/,'$1-$2'); return v; });
 
 // ── CEP ──
-g('btn-cep').addEventListener('click', async function(){
+g('btn-cep').addEventListener('click', async function(e){
+  if(e) e.preventDefault();
   const cep = g('inp-cep').value.replace(/\D/g,'');
   if(cep.length!==8){ toast('CEP inválido','err'); return; }
   this.classList.add('ld'); this.innerHTML='<i class="fas fa-spinner"></i> Buscando...';
@@ -845,11 +811,18 @@ g('btn-cep').addEventListener('click', async function(){
     const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
     const d = await r.json();
     if(d.erro){ toast('CEP não encontrado','err'); return; }
-    g('inp-log').value=d.logradouro||''; g('inp-bairro').value=d.bairro||'';
-    g('inp-cidade').value=`${d.localidade} / ${d.uf}`;
+    g('inp-log').value = d.logradouro || ''; 
+    g('inp-bairro').value = d.bairro || '';
+    g('inp-cidade').value = `${d.localidade} / ${d.uf}`;
     toast('Endereço preenchido!');
-  }catch{ toast('Erro ao buscar CEP','err'); }
-  finally{ this.classList.remove('ld'); this.innerHTML='<i class="fas fa-search"></i> Buscar'; }
+  }catch(err){ 
+    console.error(err);
+    toast('Erro ao buscar CEP','err'); 
+  }
+  finally{ 
+    this.classList.remove('ld'); 
+    this.innerHTML='<i class="fas fa-search"></i> Buscar'; 
+  }
 });
 
 // ── PIX TOGGLE ──
@@ -1171,10 +1144,12 @@ function getMesAtual(){
   const d=new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
 }
-function getUltimosMeses(n=3){
+
+// Mostra o mês atual + os 11 meses para frente (1 ano no total)
+function getMesesFuturos(n=12){
   const hoje = new Date();
   return Array.from({length:n},(_,i)=>{
-    const d = new Date(hoje.getFullYear(), hoje.getMonth()-(n-1-i), 1);
+    const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
   });
 }
@@ -1207,7 +1182,7 @@ function renderTable(){
     g('pending-msg').textContent=`${pendentes.length} associado(s) com pagamento PENDENTE para o dia ${dia} no mês atual`;
   } else { pAlert.style.display='none'; }
 
-  const meses = getUltimosMeses(3);
+  const meses = getMesesFuturos(12);
   const tbody = g('table-body');
   tbody.innerHTML = filtered.map(a=>{
     const pags = pagamentos[a.id]||[];
@@ -1371,8 +1346,8 @@ Gostaríamos de lembrar que há uma contribuição em aberto com a *ONG Por Amor
 💰 *Valor mensal:* R$ ${(a.valor_contribuicao||30).toFixed(2).replace('.',',')}
 📅 *Vencimento:* Todo dia ${a.dia_pagamento||10}${totalPend>0?`\n⚠️ *Total pendente:* R$ ${totalPend.toFixed(2).replace('.',',')}`:''}
 
-🔑 *Chave PIX:* 54286499000174
-🏷️ *Tipo:* CNPJ — ONG Por Amor
+🔑 *Chave PIX:* (83) 98231-5427
+🏷️ *Tipo:* Celular — ONG Por Amor
 
 Após o pagamento, envie o comprovante para confirmar. Qualquer dúvida, estamos à disposição! ❤️
 — Equipe ONG Por Amor | (83) 98231-5427`;
@@ -1538,7 +1513,7 @@ function showAdminTab(id){
 // ═══════════════════════════════════════════
 //  UTILS
 // ═══════════════════════════════════════════
-function copyPix(){ navigator.clipboard.writeText('54286499000174').then(()=>toast('Chave PIX copiada!')); }
+function copyPix(){ navigator.clipboard.writeText('83982315427').then(()=>toast('Chave PIX copiada!')); }
 
 let _toastTimer;
 function toast(msg, type='ok'){
