@@ -843,7 +843,7 @@ g('btn-cep').addEventListener('click', async function(e) {
     
     // Tentativa 2: Fallback para API alternativa (BrasilAPI)
     try {
-      toast('Tentando API alternativa...', 'err');
+     ;
       
       const fallbackResponse = await fetch(`https://brasilapi.com.br/api/cep/v1/${cep}`);
       
