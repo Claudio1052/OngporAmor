@@ -843,7 +843,7 @@ g('btn-cep').addEventListener('click', async function(e) {
     
     // Tentativa 2: Fallback para API alternativa (BrasilAPI)
     try {
-     ;
+      toast('Endereço preenchido com sucesso!', 'err');
       
       const fallbackResponse = await fetch(`https://brasilapi.com.br/api/cep/v1/${cep}`);
       
@@ -857,7 +857,7 @@ g('btn-cep').addEventListener('click', async function(e) {
       g('inp-bairro').value = fallbackData.neighborhood || '';
       g('inp-cidade').value = `${fallbackData.city} / ${fallbackData.state}`;
       
-     ;
+      toast('Endereço preenchido com sucesso!');
       
     } catch (fallbackError) {
       console.error('Erro também na API fallback:', fallbackError);
