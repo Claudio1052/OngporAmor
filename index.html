@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR"> 
+<html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -380,6 +380,16 @@ tr:hover td{background:var(--gray-50)}
   .card,.table-wrap{box-shadow:none!important;border:1px solid #ccc!important}
 }
 
+/* ── POPUP OVERLAY ── */
+.popup-overlay{position:fixed;inset:0;background:rgba(11,31,49,.5);backdrop-filter:blur(6px);z-index:600;display:none;align-items:center;justify-content:center;padding:1.5rem}
+.popup-overlay.open{display:flex;animation:pgIn .25s ease both}
+.popup-box{background:#fff;border-radius:var(--R);padding:2.5rem 2rem;max-width:400px;width:100%;text-align:center;box-shadow:0 30px 60px rgba(0,0,0,.3);animation:popIn .35s cubic-bezier(.175,.885,.32,1.275) both}
+.popup-icon-wrap{font-size:3rem;margin-bottom:1rem}
+.popup-t{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy);margin-bottom:.5rem}
+.popup-m{font-size:.9rem;color:var(--gray-600);line-height:1.6;margin-bottom:1.5rem}
+.popup-close-btn{background:linear-gradient(135deg,var(--teal),var(--navy-light));border:none;color:#fff;padding:.7rem 2rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:var(--tr);box-shadow:0 6px 18px rgba(13,143,143,.3)}
+.popup-close-btn:hover{transform:translateY(-2px)}
+
 /* Responsive */
 @media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.charts-grid{grid-template-columns:1fr}.chart-card.wide{grid-column:span 1}.g2,.g3,.g4{grid-template-columns:1fr}.s2,.s3,.s4{grid-column:span 1}.sig-grid{grid-template-columns:1fr}}
 @media(max-width:600px){.hdr-inner{padding:1.5rem;flex-direction:column;gap:1rem}.hdr-title{font-size:1.7rem}.card-body{padding:1.5rem}.step-nav{flex-wrap:wrap}.sn-item{min-width:50%}.sn-sub{display:none}.admin-tabs{display:none}}
@@ -418,7 +428,7 @@ tr:hover td{background:var(--gray-50)}
             <div class="hdr-chips">
               <span class="chip"><i class="fas fa-id-card"></i> CNPJ 54.286.499/0001-74</span>
               <span class="chip"><i class="fas fa-map-pin"></i> Campina Grande · PB</span>
-              <span class="chip"><i class="fas fa-envelope"></i> Poramorongcg@gmail.com</span>
+              <span class="chip"><i class="fas fa-envelope"></i> <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="adfdc2dfccc0c2dfc2c3cacecaedcac0ccc4c183cec2c0">[email&#160;protected]</a></span>
               <span class="chip"><i class="fas fa-phone"></i> (83) 98231-5427</span>
             </div>
           </div>
@@ -513,34 +523,21 @@ tr:hover td{background:var(--gray-50)}
 
         <!-- ── PAGE 4: ASSINATURA ── -->
         <div class="form-page" id="page4">
-          <div class="pg-hdr"><div class="pg-icon"><i class="fas fa-pen-fancy"></i></div><div><div class="pg-title">Assinatura Digital</div><div class="pg-desc">Escolha a forma de assinatura para validar sua ficha</div></div></div>
-          <div class="sig-options">
-            <div class="sig-opt selected" id="sig-opt-draw" onclick="selectSig('draw')">
-              <i class="fas fa-signature"></i>
-              <div><div class="sig-opt-title">Assinar na Tela</div><div class="sig-opt-desc">Desenhe sua assinatura com o dedo ou mouse</div></div>
-            </div>
-            <div class="sig-opt" id="sig-opt-govbr" onclick="selectSig('govbr')">
-              <i class="fas fa-stamp"></i>
-              <div><div class="sig-opt-title">Assinar com Gov.br</div><div class="sig-opt-desc">Assinatura digital com certificado oficial</div></div>
-            </div>
+          <div class="pg-hdr"><div class="pg-icon"><i class="fas fa-pen-fancy"></i></div><div><div class="pg-title">Assinatura Digital</div><div class="pg-desc">Assine com o dedo (celular) ou mouse (computador) no campo abaixo</div></div></div>
+          <div style="background:rgba(13,143,143,.05);border:1.5px solid rgba(13,143,143,.15);border-radius:var(--r);padding:1rem 1.3rem;margin-bottom:1.2rem;display:flex;align-items:center;gap:.8rem;font-size:.85rem;color:var(--gray-700)">
+            <i class="fas fa-info-circle" style="color:var(--teal);font-size:1.1rem;flex-shrink:0"></i>
+            <span>Utilize o campo abaixo para assinar digitalmente sua ficha. No celular, use o dedo; no computador, use o mouse. Pressione e arraste para desenhar.</span>
           </div>
-          <!-- DRAW -->
-          <div class="sig-panel active" id="sig-draw">
-            <p style="font-size:.83rem;color:var(--gray-600);margin-bottom:.8rem"><i class="fas fa-info-circle" style="color:var(--teal)"></i> Assine no campo abaixo usando o dedo (celular) ou o mouse (computador).</p>
-            <div id="canvas-wrap"><canvas id="sig-canvas"></canvas></div>
-            <div class="sig-canvas-actions">
-              <button class="btn-sig-clear" onclick="clearCanvas()"><i class="fas fa-eraser"></i> Limpar</button>
-              <span id="sig-status" style="font-size:.78rem;color:var(--gray-400);align-self:center"></span>
+          <div id="canvas-wrap" style="position:relative;border:2px solid var(--gray-200);border-radius:var(--r);overflow:hidden;background:#fff;cursor:crosshair;min-height:200px;">
+            <div id="sig-placeholder" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;color:var(--gray-300)">
+              <i class="fas fa-signature" style="font-size:3rem;margin-bottom:.5rem"></i>
+              <span style="font-size:.85rem;font-weight:500">Assine aqui</span>
             </div>
+            <canvas id="sig-canvas" style="display:block;touch-action:none;width:100%;height:200px;"></canvas>
           </div>
-          <!-- GOV.BR -->
-          <div class="sig-panel" id="sig-govbr">
-            <div class="govbr-box">
-              <div class="govbr-logo">gov.br <span>Assinatura Digital com Certificado ICP-Brasil</span></div>
-              <p style="font-size:.85rem;color:var(--gray-600);line-height:1.6;margin-bottom:.5rem">Ao clicar em "Assinar com Gov.br", você será redirecionado ao portal de assinatura digital do Governo Federal. O processo utiliza seu certificado digital ou certificado em nuvem.</p>
-              <button class="btn-govbr" onclick="simGovBr()"><i class="fas fa-external-link-alt"></i> Assinar com Gov.br</button>
-              <div id="govbr-signed" style="display:none;margin-top:1rem;padding:.8rem 1.2rem;background:var(--success-pale);border:1px solid rgba(5,150,105,.2);border-radius:var(--r);font-size:.85rem;color:var(--success);display:none;align-items:center;gap:.5rem"><i class="fas fa-check-circle"></i> Assinatura Gov.br registrada com sucesso!</div>
-            </div>
+          <div class="sig-canvas-actions" style="display:flex;gap:.8rem;margin-top:.8rem;align-items:center">
+            <button class="btn-sig-clear" onclick="clearCanvas()"><i class="fas fa-eraser"></i> Limpar assinatura</button>
+            <span id="sig-status" style="font-size:.82rem;color:var(--success);align-self:center;font-weight:600"></span>
           </div>
           <div class="nav-btns"><button class="btn-back" onclick="goPage(3)"><i class="fas fa-arrow-left"></i> Voltar</button><button class="btn-next" onclick="goPage(5)">Revisar <i class="fas fa-arrow-right"></i></button></div>
         </div>
@@ -569,9 +566,9 @@ tr:hover td{background:var(--gray-50)}
             <div class="sum-row"><span class="sum-k">Assinatura</span><span class="sum-v" id="sv-sig">—</span></div>
           </div></div>
           <div class="sig-grid">
-            <div class="sig-block"><div class="sig-lbl"><i class="fas fa-map-pin" style="color:var(--teal)"></i> Local e Data</div><div class="sig-line"></div><div class="sig-hint">Campina Grande – PB, ___/___/______</div></div>
-            <div class="sig-block"><div class="sig-lbl"><i class="fas fa-pen" style="color:var(--teal)"></i> Assinatura do Associado</div><div class="sig-line"><img id="sv-sig-img" style="max-height:50px;display:none"></div><div class="sig-hint">Registrado digitalmente</div></div>
-            <div class="sig-block"><div class="sig-lbl"><i class="fas fa-stamp" style="color:var(--teal)"></i> Responsável ONG</div><div class="sig-line"></div><div class="sig-hint">Uso interno</div></div>
+            <div class="sig-block"><div class="sig-lbl"><i class="fas fa-map-pin" style="color:var(--teal)"></i> Local e Data</div><div class="sig-line" style="padding-top:.5rem"><span id="sv-local-data" style="font-size:.88rem;font-weight:600;color:var(--navy)"></span></div><div class="sig-hint">Preenchido automaticamente</div></div>
+            <div class="sig-block"><div class="sig-lbl"><i class="fas fa-pen" style="color:var(--teal)"></i> Assinatura do Associado</div><div class="sig-line" style="min-height:60px;display:flex;align-items:center"><img id="sv-sig-img" style="max-height:54px;max-width:100%;display:none;"></div><div class="sig-hint" id="sv-sig-hint">Registrado digitalmente</div></div>
+            <div class="sig-block"><div class="sig-lbl"><i class="fas fa-stamp" style="color:var(--teal)"></i> Responsável ONG</div><div class="sig-line" style="padding-top:2rem"></div><div class="sig-hint">Uso interno</div></div>
           </div>
           <div class="nav-btns"><button class="btn-back" onclick="goPage(4)"><i class="fas fa-arrow-left"></i> Voltar</button><button class="btn-submit-final" onclick="submitForm()"><i class="fas fa-paper-plane"></i> Enviar Ficha de Associação</button></div>
         </div>
@@ -693,11 +690,74 @@ tr:hover td{background:var(--gray-50)}
   </div>
 </div>
 
+<!-- MODAL EDITAR ASSOCIADO -->
+<div class="modal-overlay" id="modal-edit">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-hdr"><div class="modal-title"><i class="fas fa-pen" style="color:var(--teal)"></i> Editar Associado</div><button class="modal-close" onclick="closeEdit()"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body">
+      <div class="fg g2" style="gap:1rem 1.4rem">
+        <div class="field s2"><label class="fl"><i class="fas fa-user"></i> Nome Completo</label><input class="fi" id="edit-nome" type="text"></div>
+        <div class="field"><label class="fl"><i class="fas fa-id-card"></i> CPF</label><input class="fi" id="edit-cpf" type="text" maxlength="14"></div>
+        <div class="field"><label class="fl"><i class="fas fa-phone"></i> Telefone</label><input class="fi" id="edit-tel" type="text" maxlength="15"></div>
+        <div class="field"><label class="fl"><i class="fas fa-envelope"></i> E-mail</label><input class="fi" id="edit-email" type="email"></div>
+        <div class="field"><label class="fl"><i class="fas fa-briefcase"></i> Profissão</label><input class="fi" id="edit-prof" type="text"></div>
+        <div class="field"><label class="fl"><i class="fas fa-coins"></i> Valor (R$)</label><input class="fi" id="edit-valor" type="text"></div>
+        <div class="field"><label class="fl"><i class="fas fa-calendar-day"></i> Dia Pagamento</label>
+          <select class="fi" id="edit-dia">
+            <option value="1">Dia 1</option><option value="5">Dia 5</option><option value="10">Dia 10</option>
+            <option value="15">Dia 15</option><option value="20">Dia 20</option><option value="25">Dia 25</option><option value="28">Dia 28</option>
+          </select>
+        </div>
+        <div class="field"><label class="fl"><i class="fas fa-wallet"></i> Forma Pagamento</label>
+          <select class="fi" id="edit-pgto">
+            <option>PIX</option><option>Boleto</option><option>Transferência bancária</option><option>Débito automático</option><option>Outro</option>
+          </select>
+        </div>
+        <div class="field"><label class="fl"><i class="fas fa-circle-dot"></i> Status</label>
+          <select class="fi" id="edit-status">
+            <option value="ativo">Ativo</option><option value="inativo">Inativo</option><option value="suspenso">Suspenso</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:.8rem;justify-content:flex-end;margin-top:1.5rem;padding-top:1.2rem;border-top:1px solid var(--gray-200)">
+        <button class="btn-back" onclick="closeEdit()"><i class="fas fa-times"></i> Cancelar</button>
+        <button class="btn-next" style="margin-left:0" onclick="saveEdit()"><i class="fas fa-save"></i> Salvar alterações</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR EXCLUSÃO -->
+<div class="modal-overlay" id="modal-delete">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-hdr"><div class="modal-title"><i class="fas fa-trash" style="color:var(--error)"></i> Excluir Associado</div><button class="modal-close" onclick="closeDelete()"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body" style="text-align:center;padding:2rem">
+      <div style="font-size:3rem;margin-bottom:1rem">⚠️</div>
+      <div style="font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:.5rem">Confirmar exclusão?</div>
+      <div style="font-size:.9rem;color:var(--gray-600);margin-bottom:1.5rem;line-height:1.6">Você está prestes a excluir <strong id="delete-name"></strong> e todos os seus registros de pagamento. Esta ação <strong>não pode ser desfeita</strong>.</div>
+      <div style="display:flex;gap:.8rem;justify-content:center">
+        <button class="btn-back" onclick="closeDelete()"><i class="fas fa-times"></i> Cancelar</button>
+        <button style="background:var(--error);border:none;color:#fff;padding:.7rem 1.6rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;transition:var(--tr);display:flex;align-items:center;gap:.5rem;box-shadow:0 6px 16px rgba(220,38,38,.3)" onclick="doDelete()"><i class="fas fa-trash"></i> Excluir definitivamente</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- POPUP LOGIN -->
+<div class="popup-overlay" id="popup-overlay" onclick="this.classList.remove('open')">
+  <div class="popup-box">
+    <div class="popup-icon-wrap" id="popup-icon"></div>
+    <div class="popup-t" id="popup-title"></div>
+    <div class="popup-m" id="popup-msg"></div>
+    <button class="popup-close-btn" onclick="g('popup-overlay').classList.remove('open')"><i class="fas fa-check"></i> Continuar</button>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toast-msg"></span></div>
 
 <!-- SUPABASE CDN -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <script>
 // ═══════════════════════════════════════════
@@ -706,39 +766,38 @@ tr:hover td{background:var(--gray-50)}
 const SUPA_URL = 'https://cqjcajxjtevvquouengk.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxamNhanhqdGV2dnF1b3VlbmdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4Njk3MTIsImV4cCI6MjA4NTQ0NTcxMn0.c24BbLCJnbp15Zfp8iDqek87QWegWI5qxmlqwrkTu4c';
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+const g = id => document.getElementById(id);
 
 // ═══════════════════════════════════════════
 //  VIEW MANAGER
 // ═══════════════════════════════════════════
 function showView(id){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  g(id).classList.add('active');
 }
 
 // ═══════════════════════════════════════════
-//  FORM — STATE
+//  FORM STATE
 // ═══════════════════════════════════════════
 let currentPage = 1;
-let sigType = 'draw';
-let govBrSigned = false;
 
 // ── NAVIGATION ──
 function goPage(n){
   if(n > currentPage && !validatePage(currentPage)) return;
-  document.getElementById(`page${currentPage}`)?.classList.remove('active');
-  document.getElementById('suc-screen').classList.remove('active');
+  g(`page${currentPage}`)?.classList.remove('active');
+  g('suc-screen').classList.remove('active');
   currentPage = n;
-  document.getElementById(`page${n}`).classList.add('active');
+  g(`page${n}`).classList.add('active');
   document.querySelectorAll('.sn-item').forEach((el,i)=>{
     el.classList.remove('active','done');
     if(i+1 < n) el.classList.add('done');
     if(i+1 === n) el.classList.add('active');
   });
+  if(n===4){ setTimeout(initCanvas, 80); }
   if(n===5) buildSummary();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-// Step nav click
 document.querySelectorAll('.sn-item').forEach(el=>{
   el.addEventListener('click',()=>{ const t=parseInt(el.dataset.step); if(t<=currentPage) goPage(t); });
 });
@@ -759,12 +818,11 @@ function validatePage(p){
   return true;
 }
 function setErr(id, hasErr){
-  const el=document.getElementById(id);
+  const el=g(id);
   if(!el) return;
   el.classList.toggle('err', hasErr);
   el.classList.toggle('ok', !hasErr && el.querySelector('.fi').value.trim().length>0);
 }
-const g = id => document.getElementById(id);
 
 // ── MASKS ──
 function mask(id, fn){ g(id).addEventListener('input', function(){ this.value = fn(this.value); }); }
@@ -798,52 +856,106 @@ document.querySelectorAll('input[name="pag"]').forEach(r=>{
 g('inp-valor').addEventListener('blur',function(){ const n=parseFloat(this.value.replace(',','.'))||30; this.value=Math.max(30,n).toFixed(2).replace('.',','); });
 
 // ═══════════════════════════════════════════
-//  CANVAS SIGNATURE
+//  CANVAS SIGNATURE — FIXED
 // ═══════════════════════════════════════════
-let isDrawing = false, lastX, lastY;
-const canvas = g('sig-canvas');
-const ctx = canvas.getContext('2d');
+let isDrawing = false, lastX = 0, lastY = 0, hasSigned = false;
+let sigCanvas = null, sigCtx = null;
 
-function resizeCanvas(){
+function initCanvas(){
+  sigCanvas = g('sig-canvas');
+  if(!sigCanvas) return;
+  sigCtx = sigCanvas.getContext('2d');
   const wrap = g('canvas-wrap');
-  canvas.width = wrap.offsetWidth;
-  canvas.height = 180;
-}
-window.addEventListener('resize', resizeCanvas);
-setTimeout(resizeCanvas, 200);
-
-function getPos(e, canvas){
-  const r = canvas.getBoundingClientRect();
-  const touch = e.touches?.[0] || e;
-  return { x: (touch.clientX - r.left) * (canvas.width/r.width), y: (touch.clientY - r.top) * (canvas.height/r.height) };
-}
-
-canvas.addEventListener('mousedown', e=>{ isDrawing=true; const {x,y}=getPos(e,canvas); lastX=x; lastY=y; });
-canvas.addEventListener('mousemove', e=>{ if(!isDrawing) return; const {x,y}=getPos(e,canvas); ctx.beginPath(); ctx.strokeStyle='#0b1f31'; ctx.lineWidth=2.5; ctx.lineCap='round'; ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); ctx.stroke(); lastX=x; lastY=y; g('sig-status').textContent='✓ Assinatura registrada'; });
-canvas.addEventListener('mouseup', ()=>isDrawing=false);
-canvas.addEventListener('mouseleave', ()=>isDrawing=false);
-canvas.addEventListener('touchstart', e=>{ e.preventDefault(); isDrawing=true; const {x,y}=getPos(e,canvas); lastX=x; lastY=y; },{passive:false});
-canvas.addEventListener('touchmove', e=>{ e.preventDefault(); if(!isDrawing) return; const {x,y}=getPos(e,canvas); ctx.beginPath(); ctx.strokeStyle='#0b1f31'; ctx.lineWidth=2.8; ctx.lineCap='round'; ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); ctx.stroke(); lastX=x; lastY=y; g('sig-status').textContent='✓ Assinatura registrada'; },{passive:false});
-canvas.addEventListener('touchend', ()=>isDrawing=false);
-
-function clearCanvas(){ ctx.clearRect(0,0,canvas.width,canvas.height); g('sig-status').textContent=''; }
-
-// ── SIG OPTION ──
-function selectSig(type){
-  sigType = type;
-  document.querySelectorAll('.sig-opt').forEach(el=>el.classList.remove('selected'));
-  g(`sig-opt-${type}`).classList.add('selected');
-  document.querySelectorAll('.sig-panel').forEach(p=>p.classList.remove('active'));
-  g(`sig-${type}`).classList.add('active');
-  if(type==='draw') setTimeout(resizeCanvas, 50);
+  // Set actual pixel dimensions
+  const rect = wrap.getBoundingClientRect();
+  const w = rect.width || wrap.offsetWidth || 600;
+  sigCanvas.width = w;
+  sigCanvas.height = 200;
+  sigCanvas.style.width = '100%';
+  sigCanvas.style.height = '200px';
+  // Style the canvas context
+  sigCtx.lineJoin = 'round';
+  sigCtx.lineCap = 'round';
+  sigCtx.lineWidth = 2.5;
+  sigCtx.strokeStyle = '#0b1f31';
+  attachCanvasEvents();
 }
 
-function simGovBr(){
-  govBrSigned = true;
-  const el = g('govbr-signed');
-  el.style.display='flex'; el.classList.add('active');
-  toast('Assinatura Gov.br registrada!');
+function attachCanvasEvents(){
+  if(!sigCanvas || sigCanvas._eventsAttached) return;
+  sigCanvas._eventsAttached = true;
+
+  const getPos = (e) => {
+    const r = sigCanvas.getBoundingClientRect();
+    const scaleX = sigCanvas.width / r.width;
+    const scaleY = sigCanvas.height / r.height;
+    const src = e.touches ? e.touches[0] : e;
+    return { x: (src.clientX - r.left) * scaleX, y: (src.clientY - r.top) * scaleY };
+  };
+
+  sigCanvas.addEventListener('mousedown', e => {
+    isDrawing = true;
+    const p = getPos(e);
+    lastX = p.x; lastY = p.y;
+    hidePlaceholder();
+  });
+  sigCanvas.addEventListener('mousemove', e => {
+    if(!isDrawing) return;
+    const p = getPos(e);
+    sigCtx.beginPath();
+    sigCtx.moveTo(lastX, lastY);
+    sigCtx.lineTo(p.x, p.y);
+    sigCtx.stroke();
+    lastX = p.x; lastY = p.y;
+    markSigned();
+  });
+  sigCanvas.addEventListener('mouseup', () => isDrawing = false);
+  sigCanvas.addEventListener('mouseleave', () => isDrawing = false);
+
+  sigCanvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    isDrawing = true;
+    const p = getPos(e);
+    lastX = p.x; lastY = p.y;
+    hidePlaceholder();
+  }, {passive:false});
+  sigCanvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if(!isDrawing) return;
+    const p = getPos(e);
+    sigCtx.beginPath();
+    sigCtx.moveTo(lastX, lastY);
+    sigCtx.lineTo(p.x, p.y);
+    sigCtx.stroke();
+    lastX = p.x; lastY = p.y;
+    markSigned();
+  }, {passive:false});
+  sigCanvas.addEventListener('touchend', () => isDrawing = false);
 }
+
+function hidePlaceholder(){
+  const ph = g('sig-placeholder');
+  if(ph) ph.style.display = 'none';
+}
+function markSigned(){
+  hasSigned = true;
+  const st = g('sig-status');
+  if(st) st.innerHTML = '<i class="fas fa-check-circle"></i> Assinatura registrada!';
+}
+
+function clearCanvas(){
+  if(!sigCanvas || !sigCtx) return;
+  sigCtx.clearRect(0,0,sigCanvas.width,sigCanvas.height);
+  hasSigned = false;
+  const ph = g('sig-placeholder');
+  if(ph) ph.style.display = 'flex';
+  const st = g('sig-status');
+  if(st) st.textContent = '';
+}
+
+// Init on load if page4 is somehow active
+window.addEventListener('load', ()=>{ if(g('page4')?.classList.contains('active')) initCanvas(); });
+window.addEventListener('resize', ()=>{ if(sigCanvas){ const w=g('canvas-wrap').offsetWidth; sigCanvas.width=w; } });
 
 // ── SUMMARY ──
 function buildSummary(){
@@ -863,19 +975,33 @@ function buildSummary(){
   sv('sv-lgpd', yn(g('t-lgpd').checked));
   sv('sv-img', yn(g('t-img').checked));
   sv('sv-com', yn(g('t-com').checked));
-  if(sigType==='draw'){
-    const blank = !ctx.getImageData(0,0,canvas.width,canvas.height).data.some(c=>c!==0);
-    sv('sv-sig', blank?'⚠️ Assinatura vazia':'✅ Assinatura digital (tela)');
-    if(!blank){ const img=g('sv-sig-img'); img.src=canvas.toDataURL(); img.style.display='block'; }
+
+  // Auto-fill local e data
+  const hoje = new Date();
+  const dia2 = String(hoje.getDate()).padStart(2,'0');
+  const mes2 = String(hoje.getMonth()+1).padStart(2,'0');
+  const ano2 = hoje.getFullYear();
+  const cidadeStr = g('inp-cidade').value||'Campina Grande / PB';
+  const localData = `${cidadeStr.split('/')[0].trim()}, ${dia2}/${mes2}/${ano2}`;
+  const svld = g('sv-local-data');
+  if(svld) svld.textContent = localData;
+
+  // Signature preview
+  if(sigCanvas && hasSigned){
+    const img = g('sv-sig-img');
+    if(img){ img.src = sigCanvas.toDataURL(); img.style.display = 'block'; }
+    sv('sv-sig', '✅ Assinatura digital registrada');
   } else {
-    sv('sv-sig', govBrSigned?'✅ Gov.br certificado':'⚠️ Pendente Gov.br');
+    sv('sv-sig', '⚠️ Assinatura não realizada');
+    const img = g('sv-sig-img');
+    if(img) img.style.display = 'none';
   }
 }
 
 // ── SUBMIT ──
 async function submitForm(){
-  const sigData = sigType==='draw' ? canvas.toDataURL() : null;
   const cidadeUF = g('inp-cidade').value.split(' / ');
+  const sigData = (sigCanvas && hasSigned) ? sigCanvas.toDataURL() : null;
   const payload = {
     nome: g('inp-nome').value.trim(),
     data_nascimento: parseDate(g('inp-nasc').value),
@@ -888,8 +1014,8 @@ async function submitForm(){
     numero: g('inp-num').value,
     complemento: g('inp-comp').value,
     bairro: g('inp-bairro').value,
-    cidade: cidadeUF[0]||g('inp-cidade').value,
-    uf: cidadeUF[1]||'',
+    cidade: cidadeUF[0]?.trim()||g('inp-cidade').value,
+    uf: cidadeUF[1]?.trim()||'',
     telefone: g('inp-tel').value,
     email: g('inp-email').value,
     valor_contribuicao: parseFloat(g('inp-valor').value.replace(',','.'))||30,
@@ -898,7 +1024,7 @@ async function submitForm(){
     autoriza_lgpd: g('t-lgpd').checked,
     autoriza_imagem: g('t-img').checked,
     autoriza_comunicacoes: g('t-com').checked,
-    assinatura_tipo: sigType,
+    assinatura_tipo: 'desenho',
     assinatura_data: sigData
   };
   try{
@@ -906,8 +1032,8 @@ async function submitForm(){
     if(error) throw error;
     toast('Ficha enviada com sucesso! 🎉');
   }catch(e){
-    console.warn('Supabase insert error (demo mode):', e.message);
-    toast('Ficha registrada localmente (modo demo)');
+    console.warn('Supabase insert (demo mode):', e.message);
+    toast('Ficha registrada! (modo demo)');
   }
   document.querySelectorAll('.form-page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.sn-item').forEach(el=>el.classList.add('done'));
@@ -922,7 +1048,7 @@ function resetForm(){
   document.querySelectorAll('.fi').forEach(i=>{ if(i.tagName==='INPUT') i.value=''; });
   g('inp-valor').value='30,00'; g('t-lgpd').checked=true; g('t-img').checked=false; g('t-com').checked=true;
   g('r-pix').checked=true; g('pix-info').style.display='block';
-  clearCanvas(); govBrSigned=false;
+  clearCanvas(); hasSigned=false;
   goPage(1);
 }
 
@@ -934,21 +1060,39 @@ const ADMIN_CREDS = { login:'ongadmin', senha:'ongamor_2026!' };
 async function doLogin(){
   const l=g('adm-login').value.trim(), s=g('adm-senha').value;
   const err=g('login-err');
-  // Check local first, then Supabase
-  if(l===ADMIN_CREDS.login && s===ADMIN_CREDS.senha){
+  const ok = (l===ADMIN_CREDS.login && s===ADMIN_CREDS.senha);
+  if(ok){
     err.classList.remove('show');
     showView('view-admin');
+    // ── LOGIN SUCCESS POPUP ──
+    showPopup('Login realizado com sucesso! 🎉', 'Bem-vindo, Administrador ONG Por Amor.', 'success');
     await loadAssociados();
     renderCharts();
   } else {
     try{
       const {data,error} = await sb.from('admins').select('*').eq('login',l).eq('senha_hash',s).single();
-      if(data && !error){ err.classList.remove('show'); showView('view-admin'); await loadAssociados(); renderCharts(); }
-      else { err.classList.add('show'); }
+      if(data && !error){
+        err.classList.remove('show');
+        showView('view-admin');
+        showPopup('Login realizado com sucesso! 🎉', 'Bem-vindo, Administrador ONG Por Amor.', 'success');
+        await loadAssociados(); renderCharts();
+      } else { err.classList.add('show'); }
     }catch{ err.classList.add('show'); }
   }
 }
 function doLogout(){ showView('view-form'); g('adm-login').value=''; g('adm-senha').value=''; }
+
+// ── POPUP ──
+function showPopup(title, msg, type='success'){
+  const el = g('popup-overlay');
+  g('popup-title').textContent = title;
+  g('popup-msg').textContent = msg;
+  const icon = g('popup-icon');
+  if(type==='success'){ icon.innerHTML='<i class="fas fa-check-circle"></i>'; icon.style.color='var(--success)'; }
+  else { icon.innerHTML='<i class="fas fa-info-circle"></i>'; icon.style.color='var(--teal)'; }
+  el.classList.add('open');
+  setTimeout(()=>el.classList.remove('open'), 3200);
+}
 
 // ═══════════════════════════════════════════
 //  ADMIN DATA
@@ -973,32 +1117,54 @@ async function loadAssociados(){
 
 function demoData(){
   return [
-    {id:'1',numero_associado:1,nome:'Maria das Graças Silva',cpf:'123.456.789-00',telefone:'(83) 99811-2233',email:'maria@email.com',valor_contribuicao:50,dia_pagamento:10,forma_pagamento:'PIX',status:'ativo',cidade:'Campina Grande',created_at:new Date().toISOString()},
-    {id:'2',numero_associado:2,nome:'João Carlos Oliveira',cpf:'987.654.321-00',telefone:'(83) 99722-3344',email:'joao@email.com',valor_contribuicao:30,dia_pagamento:5,forma_pagamento:'Boleto',status:'ativo',cidade:'Campina Grande',created_at:new Date().toISOString()},
-    {id:'3',numero_associado:3,nome:'Ana Paula Ferreira',cpf:'456.123.789-00',telefone:'(83) 99633-4455',email:'ana@email.com',valor_contribuicao:80,dia_pagamento:15,forma_pagamento:'PIX',status:'ativo',cidade:'Campina Grande',created_at:new Date().toISOString()},
-    {id:'4',numero_associado:4,nome:'Carlos Eduardo Souza',cpf:'789.456.123-00',telefone:'(83) 99544-5566',email:'carlos@email.com',valor_contribuicao:30,dia_pagamento:20,forma_pagamento:'Transferência bancária',status:'inativo',cidade:'Campina Grande',created_at:new Date().toISOString()},
-    {id:'5',numero_associado:5,nome:'Fernanda Lima Costa',cpf:'321.654.987-00',telefone:'(83) 99455-6677',email:'fernanda@email.com',valor_contribuicao:100,dia_pagamento:1,forma_pagamento:'PIX',status:'ativo',cidade:'Campina Grande',created_at:new Date().toISOString()},
+    {id:'1',numero_associado:1,nome:'Maria das Graças Silva',cpf:'123.456.789-00',telefone:'(83) 99811-2233',email:'maria@email.com',valor_contribuicao:50,dia_pagamento:10,forma_pagamento:'PIX',status:'ativo',cidade:'Campina Grande',uf:'PB',logradouro:'Rua das Flores',numero:'100',bairro:'José Pinheiro',cep:'58407-490',profissao:'Professora',created_at:new Date().toISOString()},
+    {id:'2',numero_associado:2,nome:'João Carlos Oliveira',cpf:'987.654.321-00',telefone:'(83) 99722-3344',email:'joao@email.com',valor_contribuicao:30,dia_pagamento:5,forma_pagamento:'Boleto',status:'ativo',cidade:'Campina Grande',uf:'PB',logradouro:'Av. Principal',numero:'200',bairro:'Centro',cep:'58400-000',profissao:'Comerciante',created_at:new Date().toISOString()},
+    {id:'3',numero_associado:3,nome:'Ana Paula Ferreira',cpf:'456.123.789-00',telefone:'(83) 99633-4455',email:'ana@email.com',valor_contribuicao:80,dia_pagamento:15,forma_pagamento:'PIX',status:'ativo',cidade:'Campina Grande',uf:'PB',logradouro:'Rua Nova',numero:'300',bairro:'Miriam',cep:'58408-000',profissao:'Enfermeira',created_at:new Date().toISOString()},
+    {id:'4',numero_associado:4,nome:'Carlos Eduardo Souza',cpf:'789.456.123-00',telefone:'(83) 99544-5566',email:'carlos@email.com',valor_contribuicao:30,dia_pagamento:20,forma_pagamento:'Transferência bancária',status:'inativo',cidade:'Campina Grande',uf:'PB',logradouro:'Rua Velha',numero:'400',bairro:'Bodocongó',cep:'58409-000',profissao:'Técnico',created_at:new Date().toISOString()},
+    {id:'5',numero_associado:5,nome:'Fernanda Lima Costa',cpf:'321.654.987-00',telefone:'(83) 99455-6677',email:'fernanda@email.com',valor_contribuicao:100,dia_pagamento:1,forma_pagamento:'PIX',status:'ativo',cidade:'Campina Grande',uf:'PB',logradouro:'Rua Alta',numero:'500',bairro:'Prata',cep:'58410-000',profissao:'Advogada',created_at:new Date().toISOString()},
   ];
 }
 
 async function loadPagamentos(){
+  // Gera meses dos últimos 3 meses + mês atual
+  const hoje = new Date();
+  const meses = [];
+  for(let i=2;i>=0;i--){
+    const d = new Date(hoje.getFullYear(), hoje.getMonth()-i, 1);
+    meses.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  }
   try{
     const ids = associados.map(a=>a.id);
+    if(ids.length===0) return;
     const {data} = await sb.from('pagamentos').select('*').in('associado_id', ids);
     pagamentos = {};
     (data||[]).forEach(p=>{ if(!pagamentos[p.associado_id]) pagamentos[p.associado_id]=[]; pagamentos[p.associado_id].push(p); });
   }catch{
-    // Demo: generate fake payment data
-    const meses = ['2025-01','2025-02','2025-03','2025-04','2025-05','2025-06'];
+    // Demo payment data
     pagamentos = {};
+    const mesAtual = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
     associados.forEach(a=>{
       pagamentos[a.id] = meses.map((m,i)=>({
         id:`pg-${a.id}-${m}`, associado_id:a.id, mes_referencia:m,
-        valor:a.valor_contribuicao, status: i<4?'pago': i===4?'pendente':'pendente',
-        data_vencimento:`${m}-${String(a.dia_pagamento).padStart(2,'0')}`
+        valor:a.valor_contribuicao,
+        status: m===mesAtual?'pendente':(i<2?'pago':'pendente'),
+        data_vencimento:`${m}-${String(a.dia_pagamento||10).padStart(2,'0')}`
       }));
     });
   }
+}
+
+// ── Current month helper ──
+function getMesAtual(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+function getUltimosMeses(n=3){
+  const hoje = new Date();
+  return Array.from({length:n},(_,i)=>{
+    const d = new Date(hoje.getFullYear(), hoje.getMonth()-(n-1-i), 1);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  });
 }
 
 // ═══════════════════════════════════════════
@@ -1009,37 +1175,42 @@ function renderTable(){
   const dia = g('f-dia').value;
   const status = g('f-status').value;
   const pgstatus = g('f-pgstatus').value;
+  const mesAtual = getMesAtual();
 
   let filtered = associados.filter(a=>{
     if(busca && !a.nome?.toLowerCase().includes(busca) && !a.cpf?.includes(busca) && !a.email?.toLowerCase().includes(busca)) return false;
     if(dia && String(a.dia_pagamento) !== dia) return false;
     if(status && a.status !== status) return false;
-    if(pgstatus==='pendente'){ const pags = pagamentos[a.id]||[]; const hasPend = pags.some(p=>p.status==='pendente'); if(!hasPend) return false; }
-    if(pgstatus==='em_dia'){ const pags = pagamentos[a.id]||[]; const hasPend = pags.some(p=>p.status==='pendente'); if(hasPend) return false; }
+    if(pgstatus==='pendente'){ const pags=pagamentos[a.id]||[]; if(!pags.some(p=>p.status==='pendente'&&p.mes_referencia===mesAtual)) return false; }
+    if(pgstatus==='em_dia'){ const pags=pagamentos[a.id]||[]; if(pags.some(p=>p.status==='pendente'&&p.mes_referencia===mesAtual)) return false; }
     return true;
   });
 
   g('count-badge').textContent = filtered.length;
 
-  const pendentes = filtered.filter(a=>(pagamentos[a.id]||[]).some(p=>p.status==='pendente'));
+  const pendentes = filtered.filter(a=>(pagamentos[a.id]||[]).some(p=>p.status==='pendente'&&p.mes_referencia===mesAtual));
   const pAlert = g('pending-alert');
   if(pendentes.length>0 && dia){
     pAlert.style.display='flex';
-    g('pending-msg').textContent=`${pendentes.length} associado(s) com pagamento pendente para o dia ${dia}`;
+    g('pending-msg').textContent=`${pendentes.length} associado(s) com pagamento PENDENTE para o dia ${dia} no mês atual`;
   } else { pAlert.style.display='none'; }
 
+  const meses = getUltimosMeses(3);
   const tbody = g('table-body');
   tbody.innerHTML = filtered.map(a=>{
     const pags = pagamentos[a.id]||[];
-    const mesesRecentes = ['2025-04','2025-05','2025-06'];
-    const payChips = mesesRecentes.map(m=>{
+    const payChips = meses.map(m=>{
       const p = pags.find(x=>x.mes_referencia===m);
-      if(!p) return `<span class="pay-chip pending" onclick="togglePay('${a.id}','${m}')" title="Clique para confirmar">${m.slice(5)} ○</span>`;
-      if(p.status==='pago') return `<span class="pay-chip paid" onclick="togglePay('${a.id}','${m}')">${m.slice(5)} ✓</span>`;
-      return `<span class="pay-chip pending" onclick="togglePay('${a.id}','${m}')" title="Confirmar pagamento">${m.slice(5)} ○</span>`;
+      const mesLabel = m.slice(5)+'/'+m.slice(2,4);
+      if(!p||p.status==='pendente'){
+        const isOverdue = m<mesAtual;
+        const cls = isOverdue?'overdue':'pending';
+        return `<span class="pay-chip ${cls}" onclick="togglePay('${a.id}','${m}')" title="Clique para confirmar pagamento de ${mesLabel}">${mesLabel} ○</span>`;
+      }
+      return `<span class="pay-chip paid" onclick="togglePay('${a.id}','${m}')" title="Pago - clique para reverter">${mesLabel} ✓</span>`;
     }).join('');
     const statusBadge = {ativo:'badge-green',inativo:'badge-gray',suspenso:'badge-red'}[a.status]||'badge-gray';
-    return `<tr>
+    return `<tr id="row-${a.id}">
       <td><span class="td-num">#${String(a.numero_associado||'--').padStart(3,'0')}</span></td>
       <td><span class="td-name">${a.nome}</span><br><span class="td-num">${a.cpf||''}</span></td>
       <td>${a.telefone||'—'}</td>
@@ -1049,8 +1220,10 @@ function renderTable(){
       <td><span class="badge ${statusBadge}">${a.status||'ativo'}</span></td>
       <td><div class="pay-month-row">${payChips}</div></td>
       <td><div class="actions-cell">
-        <button class="btn-sm btn-sm-warn" onclick="openCobranca('${a.id}')"><i class="fas fa-paper-plane"></i> Cobrança</button>
+        <button class="btn-sm btn-sm-warn" onclick="openCobranca('${a.id}')"><i class="fas fa-paper-plane"></i> Cobrar</button>
+        <button class="btn-sm btn-sm-teal" onclick="openEdit('${a.id}')"><i class="fas fa-pen"></i> Editar</button>
         <button class="btn-sm btn-sm-navy" onclick="printAssociado('${a.id}')"><i class="fas fa-print"></i></button>
+        <button class="btn-sm btn-sm-red" onclick="confirmDelete('${a.id}')"><i class="fas fa-trash"></i></button>
       </div></td>
     </tr>`;
   }).join('') || '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--gray-400)"><i class="fas fa-search"></i> Nenhum resultado encontrado</td></tr>';
@@ -1058,24 +1231,96 @@ function renderTable(){
 
 function clearFilters(){ g('f-busca').value=''; g('f-dia').value=''; g('f-status').value=''; g('f-pgstatus').value=''; renderTable(); }
 
+// ── TOGGLE PAYMENT — mes atual only ──
 async function togglePay(aid, mes){
   const pags = pagamentos[aid]||[];
   const p = pags.find(x=>x.mes_referencia===mes);
   const newStatus = (!p || p.status==='pendente') ? 'pago' : 'pendente';
   if(p){
     try{ await sb.from('pagamentos').update({status:newStatus,data_pagamento:newStatus==='pago'?new Date().toISOString().slice(0,10):null,confirmado_por:'ongadmin'}).eq('id',p.id); }
-    catch(e){ console.warn('Demo mode:',e.message); }
+    catch(e){ console.warn('Demo:', e.message); }
     p.status = newStatus;
   } else {
     const a = associados.find(x=>x.id===aid);
     const novoPag = {id:`pg-${aid}-${mes}`,associado_id:aid,mes_referencia:mes,valor:a?.valor_contribuicao||30,status:newStatus,data_vencimento:`${mes}-${String(a?.dia_pagamento||10).padStart(2,'0')}`};
-    try{ await sb.from('pagamentos').insert([{associado_id:aid,mes_referencia:mes,valor:a?.valor_contribuicao||30,status:newStatus,data_vencimento:novoPag.data_vencimento}]); }
-    catch(e){ console.warn('Demo mode:',e.message); }
+    try{ await sb.from('pagamentos').insert([{associado_id:aid,mes_referencia:mes,valor:a?.valor_contribuicao||30,status:newStatus,data_vencimento:novoPag.data_vencimento,confirmado_por:'ongadmin'}]); }
+    catch(e){ console.warn('Demo:', e.message); }
     if(!pagamentos[aid]) pagamentos[aid]=[];
     pagamentos[aid].push(novoPag);
   }
-  toast(newStatus==='pago'?'Pagamento confirmado! ✓':'Pagamento marcado como pendente');
+  toast(newStatus==='pago'?'✓ Pagamento confirmado!':'Pagamento marcado como pendente');
   renderTable(); updateKPIs(); renderPendencias();
+}
+
+// ═══════════════════════════════════════════
+//  EDIT ASSOCIADO
+// ═══════════════════════════════════════════
+let editingId = null;
+function openEdit(aid){
+  const a = associados.find(x=>x.id===aid);
+  if(!a) return;
+  editingId = aid;
+  // Fill edit form
+  g('edit-nome').value = a.nome||'';
+  g('edit-cpf').value = a.cpf||'';
+  g('edit-tel').value = a.telefone||'';
+  g('edit-email').value = a.email||'';
+  g('edit-prof').value = a.profissao||'';
+  g('edit-valor').value = (a.valor_contribuicao||30).toFixed(2).replace('.',',');
+  g('edit-dia').value = a.dia_pagamento||10;
+  g('edit-pgto').value = a.forma_pagamento||'PIX';
+  g('edit-status').value = a.status||'ativo';
+  g('modal-edit').classList.add('open');
+}
+function closeEdit(){ g('modal-edit').classList.remove('open'); editingId=null; }
+
+async function saveEdit(){
+  if(!editingId) return;
+  const updates = {
+    nome: g('edit-nome').value.trim(),
+    cpf: g('edit-cpf').value,
+    telefone: g('edit-tel').value,
+    email: g('edit-email').value,
+    profissao: g('edit-prof').value,
+    valor_contribuicao: parseFloat(g('edit-valor').value.replace(',','.'))||30,
+    dia_pagamento: parseInt(g('edit-dia').value)||10,
+    forma_pagamento: g('edit-pgto').value,
+    status: g('edit-status').value
+  };
+  try{
+    const {error} = await sb.from('associados').update(updates).eq('id',editingId);
+    if(error) throw error;
+  }catch(e){ console.warn('Demo mode:', e.message); }
+  // Update local
+  const idx = associados.findIndex(x=>x.id===editingId);
+  if(idx>-1) associados[idx] = {...associados[idx], ...updates};
+  closeEdit();
+  toast('Associado atualizado com sucesso!');
+  renderTable(); updateKPIs();
+}
+
+// ── DELETE ──
+let deleteId = null;
+function confirmDelete(aid){
+  deleteId = aid;
+  const a = associados.find(x=>x.id===aid);
+  g('delete-name').textContent = a?.nome||'este associado';
+  g('modal-delete').classList.add('open');
+}
+function closeDelete(){ g('modal-delete').classList.remove('open'); deleteId=null; }
+
+async function doDelete(){
+  if(!deleteId) return;
+  try{
+    await sb.from('pagamentos').delete().eq('associado_id',deleteId);
+    const {error} = await sb.from('associados').delete().eq('id',deleteId);
+    if(error) throw error;
+  }catch(e){ console.warn('Demo mode:', e.message); }
+  associados = associados.filter(x=>x.id!==deleteId);
+  delete pagamentos[deleteId];
+  closeDelete();
+  toast('Associado removido.');
+  renderTable(); updateKPIs();
 }
 
 // ═══════════════════════════════════════════
@@ -1086,42 +1331,101 @@ function openCobranca(aid){
   const a = associados.find(x=>x.id===aid);
   if(!a) return;
   cobrancaAssociadoId = aid;
+  const mesAtual = getMesAtual();
   const pend = (pagamentos[aid]||[]).filter(p=>p.status==='pendente');
   const totalPend = pend.reduce((s,p)=>s+p.valor,0);
+  const hoje = new Date();
+  const vencimento = `${String(a.dia_pagamento||10).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
   const msg = `Olá, ${a.nome.split(' ')[0]}! 😊
 
-Gostaríamos de lembrar que há uma contribuição pendente com a *ONG Por Amor*.
+Gostaríamos de lembrar que há uma contribuição em aberto com a *ONG Por Amor*.
 
 📋 *Associado:* ${a.nome}
-💰 *Valor:* R$ ${(a.valor_contribuicao||30).toFixed(2).replace('.',',')} /mês
-📅 *Vencimento:* Todo dia ${a.dia_pagamento||10}
-${totalPend>0?`⚠️ *Total pendente:* R$ ${totalPend.toFixed(2).replace('.',',')}\n`:''}
-🔑 *Chave PIX:* 54286499000174 (CNPJ ONG Por Amor)
+💰 *Valor mensal:* R$ ${(a.valor_contribuicao||30).toFixed(2).replace('.',',')}
+📅 *Vencimento:* Todo dia ${a.dia_pagamento||10}${totalPend>0?`\n⚠️ *Total pendente:* R$ ${totalPend.toFixed(2).replace('.',',')}`:''}
 
-Qualquer dúvida, estamos à disposição! ❤️
+🔑 *Chave PIX:* 54286499000174
+🏷️ *Tipo:* CNPJ — ONG Por Amor
+
+Após o pagamento, envie o comprovante para confirmar. Qualquer dúvida, estamos à disposição! ❤️
 — Equipe ONG Por Amor | (83) 98231-5427`;
 
   g('msg-template').textContent = msg;
   const waNum = (a.telefone||'').replace(/\D/g,'');
-  const waUrl = `https://wa.me/55${waNum}?text=${encodeURIComponent(msg)}`;
-  g('btn-wa-send').onclick = () => window.open(waUrl,'_blank');
-  const emailSubject = `ONG Por Amor — Contribuição Mensal`;
-  g('btn-email-send').onclick = () => window.open(`mailto:${a.email||''}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(msg)}`,'_blank');
+  g('btn-wa-send').onclick = () => window.open(`https://wa.me/55${waNum}?text=${encodeURIComponent(msg)}`,'_blank');
+  g('btn-email-send').onclick = () => window.open(`mailto:${a.email||''}?subject=${encodeURIComponent('ONG Por Amor — Contribuição Mensal')}&body=${encodeURIComponent(msg)}`,'_blank');
   g('modal-cobranca').classList.add('open');
 }
 function closeModal(){ g('modal-cobranca').classList.remove('open'); }
 function copyMsg(){ navigator.clipboard.writeText(g('msg-template').textContent).then(()=>toast('Mensagem copiada!')); }
 
 // ═══════════════════════════════════════════
-//  PRINT
+//  PRINT — FULL DATA + SIGNATURE
 // ═══════════════════════════════════════════
 function printTable(){ window.print(); }
+
 function printAssociado(aid){
   const a = associados.find(x=>x.id===aid);
   if(!a) return;
+  const pags = pagamentos[aid]||[];
+  const hoje = new Date();
+  const dataImpressao = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
+  const statusColor = {ativo:'#059669',inativo:'#94a3b8',suspenso:'#dc2626'}[a.status]||'#94a3b8';
+  const pagRows = pags.map(p=>`<tr><td>${p.mes_referencia}</td><td>R$ ${(p.valor||0).toFixed(2)}</td><td>${p.data_vencimento||'—'}</td><td style="color:${p.status==='pago'?'#059669':'#d97706'};font-weight:700">${p.status==='pago'?'✓ Pago':'○ Pendente'}</td></tr>`).join('');
+  const sigSrc = a.assinatura_data||'';
+
   const w = window.open('','_blank');
-  w.document.write(`<!DOCTYPE html><html><head><title>Ficha - ${a.nome}</title><style>body{font-family:sans-serif;padding:2rem;max-width:700px;margin:0 auto} h1{font-size:1.5rem;color:#0b1f31} table{width:100%;border-collapse:collapse;margin-top:1rem} td,th{border:1px solid #ddd;padding:.5rem;font-size:.88rem} th{background:#f1f5f9;font-weight:600}</style></head><body><h1>ONG Por Amor — Ficha de Associado</h1><p style="color:#666;font-size:.85rem">CNPJ: 54.286.499/0001-74</p><table><tr><th colspan="2">Dados Pessoais</th></tr><tr><td>Nome</td><td>${a.nome}</td></tr><tr><td>CPF</td><td>${a.cpf||'—'}</td></tr><tr><td>Telefone</td><td>${a.telefone||'—'}</td></tr><tr><td>E-mail</td><td>${a.email||'—'}</td></tr><tr><td>Cidade</td><td>${a.cidade||'—'}</td></tr><tr><th colspan="2">Contribuição</th></tr><tr><td>Valor</td><td>R$ ${(a.valor_contribuicao||30).toFixed(2)}/mês</td></tr><tr><td>Dia Vencimento</td><td>Dia ${a.dia_pagamento||10}</td></tr><tr><td>Forma Pgto</td><td>${a.forma_pagamento||'PIX'}</td></tr><tr><td>Status</td><td>${a.status}</td></tr></table><br><br><p>_______________________________ &nbsp;&nbsp;&nbsp; ___________________________</p><p style="font-size:.8rem">Assinatura do Associado &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Responsável ONG</p></body></html>`);
-  w.document.close(); w.print();
+  w.document.write(`<!DOCTYPE html><html><head><title>Ficha — ${a.nome}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',sans-serif;padding:2.5rem;color:#0f172a;max-width:800px;margin:0 auto;font-size:13px}
+  .logo{display:flex;align-items:center;gap:.8rem;margin-bottom:.3rem}
+  .logo-heart{font-size:2rem}
+  .logo-title{font-size:1.6rem;font-weight:800;color:#0b1f31}
+  .logo-title em{font-style:italic;color:#0d8f8f}
+  .sub{font-size:.75rem;color:#64748b;margin-bottom:.2rem}
+  .hr{border:none;border-top:3px solid #0b1f31;margin:1rem 0 1.5rem}
+  h2{font-size:1rem;font-weight:700;color:#fff;background:#0b1f31;padding:.5rem 1rem;border-radius:6px;margin:1.2rem 0 .6rem}
+  table{width:100%;border-collapse:collapse;margin-bottom:.5rem}
+  td,th{border:1px solid #e2e8f0;padding:.45rem .7rem;font-size:.8rem}
+  th{background:#f1f5f9;font-weight:700;color:#475569}
+  .key{background:#f8fafc;font-weight:600;color:#334155;width:35%}
+  .status-badge{display:inline-block;padding:.15rem .6rem;border-radius:100px;font-size:.72rem;font-weight:700;background:${statusColor}20;color:${statusColor}}
+  .sig-area{display:flex;gap:2rem;margin-top:2.5rem}
+  .sig-box{flex:1;text-align:center}
+  .sig-box .label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:.4rem}
+  .sig-box .line{border-bottom:2px solid #0b1f31;min-height:60px;display:flex;align-items:center;justify-content:center}
+  .footer{margin-top:2rem;padding-top:1rem;border-top:1px solid #e2e8f0;text-align:center;font-size:.72rem;color:#94a3b8}
+  @media print{body{padding:1.5rem}}
+</style></head><body>
+<div class="logo"><span class="logo-heart">❤️</span><div><div class="logo-title">ONG <em>Por Amor</em></div><div class="sub">CNPJ: 54.286.499/0001-74 &nbsp;|&nbsp; Rua Fernandes Vieira 1148, José Pinheiro, Campina Grande - PB &nbsp;|&nbsp; (83) 98231-5427</div></div></div>
+<hr class="hr">
+<div style="text-align:right;font-size:.75rem;color:#64748b">Impresso em: ${dataImpressao} &nbsp;|&nbsp; Nº Associado: #${String(a.numero_associado||'--').padStart(3,'0')}</div>
+<h2>📋 Dados Pessoais</h2>
+<table><tr><td class="key">Nome Completo</td><td><strong>${a.nome}</strong></td><td class="key">CPF</td><td>${a.cpf||'—'}</td></tr>
+<tr><td class="key">Data Nasc.</td><td>${a.data_nascimento||'—'}</td><td class="key">RG</td><td>${a.rg||'—'}</td></tr>
+<tr><td class="key">Estado Civil</td><td>${a.estado_civil||'—'}</td><td class="key">Profissão</td><td>${a.profissao||'—'}</td></tr></table>
+<h2>📍 Endereço</h2>
+<table><tr><td class="key">Logradouro</td><td>${a.logradouro||'—'}, nº ${a.numero||'—'} ${a.complemento?'/ '+a.complemento:''}</td><td class="key">CEP</td><td>${a.cep||'—'}</td></tr>
+<tr><td class="key">Bairro</td><td>${a.bairro||'—'}</td><td class="key">Cidade / UF</td><td>${a.cidade||'—'} / ${a.uf||'—'}</td></tr></table>
+<h2>📞 Contato</h2>
+<table><tr><td class="key">Telefone/WhatsApp</td><td>${a.telefone||'—'}</td><td class="key">E-mail</td><td>${a.email||'—'}</td></tr></table>
+<h2>💰 Contribuição</h2>
+<table><tr><td class="key">Valor Mensal</td><td><strong>R$ ${(a.valor_contribuicao||30).toFixed(2)}</strong></td><td class="key">Dia Vencimento</td><td>Todo dia <strong>${a.dia_pagamento||10}</strong></td></tr>
+<tr><td class="key">Forma de Pagamento</td><td>${a.forma_pagamento||'PIX'}</td><td class="key">Status</td><td><span class="status-badge">${a.status||'ativo'}</span></td></tr></table>
+<h2>✅ Autorizações (LGPD)</h2>
+<table><tr><td class="key">Dados Pessoais</td><td>${a.autoriza_lgpd?'✅ Autorizado':'❌ Não autorizado'}</td><td class="key">Uso de Imagem</td><td>${a.autoriza_imagem?'✅ Autorizado':'❌ Não autorizado'}</td></tr>
+<tr><td class="key">Comunicações</td><td colspan="3">${a.autoriza_comunicacoes?'✅ Autorizado':'❌ Não autorizado'}</td></tr></table>
+${pags.length>0?`<h2>🗓️ Histórico de Pagamentos</h2><table><thead><tr><th>Mês</th><th>Valor</th><th>Vencimento</th><th>Status</th></tr></thead><tbody>${pagRows}</tbody></table>`:''}
+<div class="sig-area">
+  <div class="sig-box"><div class="label">Local e Data</div><div class="line"><span>${a.cidade||'Campina Grande'} – ${a.uf||'PB'}, ${dataImpressao}</span></div></div>
+  <div class="sig-box"><div class="label">Assinatura do Associado</div><div class="line">${sigSrc?`<img src="${sigSrc}" style="max-height:56px;max-width:90%">`:'&nbsp;'}</div></div>
+  <div class="sig-box"><div class="label">Responsável ONG</div><div class="line">&nbsp;</div></div>
+</div>
+<div class="footer">ONG Por Amor · Ficha de Associação · Documento gerado automaticamente · Campina Grande – PB</div>
+</body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(), 400);
 }
 
 // ═══════════════════════════════════════════
@@ -1133,9 +1437,10 @@ function updateKPIs(){
   g('kpi-ativos').textContent = `${ativos.length} ativos`;
   const receitaMensal = ativos.reduce((s,a)=>s+(a.valor_contribuicao||30),0);
   g('kpi-receita').textContent = `R$ ${receitaMensal.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}`;
-  const totalPend = Object.values(pagamentos).flat().filter(p=>p.status==='pendente').reduce((s,p)=>s+p.valor,0);
-  g('kpi-pend').textContent = `R$ ${totalPend.toFixed(0)}`;
-  const assocPend = ativos.filter(a=>(pagamentos[a.id]||[]).some(p=>p.status==='pendente'));
+  const mesAtual = getMesAtual();
+  const pendMes = Object.values(pagamentos).flat().filter(p=>p.status==='pendente'&&p.mes_referencia===mesAtual).reduce((s,p)=>s+p.valor,0);
+  g('kpi-pend').textContent = `R$ ${pendMes.toFixed(0)}`;
+  const assocPend = ativos.filter(a=>(pagamentos[a.id]||[]).some(p=>p.status==='pendente'&&p.mes_referencia===mesAtual));
   g('kpi-npend').textContent = `${assocPend.length} associados`;
   const ticket = ativos.length>0 ? receitaMensal/ativos.length : 0;
   g('kpi-ticket').textContent = `R$ ${ticket.toFixed(0)}`;
@@ -1143,17 +1448,17 @@ function updateKPIs(){
 
 function renderPendencias(){
   const tbody = g('pend-body');
-  const mesAtual = new Date().toISOString().slice(0,7);
-  const pendentes = [];
-  associados.forEach(a=>{
-    const pags = pagamentos[a.id]||[];
-    const p = pags.find(x=>x.mes_referencia===mesAtual&&x.status==='pendente');
-    if(p||a.status==='ativo') pendentes.push({a,p});
-  });
-  const pens = pendentes.filter(({p})=>!p||p.status==='pendente');
-  tbody.innerHTML = pens.slice(0,10).map(({a})=>{
-    const venc = `${mesAtual}-${String(a.dia_pagamento||10).padStart(2,'0')}`;
-    return `<tr><td class="td-name">${a.nome}</td><td>${a.telefone||'—'}</td><td style="font-weight:700">R$ ${(a.valor_contribuicao||30).toFixed(2)}</td><td>${venc}</td><td><button class="btn-sm btn-sm-warn" onclick="openCobranca('${a.id}')"><i class="fas fa-paper-plane"></i> Enviar cobrança</button></td></tr>`;
+  const mesAtual = getMesAtual();
+  const list = associados
+    .filter(a=>a.status==='ativo')
+    .map(a=>({a, p:(pagamentos[a.id]||[]).find(x=>x.mes_referencia===mesAtual)}))
+    .filter(({p})=>!p||p.status==='pendente');
+
+  tbody.innerHTML = list.slice(0,15).map(({a})=>{
+    const hoje = new Date();
+    const venc = `${String(a.dia_pagamento||10).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
+    const isOverdue = hoje.getDate() > (a.dia_pagamento||10);
+    return `<tr><td class="td-name">${a.nome}</td><td>${a.telefone||'—'}</td><td style="font-weight:700">R$ ${(a.valor_contribuicao||30).toFixed(2)}</td><td><span style="color:${isOverdue?'var(--error)':'var(--warn)'}">⏰ ${venc}</span></td><td><button class="btn-sm btn-sm-warn" onclick="openCobranca('${a.id}')"><i class="fas fa-paper-plane"></i> Enviar cobrança</button></td></tr>`;
   }).join('')||'<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--gray-400)">✅ Nenhuma pendência no mês atual</td></tr>';
 }
 
@@ -1164,17 +1469,19 @@ let charts = {};
 function renderCharts(){
   const ativos = associados.filter(a=>a.status==='ativo');
   const receitaMensal = ativos.reduce((s,a)=>s+(a.valor_contribuicao||30),0);
-  const meses = ['Jan','Fev','Mar','Abr','Mai','Jun'];
-  const proj = meses.map((_,i)=> receitaMensal * (1 + i*0.02));
+  const hoje = new Date();
+  const mesesLabels = Array.from({length:6},(_,i)=>{
+    const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
+    return d.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'});
+  });
+  const proj = mesesLabels.map((_,i)=> receitaMensal * (1 + i*0.025));
 
   if(charts.projecao) charts.projecao.destroy();
   charts.projecao = new Chart(g('chart-projecao').getContext('2d'),{
     type:'bar',
-    data:{labels:meses,datasets:[{label:'Receita Projetada (R$)',data:proj,backgroundColor:'rgba(13,143,143,.15)',borderColor:'rgba(13,143,143,.9)',borderWidth:2,borderRadius:6},{type:'line',label:'Tendência',data:proj,borderColor:'#e8c96a',borderWidth:2,pointBackgroundColor:'#e8c96a',tension:.4,fill:false}]},
+    data:{labels:mesesLabels,datasets:[{label:'Receita Projetada (R$)',data:proj,backgroundColor:'rgba(13,143,143,.15)',borderColor:'rgba(13,143,143,.9)',borderWidth:2,borderRadius:6},{type:'line',label:'Tendência',data:proj,borderColor:'#e8c96a',borderWidth:2,pointBackgroundColor:'#e8c96a',tension:.4,fill:false}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:11},boxWidth:12}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>'R$'+v.toFixed(0),font:{family:'DM Sans',size:10}},grid:{color:'rgba(0,0,0,.05)'}},x:{ticks:{font:{family:'DM Sans',size:11}},grid:{display:false}}}}
   });
-
-  // Dias
   const diasCount = {};
   associados.forEach(a=>{ const d=`Dia ${a.dia_pagamento||10}`; diasCount[d]=(diasCount[d]||0)+1; });
   if(charts.dias) charts.dias.destroy();
@@ -1183,8 +1490,6 @@ function renderCharts(){
     data:{labels:Object.keys(diasCount),datasets:[{data:Object.values(diasCount),backgroundColor:['rgba(13,143,143,.8)','rgba(11,31,49,.8)','rgba(232,201,106,.8)','rgba(30,74,107,.8)','rgba(94,163,163,.8)'],borderWidth:2,borderColor:'#fff'}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:10},boxWidth:10}}}}
   });
-
-  // Status
   const sc = {ativo:0,inativo:0,suspenso:0};
   associados.forEach(a=>{ sc[a.status||'ativo']++; });
   if(charts.status) charts.status.destroy();
@@ -1220,11 +1525,10 @@ function toast(msg, type='ok'){
   _toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
 }
 
-// Enter on login
 g('adm-senha').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
-
-// Close modal on overlay click
 g('modal-cobranca').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
+g('modal-edit').addEventListener('click',function(e){ if(e.target===this) closeEdit(); });
+g('modal-delete').addEventListener('click',function(e){ if(e.target===this) closeDelete(); });
 </script>
 </body>
 </html>
