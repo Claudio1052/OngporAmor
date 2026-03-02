@@ -1007,7 +1007,14 @@ function buildSummary(){
 async function submitForm(){
   const cidadeUF = g('inp-cidade').value.split(' / ');
   const sigData = (sigCanvas && hasSigned) ? sigCanvas.toDataURL() : null;
+  
+  // Gerar número de associado sequencial
+  const { data: existing } = await sb.from('associados').select('numero_associado').order('numero_associado', { ascending: false }).limit(1);
+  const lastNum = existing && existing.length > 0 ? existing[0].numero_associado : 0;
+  const numero_associado = lastNum + 1;
+  
   const payload = {
+    numero_associado: numero_associado,
     nome: g('inp-nome').value.trim(),
     data_nascimento: parseDate(g('inp-nasc').value),
     cpf: g('inp-cpf').value.replace(/\D/g,''),
@@ -1030,16 +1037,38 @@ async function submitForm(){
     autoriza_imagem: g('t-img').checked,
     autoriza_comunicacoes: g('t-com').checked,
     assinatura_tipo: 'desenho',
-    assinatura_data: sigData
+    assinatura_data: sigData,
+    status: 'ativo',
+    created_at: new Date().toISOString()
   };
+  
   try{
     const {error} = await sb.from('associados').insert([payload]);
-    if(error) throw error;
+    if(error) {
+      console.error('Erro ao inserir:', error);
+      toast('Erro ao enviar ficha: ' + error.message, 'err');
+      return;
+    }
+    
+    // Criar primeiro pagamento pendente
+    const mesAtual = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+    const pagamentoPayload = {
+      associado_id: (await sb.from('associados').select('id').eq('cpf', payload.cpf).single()).data.id,
+      mes_referencia: mesAtual,
+      valor: payload.valor_contribuicao,
+      status: 'pendente',
+      data_vencimento: `${mesAtual}-${String(payload.dia_pagamento).padStart(2,'0')}`
+    };
+    
+    await sb.from('pagamentos').insert([pagamentoPayload]);
+    
     toast('Ficha enviada com sucesso! 🎉');
   }catch(e){
-    console.warn('Supabase insert (demo mode):', e.message);
-    toast('Ficha registrada! (modo demo)');
+    console.error('Erro no submit:', e);
+    toast('Erro ao enviar ficha: ' + e.message, 'err');
+    return;
   }
+  
   document.querySelectorAll('.form-page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.sn-item').forEach(el=>el.classList.add('done'));
   g('suc-screen').classList.add('active');
@@ -1111,8 +1140,8 @@ async function loadAssociados(){
     if(error) throw error;
     associados = data || [];
   }catch(e){
-    console.warn('Supabase load error, using demo data:', e.message);
-    associados = demoData();
+    console.error('Erro ao carregar associados:', e.message);
+    associados = [];
   }
   await loadPagamentos();
   renderTable();
@@ -1120,42 +1149,20 @@ async function loadAssociados(){
   renderPendencias();
 }
 
-function demoData(){
-  return [
-    {id:'1',numero_associado:1,nome:'Maria das Graças Silva',cpf:'123.456.789-00',telefone:'(83) 99811-2233',email:'maria@email.com',valor_contribuicao:50,dia_pagamento:10,forma_pagamento:'PIX',status:'ativo',cidade:'Campina Grande',uf:'PB',logradouro:'Rua das Flores',numero:'100',bairro:'José Pinheiro',cep:'58407-490',profissao:'Professora',created_at:new Date().toISOString()},
-    {id:'2',numero_associado:2,nome:'João Carlos Oliveira',cpf:'987.654.321-00',telefone:'(83) 99722-3344',email:'joao@email.com',valor_contribuicao:30,dia_pagamento:5,forma_pagamento:'Boleto',status:'ativo',cidade:'Campina Grande',uf:'PB',logradouro:'Av. Principal',numero:'200',bairro:'Centro',cep:'58400-000',profissao:'Comerciante',created_at:new Date().toISOString()},
-    {id:'3',numero_associado:3,nome:'Ana Paula Ferreira',cpf:'456.123.789-00',telefone:'(83) 99633-4455',email:'ana@email.com',valor_contribuicao:80,dia_pagamento:15,forma_pagamento:'PIX',status:'ativo',cidade:'Campina Grande',uf:'PB',logradouro:'Rua Nova',numero:'300',bairro:'Miriam',cep:'58408-000',profissao:'Enfermeira',created_at:new Date().toISOString()},
-    {id:'4',numero_associado:4,nome:'Carlos Eduardo Souza',cpf:'789.456.123-00',telefone:'(83) 99544-5566',email:'carlos@email.com',valor_contribuicao:30,dia_pagamento:20,forma_pagamento:'Transferência bancária',status:'inativo',cidade:'Campina Grande',uf:'PB',logradouro:'Rua Velha',numero:'400',bairro:'Bodocongó',cep:'58409-000',profissao:'Técnico',created_at:new Date().toISOString()},
-    {id:'5',numero_associado:5,nome:'Fernanda Lima Costa',cpf:'321.654.987-00',telefone:'(83) 99455-6677',email:'fernanda@email.com',valor_contribuicao:100,dia_pagamento:1,forma_pagamento:'PIX',status:'ativo',cidade:'Campina Grande',uf:'PB',logradouro:'Rua Alta',numero:'500',bairro:'Prata',cep:'58410-000',profissao:'Advogada',created_at:new Date().toISOString()},
-  ];
-}
-
 async function loadPagamentos(){
-  // Gera meses dos últimos 3 meses + mês atual
-  const hoje = new Date();
-  const meses = [];
-  for(let i=2;i>=0;i--){
-    const d = new Date(hoje.getFullYear(), hoje.getMonth()-i, 1);
-    meses.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
-  }
   try{
     const ids = associados.map(a=>a.id);
     if(ids.length===0) return;
-    const {data} = await sb.from('pagamentos').select('*').in('associado_id', ids);
+    const {data, error} = await sb.from('pagamentos').select('*').in('associado_id', ids).order('mes_referencia', {ascending: false});
+    if(error) throw error;
     pagamentos = {};
-    (data||[]).forEach(p=>{ if(!pagamentos[p.associado_id]) pagamentos[p.associado_id]=[]; pagamentos[p.associado_id].push(p); });
-  }catch{
-    // Demo payment data
-    pagamentos = {};
-    const mesAtual = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
-    associados.forEach(a=>{
-      pagamentos[a.id] = meses.map((m,i)=>({
-        id:`pg-${a.id}-${m}`, associado_id:a.id, mes_referencia:m,
-        valor:a.valor_contribuicao,
-        status: m===mesAtual?'pendente':(i<2?'pago':'pendente'),
-        data_vencimento:`${m}-${String(a.dia_pagamento||10).padStart(2,'0')}`
-      }));
+    (data||[]).forEach(p=>{ 
+      if(!pagamentos[p.associado_id]) pagamentos[p.associado_id]=[]; 
+      pagamentos[p.associado_id].push(p); 
     });
+  }catch(e){
+    console.error('Erro ao carregar pagamentos:', e.message);
+    pagamentos = {};
   }
 }
 
@@ -1242,16 +1249,31 @@ async function togglePay(aid, mes){
   const p = pags.find(x=>x.mes_referencia===mes);
   const newStatus = (!p || p.status==='pendente') ? 'pago' : 'pendente';
   if(p){
-    try{ await sb.from('pagamentos').update({status:newStatus,data_pagamento:newStatus==='pago'?new Date().toISOString().slice(0,10):null,confirmado_por:'ongadmin'}).eq('id',p.id); }
-    catch(e){ console.warn('Demo:', e.message); }
-    p.status = newStatus;
+    try{ 
+      await sb.from('pagamentos').update({
+        status:newStatus,
+        data_pagamento:newStatus==='pago'?new Date().toISOString().slice(0,10):null,
+        confirmado_por:'ongadmin'
+      }).eq('id',p.id);
+      p.status = newStatus;
+    } catch(e){ console.error('Erro ao atualizar pagamento:', e.message); }
   } else {
     const a = associados.find(x=>x.id===aid);
-    const novoPag = {id:`pg-${aid}-${mes}`,associado_id:aid,mes_referencia:mes,valor:a?.valor_contribuicao||30,status:newStatus,data_vencimento:`${mes}-${String(a?.dia_pagamento||10).padStart(2,'0')}`};
-    try{ await sb.from('pagamentos').insert([{associado_id:aid,mes_referencia:mes,valor:a?.valor_contribuicao||30,status:newStatus,data_vencimento:novoPag.data_vencimento,confirmado_por:'ongadmin'}]); }
-    catch(e){ console.warn('Demo:', e.message); }
-    if(!pagamentos[aid]) pagamentos[aid]=[];
-    pagamentos[aid].push(novoPag);
+    const novoPag = {
+      associado_id: aid,
+      mes_referencia: mes,
+      valor: a?.valor_contribuicao||30,
+      status: newStatus,
+      data_vencimento: `${mes}-${String(a?.dia_pagamento||10).padStart(2,'0')}`,
+      confirmado_por: newStatus==='pago'?'ongadmin':null,
+      data_pagamento: newStatus==='pago'?new Date().toISOString().slice(0,10):null
+    };
+    try{ 
+      const {data, error} = await sb.from('pagamentos').insert([novoPag]).select();
+      if(error) throw error;
+      if(!pagamentos[aid]) pagamentos[aid]=[];
+      pagamentos[aid].push(data[0]);
+    } catch(e){ console.error('Erro ao criar pagamento:', e.message); }
   }
   toast(newStatus==='pago'?'✓ Pagamento confirmado!':'Pagamento marcado como pendente');
   renderTable(); updateKPIs(); renderPendencias();
@@ -1295,7 +1317,7 @@ async function saveEdit(){
   try{
     const {error} = await sb.from('associados').update(updates).eq('id',editingId);
     if(error) throw error;
-  }catch(e){ console.warn('Demo mode:', e.message); }
+  }catch(e){ console.error('Erro ao atualizar:', e.message); }
   // Update local
   const idx = associados.findIndex(x=>x.id===editingId);
   if(idx>-1) associados[idx] = {...associados[idx], ...updates};
@@ -1320,7 +1342,7 @@ async function doDelete(){
     await sb.from('pagamentos').delete().eq('associado_id',deleteId);
     const {error} = await sb.from('associados').delete().eq('id',deleteId);
     if(error) throw error;
-  }catch(e){ console.warn('Demo mode:', e.message); }
+  }catch(e){ console.error('Erro ao excluir:', e.message); }
   associados = associados.filter(x=>x.id!==deleteId);
   delete pagamentos[deleteId];
   closeDelete();
