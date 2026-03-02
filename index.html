@@ -42,6 +42,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);min-height:100vh;co
 .topbar-logo .logo-heart{font-size:1.4rem;animation:hb 2.5s ease-in-out infinite}
 @keyframes hb{0%,100%{transform:scale(1)}15%{transform:scale(1.12)}30%{transform:scale(1)}45%{transform:scale(1.07)}}
 .topbar-logo span{font-family:'DM Serif Display',serif;font-size:1.15rem;color:#fff;font-style:italic}
+.topbar-logo .logo-img{height:32px;width:auto;border-radius:6px;margin-right:4px}
 .topbar-nav{display:flex;gap:.25rem;flex:1}
 .nav-btn{
   background:transparent;border:none;color:rgba(255,255,255,.5);
@@ -268,7 +269,8 @@ canvas#sig-canvas{display:block;touch-action:none;width:100%;height:180px}
 ═══════════════════════════════════════ */
 #view-admin{background:var(--gray-50);min-height:100vh}
 .admin-topbar{background:var(--navy);padding:0 2rem;height:56px;display:flex;align-items:center;gap:1.2rem;border-bottom:1px solid rgba(255,255,255,.07)}
-.admin-brand{font-family:'DM Serif Display',serif;font-style:italic;color:#fff;font-size:1.1rem}
+.admin-brand{font-family:'DM Serif Display',serif;font-style:italic;color:#fff;font-size:1.1rem;display:flex;align-items:center;gap:.5rem}
+.admin-brand .logo-img{height:28px;width:auto;border-radius:4px}
 .admin-badge{font-size:.68rem;font-weight:700;background:rgba(13,143,143,.3);color:var(--teal-light);padding:.15rem .6rem;border-radius:100px;text-transform:uppercase;letter-spacing:.08em}
 .admin-tabs{display:flex;gap:.2rem;margin-left:1.5rem}
 .atab{background:transparent;border:none;color:rgba(255,255,255,.4);padding:.4rem .9rem;border-radius:var(--r);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:500;transition:var(--tr)}
@@ -405,7 +407,7 @@ tr:hover td{background:var(--gray-50)}
   <!-- TOPBAR -->
   <nav class="topbar">
     <a href="#" class="topbar-logo" onclick="showView('view-form')">
-      <span class="logo-heart">❤️</span>
+      <img src="https://cqjcajxjtevvquouengk.supabase.co/storage/v1/object/public/IMAGENS/LOGOMARCA.png" class="logo-img" alt="ONG Por Amor">
       <span>Por Amor</span>
     </a>
     <div class="topbar-nav">
@@ -611,7 +613,10 @@ tr:hover td{background:var(--gray-50)}
 ═══════════════════════════════════════════════ -->
 <div id="view-admin" class="view">
   <div class="admin-topbar">
-    <span class="admin-brand">Por Amor</span>
+    <span class="admin-brand">
+      <img src="https://cqjcajxjtevvquouengk.supabase.co/storage/v1/object/public/IMAGENS/LOGOMARCA.png" class="logo-img" alt="ONG Por Amor">
+      Por Amor
+    </span>
     <span class="admin-badge">Admin</span>
     <div class="admin-tabs">
       <button class="atab active" onclick="showAdminTab('tab-associados')"><i class="fas fa-users"></i> Associados</button>
@@ -757,7 +762,7 @@ tr:hover td{background:var(--gray-50)}
 <div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toast-msg"></span></div>
 
 <!-- SUPABASE CDN -->
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <script>
 // ═══════════════════════════════════════════
