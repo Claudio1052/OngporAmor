@@ -1,0 +1,23 @@
+# ═══════════════════════════════════════════
+# .gitignore — ONG Por Amor
+# ═══════════════════════════════════════════
+
+# ⚠️ CREDENCIAIS — NUNCA commitar estes arquivos!
+config.js
+.env
+.env.local
+.env.production
+*.env
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+*.swp
+
+# Node (se usar build tools)
+node_modules/
+dist/

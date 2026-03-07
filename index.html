@@ -8,6 +8,24 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<!--
+  ╔══════════════════════════════════════════════════════════════╗
+  ║  CONFIGURAÇÃO DE CREDENCIAIS                                 ║
+  ║  Inclua config.js ANTES deste arquivo no seu servidor.       ║
+  ║  NUNCA suba config.js para o GitHub!                         ║
+  ║  Adicione config.js ao .gitignore                            ║
+  ╚══════════════════════════════════════════════════════════════╝
+  Exemplo de config.js:
+    window.__APP_CONFIG__ = {
+      SUPA_URL:    'https://xxx.supabase.co',
+      SUPA_KEY:    'eyJ...',
+      ADMIN_LOGIN: 'ongadmin',
+      ADMIN_SENHA: 'suaSenhaAqui'
+    };
+-->
+<script src="config.js" onerror="console.warn('config.js não encontrado — configure as credenciais.')"></script>
+
 <style>
 :root{
   --navy:#0b1f31;--navy-mid:#163450;--navy-light:#1e4a6b;
@@ -249,6 +267,15 @@ canvas#sig-canvas{display:block;touch-action:none;width:100%;height:180px}
 .toast i{color:var(--teal-light)}
 .toast.err i{color:#f87171}
 
+/* ── SIG REQUIRED BANNER ── */
+.sig-required-banner{
+  display:none;background:var(--error-pale);border:1.5px solid rgba(220,38,38,.25);
+  border-radius:var(--r);padding:.9rem 1.2rem;margin-bottom:1rem;
+  font-size:.85rem;color:var(--error);font-weight:600;
+  align-items:center;gap:.6rem;
+}
+.sig-required-banner.show{display:flex}
+
 /* ═══════════════════════════════════════
    ADMIN LOGIN
 ═══════════════════════════════════════ */
@@ -404,7 +431,6 @@ tr:hover td{background:var(--gray-50)}
   <nav class="topbar">
     <a href="#" class="topbar-logo" onclick="showView('view-form')">
       <img src="https://cqjcajxjtevvquouengk.supabase.co/storage/v1/object/public/IMAGENS/LOGOMARCA.png" class="logo-img" alt="ONG Por Amor">
-      
     </a>
     <div class="topbar-nav">
       <button class="nav-btn active" onclick="showView('view-form')"><i class="fas fa-file-alt"></i> Associação</button>
@@ -521,6 +547,11 @@ tr:hover td{background:var(--gray-50)}
             <i class="fas fa-info-circle" style="color:var(--teal);font-size:1.1rem;flex-shrink:0"></i>
             <span>Utilize o campo abaixo para assinar digitalmente sua ficha. No celular, use o dedo; no computador, use o mouse. Pressione e arraste para desenhar.</span>
           </div>
+          <!-- Banner obrigatório — aparece ao tentar avançar sem assinar -->
+          <div class="sig-required-banner" id="sig-required-banner">
+            <i class="fas fa-exclamation-triangle"></i>
+            A assinatura é obrigatória para concluir o cadastro. Por favor, assine no campo abaixo.
+          </div>
           <div id="canvas-wrap" style="position:relative;border:2px solid var(--gray-200);border-radius:var(--r);overflow:hidden;background:#fff;cursor:crosshair;min-height:200px;">
             <div id="sig-placeholder" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;color:var(--gray-300)">
               <i class="fas fa-signature" style="font-size:3rem;margin-bottom:.5rem"></i>
@@ -573,7 +604,9 @@ tr:hover td{background:var(--gray-50)}
           <button class="btn-next" style="margin:2rem auto 0;display:flex" onclick="resetForm()"><i class="fas fa-redo"></i> Nova ficha</button>
         </div>
       </div><div class="card-footer"><div class="cf-l"><i class="fas fa-lock"></i> Dados protegidos pela LGPD</div><div class="cf-r">ONG Por Amor · Cadastro de Associados</div></div>
-    </div></div></div><div id="view-admin-login" class="view">
+    </div></div></div>
+
+<div id="view-admin-login" class="view">
   <div id="view-admin-login-inner" style="background:var(--navy);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem">
     <div class="login-card">
       <div class="login-icon"><i class="fas fa-shield-halved"></i></div>
@@ -650,7 +683,11 @@ tr:hover td{background:var(--gray-50)}
         <div class="table-scroll"><table><thead><tr><th>Associado</th><th>Telefone</th><th>Valor</th><th>Vencimento</th><th>Ação</th></tr></thead><tbody id="pend-body"></tbody></table></div>
       </div>
     </div>
-  </div></div></div><div class="modal-overlay" id="modal-cobranca">
+  </div>
+</div>
+
+<!-- MODAL COBRANÇA -->
+<div class="modal-overlay" id="modal-cobranca">
   <div class="modal">
     <div class="modal-hdr"><div class="modal-title"><i class="fas fa-paper-plane" style="color:var(--teal)"></i> Enviar Fatura</div><button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button></div>
     <div class="modal-body">
@@ -665,6 +702,7 @@ tr:hover td{background:var(--gray-50)}
   </div>
 </div>
 
+<!-- MODAL EDITAR -->
 <div class="modal-overlay" id="modal-edit">
   <div class="modal" style="max-width:640px">
     <div class="modal-hdr"><div class="modal-title"><i class="fas fa-pen" style="color:var(--teal)"></i> Editar Associado</div><button class="modal-close" onclick="closeEdit()"><i class="fas fa-times"></i></button></div>
@@ -701,6 +739,7 @@ tr:hover td{background:var(--gray-50)}
   </div>
 </div>
 
+<!-- MODAL EXCLUIR -->
 <div class="modal-overlay" id="modal-delete">
   <div class="modal" style="max-width:440px">
     <div class="modal-hdr"><div class="modal-title"><i class="fas fa-trash" style="color:var(--error)"></i> Excluir Associado</div><button class="modal-close" onclick="closeDelete()"><i class="fas fa-times"></i></button></div>
@@ -716,6 +755,7 @@ tr:hover td{background:var(--gray-50)}
   </div>
 </div>
 
+<!-- POPUP -->
 <div class="popup-overlay" id="popup-overlay" onclick="this.classList.remove('open')">
   <div class="popup-box">
     <div class="popup-icon-wrap" id="popup-icon"></div>
@@ -731,10 +771,10 @@ tr:hover td{background:var(--gray-50)}
 
 <script>
 // ═══════════════════════════════════════════
-//  SUPABASE
+//  SUPABASE — credenciais via config.js (não suba config.js ao GitHub!)
 // ═══════════════════════════════════════════
-const SUPA_URL = 'https://unidzfxifxjruonbjspe.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVuaWR6ZnhpZnhqcnVvbmJqc3BlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NTc0MTEsImV4cCI6MjA4ODQzMzQxMX0.0R_FvMXHDvt34bpa5Fi9pkJcu_zGy8Av86wVaXp2F3o';
+const SUPA_URL = window.__APP_CONFIG__?.SUPA_URL || '';
+const SUPA_KEY = window.__APP_CONFIG__?.SUPA_KEY || '';
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 const g = id => document.getElementById(id);
 
@@ -754,6 +794,22 @@ let currentPage = 1;
 // ── NAVIGATION ──
 function goPage(n){
   if(n > currentPage && !validatePage(currentPage)) return;
+
+  // ── BLOQUEIO: exige assinatura antes de ir para página 5 ──
+  if(n === 5 && !hasSigned){
+    const banner = g('sig-required-banner');
+    if(banner){ banner.classList.add('show'); }
+    // Pulsa borda do canvas para chamar atenção
+    const wrap = g('canvas-wrap');
+    if(wrap){
+      wrap.style.borderColor = 'var(--error)';
+      wrap.style.boxShadow = '0 0 0 4px rgba(220,38,38,.15)';
+      setTimeout(()=>{ wrap.style.borderColor=''; wrap.style.boxShadow=''; }, 2500);
+    }
+    toast('Assinatura obrigatória — assine o campo antes de prosseguir.', 'err');
+    return;
+  }
+
   g(`page${currentPage}`)?.classList.remove('active');
   g('suc-screen').classList.remove('active');
   currentPage = n;
@@ -801,77 +857,40 @@ mask('inp-nasc', v=>{ v=v.replace(/\D/g,'').slice(0,8); if(v.length>4) return v.
 mask('inp-tel', v=>{ v=v.replace(/\D/g,'').slice(0,11); if(v.length>10) return v.replace(/(\d{2})(\d{5})(\d{0,4})/,'($1) $2-$3'); if(v.length>6) return v.replace(/(\d{2})(\d{4})(\d{0,4})/,'($1) $2-$3'); if(v.length>2) return v.replace(/(\d{2})(\d{0,5})/,'($1) $2'); return v; });
 mask('inp-cep', v=>{ v=v.replace(/\D/g,'').slice(0,8); if(v.length>5) return v.replace(/(\d{5})(\d{0,3})/,'$1-$2'); return v; });
 
-// ── CEP ── (VERSÃO MELHORADA COM JSONP)
+// ── CEP ──
 g('btn-cep').addEventListener('click', async function(e) {
   e.preventDefault();
-  
   const cep = g('inp-cep').value.replace(/\D/g, '');
-  
-  if (cep.length !== 8) {
-    toast('CEP inválido (deve ter 8 dígitos)', 'err');
-    return;
-  }
-  
+  if (cep.length !== 8) { toast('CEP inválido (deve ter 8 dígitos)', 'err'); return; }
   this.classList.add('ld');
   const originalText = this.innerHTML;
   this.innerHTML = '<i class="fas fa-spinner"></i> Buscando...';
-  
-  // Tentativa 1: ViaCEP (API padrão)
   try {
     const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
-    
-    if (data.erro) {
-      toast('CEP não encontrado na base dos Correios', 'err');
-      return;
-    }
-    
-    // Preencher os campos
+    if (data.erro) { toast('CEP não encontrado na base dos Correios', 'err'); return; }
     g('inp-log').value = data.logradouro || '';
     g('inp-bairro').value = data.bairro || '';
     g('inp-cidade').value = `${data.localidade} / ${data.uf}`;
-    
     toast('Endereço preenchido com sucesso!');
-    
   } catch (error) {
-    console.error('Erro na busca de CEP:', error);
-    
-    // Tentativa 2: Fallback para API alternativa (BrasilAPI)
     try {
-      toast('Endereço preenchido com sucesso!', 'err');
-      
       const fallbackResponse = await fetch(`https://brasilapi.com.br/api/cep/v1/${cep}`);
-      
-      if (!fallbackResponse.ok) {
-        throw new Error(`Fallback HTTP error! status: ${fallbackResponse.status}`);
-      }
-      
+      if (!fallbackResponse.ok) throw new Error(`Fallback HTTP error!`);
       const fallbackData = await fallbackResponse.json();
-      
       g('inp-log').value = fallbackData.street || '';
       g('inp-bairro').value = fallbackData.neighborhood || '';
       g('inp-cidade').value = `${fallbackData.city} / ${fallbackData.state}`;
-      
       toast('Endereço preenchido com sucesso!');
-      
     } catch (fallbackError) {
-      console.error('Erro também na API fallback:', fallbackError);
-      
-      // Tentativa 3: JSONP como último recurso (ViaCEP com JSONP)
       try {
         await new Promise((resolve, reject) => {
           const script = document.createElement('script');
           const callbackName = `viacep_callback_${Date.now()}`;
-          
           window[callbackName] = function(data) {
-            if (data.erro) {
-              reject(new Error('CEP não encontrado'));
-            } else {
+            if (data.erro) { reject(new Error('CEP não encontrado')); }
+            else {
               g('inp-log').value = data.logradouro || '';
               g('inp-bairro').value = data.bairro || '';
               g('inp-cidade').value = `${data.localidade} / ${data.uf}`;
@@ -880,31 +899,14 @@ g('btn-cep').addEventListener('click', async function(e) {
             delete window[callbackName];
             document.body.removeChild(script);
           };
-          
           script.src = `https://viacep.com.br/ws/${cep}/json/?callback=${callbackName}`;
-          script.onerror = () => {
-            delete window[callbackName];
-            document.body.removeChild(script);
-            reject(new Error('Falha no carregamento do script JSONP'));
-          };
-          
+          script.onerror = () => { delete window[callbackName]; document.body.removeChild(script); reject(new Error('Falha JSONP')); };
           document.body.appendChild(script);
-          
-          // Timeout de 5 segundos
-          setTimeout(() => {
-            if (window[callbackName]) {
-              delete window[callbackName];
-              document.body.removeChild(script);
-              reject(new Error('Timeout na requisição JSONP'));
-            }
-          }, 5000);
+          setTimeout(() => { if (window[callbackName]) { delete window[callbackName]; document.body.removeChild(script); reject(new Error('Timeout')); } }, 5000);
         });
-        
-        toast('Endereço preenchido via JSONP!');
-        
+        toast('Endereço preenchido!');
       } catch (jsonpError) {
-        console.error('Todas as tentativas falharam:', jsonpError);
-        toast('Não foi possível buscar o CEP. Tente novamente ou preencha manualmente.', 'err');
+        toast('Não foi possível buscar o CEP. Preencha manualmente.', 'err');
       }
     }
   } finally {
@@ -912,6 +914,7 @@ g('btn-cep').addEventListener('click', async function(e) {
     this.innerHTML = originalText;
   }
 });
+
 // ── PIX TOGGLE ──
 document.querySelectorAll('input[name="pag"]').forEach(r=>{
   r.addEventListener('change',function(){ g('pix-info').style.display=this.value==='PIX'?'block':'none'; });
@@ -931,14 +934,12 @@ function initCanvas(){
   if(!sigCanvas) return;
   sigCtx = sigCanvas.getContext('2d');
   const wrap = g('canvas-wrap');
-  // Set actual pixel dimensions
   const rect = wrap.getBoundingClientRect();
   const w = rect.width || wrap.offsetWidth || 600;
   sigCanvas.width = w;
   sigCanvas.height = 200;
   sigCanvas.style.width = '100%';
   sigCanvas.style.height = '200px';
-  // Style the canvas context
   sigCtx.lineJoin = 'round';
   sigCtx.lineCap = 'round';
   sigCtx.lineWidth = 2.5;
@@ -949,7 +950,6 @@ function initCanvas(){
 function attachCanvasEvents(){
   if(!sigCanvas || sigCanvas._eventsAttached) return;
   sigCanvas._eventsAttached = true;
-
   const getPos = (e) => {
     const r = sigCanvas.getBoundingClientRect();
     const scaleX = sigCanvas.width / r.width;
@@ -957,43 +957,21 @@ function attachCanvasEvents(){
     const src = e.touches ? e.touches[0] : e;
     return { x: (src.clientX - r.left) * scaleX, y: (src.clientY - r.top) * scaleY };
   };
-
-  sigCanvas.addEventListener('mousedown', e => {
-    isDrawing = true;
-    const p = getPos(e);
-    lastX = p.x; lastY = p.y;
-    hidePlaceholder();
-  });
+  sigCanvas.addEventListener('mousedown', e => { isDrawing = true; const p = getPos(e); lastX = p.x; lastY = p.y; hidePlaceholder(); });
   sigCanvas.addEventListener('mousemove', e => {
     if(!isDrawing) return;
     const p = getPos(e);
-    sigCtx.beginPath();
-    sigCtx.moveTo(lastX, lastY);
-    sigCtx.lineTo(p.x, p.y);
-    sigCtx.stroke();
-    lastX = p.x; lastY = p.y;
-    markSigned();
+    sigCtx.beginPath(); sigCtx.moveTo(lastX, lastY); sigCtx.lineTo(p.x, p.y); sigCtx.stroke();
+    lastX = p.x; lastY = p.y; markSigned();
   });
   sigCanvas.addEventListener('mouseup', () => isDrawing = false);
   sigCanvas.addEventListener('mouseleave', () => isDrawing = false);
-
-  sigCanvas.addEventListener('touchstart', e => {
-    e.preventDefault();
-    isDrawing = true;
-    const p = getPos(e);
-    lastX = p.x; lastY = p.y;
-    hidePlaceholder();
-  }, {passive:false});
+  sigCanvas.addEventListener('touchstart', e => { e.preventDefault(); isDrawing = true; const p = getPos(e); lastX = p.x; lastY = p.y; hidePlaceholder(); }, {passive:false});
   sigCanvas.addEventListener('touchmove', e => {
-    e.preventDefault();
-    if(!isDrawing) return;
+    e.preventDefault(); if(!isDrawing) return;
     const p = getPos(e);
-    sigCtx.beginPath();
-    sigCtx.moveTo(lastX, lastY);
-    sigCtx.lineTo(p.x, p.y);
-    sigCtx.stroke();
-    lastX = p.x; lastY = p.y;
-    markSigned();
+    sigCtx.beginPath(); sigCtx.moveTo(lastX, lastY); sigCtx.lineTo(p.x, p.y); sigCtx.stroke();
+    lastX = p.x; lastY = p.y; markSigned();
   }, {passive:false});
   sigCanvas.addEventListener('touchend', () => isDrawing = false);
 }
@@ -1001,11 +979,17 @@ function attachCanvasEvents(){
 function hidePlaceholder(){
   const ph = g('sig-placeholder');
   if(ph) ph.style.display = 'none';
+  // Esconde o banner de obrigatório quando começa a assinar
+  const banner = g('sig-required-banner');
+  if(banner) banner.classList.remove('show');
 }
 function markSigned(){
   hasSigned = true;
   const st = g('sig-status');
   if(st) st.innerHTML = '<i class="fas fa-check-circle"></i> Assinatura registrada!';
+  // Restaura borda do canvas
+  const wrap = g('canvas-wrap');
+  if(wrap){ wrap.style.borderColor = 'rgba(5,150,105,.6)'; wrap.style.boxShadow = '0 0 0 4px rgba(5,150,105,.1)'; }
 }
 
 function clearCanvas(){
@@ -1016,9 +1000,10 @@ function clearCanvas(){
   if(ph) ph.style.display = 'flex';
   const st = g('sig-status');
   if(st) st.textContent = '';
+  const wrap = g('canvas-wrap');
+  if(wrap){ wrap.style.borderColor = ''; wrap.style.boxShadow = ''; }
 }
 
-// Init on load if page4 is somehow active
 window.addEventListener('load', ()=>{ if(g('page4')?.classList.contains('active')) initCanvas(); });
 window.addEventListener('resize', ()=>{ if(sigCanvas){ const w=g('canvas-wrap').offsetWidth; sigCanvas.width=w; } });
 
@@ -1040,8 +1025,6 @@ function buildSummary(){
   sv('sv-lgpd', yn(g('t-lgpd').checked));
   sv('sv-img', yn(g('t-img').checked));
   sv('sv-com', yn(g('t-com').checked));
-
-  // Auto-fill local e data
   const hoje = new Date();
   const dia2 = String(hoje.getDate()).padStart(2,'0');
   const mes2 = String(hoje.getMonth()+1).padStart(2,'0');
@@ -1050,8 +1033,6 @@ function buildSummary(){
   const localData = `${cidadeStr.split('/')[0].trim()}, ${dia2}/${mes2}/${ano2}`;
   const svld = g('sv-local-data');
   if(svld) svld.textContent = localData;
-
-  // Signature preview
   if(sigCanvas && hasSigned){
     const img = g('sv-sig-img');
     if(img){ img.src = sigCanvas.toDataURL(); img.style.display = 'block'; }
@@ -1067,12 +1048,9 @@ function buildSummary(){
 async function submitForm(){
   const cidadeUF = g('inp-cidade').value.split(' / ');
   const sigData = (sigCanvas && hasSigned) ? sigCanvas.toDataURL() : null;
-  
-  // Gerar número de associado sequencial
   const { data: existing } = await sb.from('associados').select('numero_associado').order('numero_associado', { ascending: false }).limit(1);
   const lastNum = existing && existing.length > 0 ? existing[0].numero_associado : 0;
   const numero_associado = lastNum + 1;
-  
   const payload = {
     numero_associado: numero_associado,
     nome: g('inp-nome').value.trim(),
@@ -1101,16 +1079,9 @@ async function submitForm(){
     status: 'ativo',
     created_at: new Date().toISOString()
   };
-  
   try{
     const {error} = await sb.from('associados').insert([payload]);
-    if(error) {
-      console.error('Erro ao inserir:', error);
-      toast('Erro ao enviar ficha: ' + error.message, 'err');
-      return;
-    }
-    
-    // Criar primeiro pagamento pendente
+    if(error) { toast('Erro ao enviar ficha: ' + error.message, 'err'); return; }
     const mesAtual = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
     const pagamentoPayload = {
       associado_id: (await sb.from('associados').select('id').eq('cpf', payload.cpf).single()).data.id,
@@ -1119,16 +1090,9 @@ async function submitForm(){
       status: 'pendente',
       data_vencimento: `${mesAtual}-${String(payload.dia_pagamento).padStart(2,'0')}`
     };
-    
     await sb.from('pagamentos').insert([pagamentoPayload]);
-    
     toast('Ficha enviada com sucesso! 🎉');
-  }catch(e){
-    console.error('Erro no submit:', e);
-    toast('Erro ao enviar ficha: ' + e.message, 'err');
-    return;
-  }
-  
+  }catch(e){ toast('Erro ao enviar ficha: ' + e.message, 'err'); return; }
   document.querySelectorAll('.form-page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.sn-item').forEach(el=>el.classList.add('done'));
   g('suc-screen').classList.add('active');
@@ -1143,22 +1107,26 @@ function resetForm(){
   g('inp-valor').value='30,00'; g('t-lgpd').checked=true; g('t-img').checked=false; g('t-com').checked=true;
   g('r-pix').checked=true; g('pix-info').style.display='block';
   clearCanvas(); hasSigned=false;
+  const banner = g('sig-required-banner');
+  if(banner) banner.classList.remove('show');
   goPage(1);
 }
 
 // ═══════════════════════════════════════════
-//  ADMIN AUTH
+//  ADMIN AUTH — credenciais via config.js (não suba config.js ao GitHub!)
 // ═══════════════════════════════════════════
-const ADMIN_CREDS = { login:'ongadmin', senha:'ongamor_2026!' };
+const ADMIN_CREDS = {
+  login: window.__APP_CONFIG__?.ADMIN_LOGIN || '',
+  senha: window.__APP_CONFIG__?.ADMIN_SENHA || ''
+};
 
 async function doLogin(){
   const l=g('adm-login').value.trim(), s=g('adm-senha').value;
   const err=g('login-err');
-  const ok = (l===ADMIN_CREDS.login && s===ADMIN_CREDS.senha);
+  const ok = (ADMIN_CREDS.login && l===ADMIN_CREDS.login && s===ADMIN_CREDS.senha);
   if(ok){
     err.classList.remove('show');
     showView('view-admin');
-    // ── LOGIN SUCCESS POPUP ──
     showPopup('Login realizado com sucesso! 🎉', 'Bem-vindo, Administrador ONG Por Amor.', 'success');
     await loadAssociados();
     renderCharts();
@@ -1199,10 +1167,7 @@ async function loadAssociados(){
     const {data, error} = await sb.from('associados').select('*').order('created_at',{ascending:false});
     if(error) throw error;
     associados = data || [];
-  }catch(e){
-    console.error('Erro ao carregar associados:', e.message);
-    associados = [];
-  }
+  }catch(e){ associados = []; }
   await loadPagamentos();
   renderTable();
   updateKPIs();
@@ -1216,27 +1181,12 @@ async function loadPagamentos(){
     const {data, error} = await sb.from('pagamentos').select('*').in('associado_id', ids).order('mes_referencia', {ascending: false});
     if(error) throw error;
     pagamentos = {};
-    (data||[]).forEach(p=>{ 
-      if(!pagamentos[p.associado_id]) pagamentos[p.associado_id]=[]; 
-      pagamentos[p.associado_id].push(p); 
-    });
-  }catch(e){
-    console.error('Erro ao carregar pagamentos:', e.message);
-    pagamentos = {};
-  }
+    (data||[]).forEach(p=>{ if(!pagamentos[p.associado_id]) pagamentos[p.associado_id]=[]; pagamentos[p.associado_id].push(p); });
+  }catch(e){ pagamentos = {}; }
 }
 
-// ── Current month helper ──
-function getMesAtual(){
-  const d=new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-}
-function getMesesDoAno(){
-  const anoAtual = new Date().getFullYear();
-  return Array.from({length:12}, (_, i) => {
-    return `${anoAtual}-${String(i+1).padStart(2,'0')}`;
-  });
-}
+function getMesAtual(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+function getMesesDoAno(){ const anoAtual = new Date().getFullYear(); return Array.from({length:12}, (_, i) => `${anoAtual}-${String(i+1).padStart(2,'0')}`); }
 
 // ═══════════════════════════════════════════
 //  TABLE RENDER
@@ -1247,7 +1197,6 @@ function renderTable(){
   const status = g('f-status').value;
   const pgstatus = g('f-pgstatus').value;
   const mesAtual = getMesAtual();
-
   let filtered = associados.filter(a=>{
     if(busca && !a.nome?.toLowerCase().includes(busca) && !a.cpf?.includes(busca) && !a.email?.toLowerCase().includes(busca)) return false;
     if(dia && String(a.dia_pagamento) !== dia) return false;
@@ -1256,16 +1205,11 @@ function renderTable(){
     if(pgstatus==='em_dia'){ const pags=pagamentos[a.id]||[]; if(pags.some(p=>p.status==='pendente'&&p.mes_referencia===mesAtual)) return false; }
     return true;
   });
-
   g('count-badge').textContent = filtered.length;
-
   const pendentes = filtered.filter(a=>(pagamentos[a.id]||[]).some(p=>p.status==='pendente'&&p.mes_referencia===mesAtual));
   const pAlert = g('pending-alert');
-  if(pendentes.length>0 && dia){
-    pAlert.style.display='flex';
-    g('pending-msg').textContent=`${pendentes.length} associado(s) com pagamento PENDENTE para o dia ${dia} no mês atual`;
-  } else { pAlert.style.display='none'; }
-
+  if(pendentes.length>0 && dia){ pAlert.style.display='flex'; g('pending-msg').textContent=`${pendentes.length} associado(s) com pagamento PENDENTE para o dia ${dia} no mês atual`; }
+  else { pAlert.style.display='none'; }
   const meses = getMesesDoAno();
   const tbody = g('table-body');
   tbody.innerHTML = filtered.map(a=>{
@@ -1302,37 +1246,18 @@ function renderTable(){
 
 function clearFilters(){ g('f-busca').value=''; g('f-dia').value=''; g('f-status').value=''; g('f-pgstatus').value=''; renderTable(); }
 
-// ── TOGGLE PAYMENT — mes atual only ──
 async function togglePay(aid, mes){
   const pags = pagamentos[aid]||[];
   const p = pags.find(x=>x.mes_referencia===mes);
   const newStatus = (!p || p.status==='pendente') ? 'pago' : 'pendente';
   if(p){
-    try{ 
-      await sb.from('pagamentos').update({
-        status:newStatus,
-        data_pagamento:newStatus==='pago'?new Date().toISOString().slice(0,10):null,
-        confirmado_por:'ongadmin'
-      }).eq('id',p.id);
-      p.status = newStatus;
-    } catch(e){ console.error('Erro ao atualizar pagamento:', e.message); }
+    try{ await sb.from('pagamentos').update({status:newStatus,data_pagamento:newStatus==='pago'?new Date().toISOString().slice(0,10):null,confirmado_por:'ongadmin'}).eq('id',p.id); p.status = newStatus; }
+    catch(e){ console.error(e.message); }
   } else {
     const a = associados.find(x=>x.id===aid);
-    const novoPag = {
-      associado_id: aid,
-      mes_referencia: mes,
-      valor: a?.valor_contribuicao||30,
-      status: newStatus,
-      data_vencimento: `${mes}-${String(a?.dia_pagamento||10).padStart(2,'0')}`,
-      confirmado_por: newStatus==='pago'?'ongadmin':null,
-      data_pagamento: newStatus==='pago'?new Date().toISOString().slice(0,10):null
-    };
-    try{ 
-      const {data, error} = await sb.from('pagamentos').insert([novoPag]).select();
-      if(error) throw error;
-      if(!pagamentos[aid]) pagamentos[aid]=[];
-      pagamentos[aid].push(data[0]);
-    } catch(e){ console.error('Erro ao criar pagamento:', e.message); }
+    const novoPag = { associado_id: aid, mes_referencia: mes, valor: a?.valor_contribuicao||30, status: newStatus, data_vencimento: `${mes}-${String(a?.dia_pagamento||10).padStart(2,'0')}`, confirmado_por: newStatus==='pago'?'ongadmin':null, data_pagamento: newStatus==='pago'?new Date().toISOString().slice(0,10):null };
+    try{ const {data, error} = await sb.from('pagamentos').insert([novoPag]).select(); if(error) throw error; if(!pagamentos[aid]) pagamentos[aid]=[]; pagamentos[aid].push(data[0]); }
+    catch(e){ console.error(e.message); }
   }
   toast(newStatus==='pago'?'✓ Pagamento confirmado!':'Pagamento marcado como pendente');
   renderTable(); updateKPIs(); renderPendencias();
@@ -1346,67 +1271,34 @@ function openEdit(aid){
   const a = associados.find(x=>x.id===aid);
   if(!a) return;
   editingId = aid;
-  // Fill edit form
-  g('edit-nome').value = a.nome||'';
-  g('edit-cpf').value = a.cpf||'';
-  g('edit-tel').value = a.telefone||'';
-  g('edit-email').value = a.email||'';
-  g('edit-prof').value = a.profissao||'';
+  g('edit-nome').value = a.nome||''; g('edit-cpf').value = a.cpf||''; g('edit-tel').value = a.telefone||'';
+  g('edit-email').value = a.email||''; g('edit-prof').value = a.profissao||'';
   g('edit-valor').value = (a.valor_contribuicao||30).toFixed(2).replace('.',',');
-  g('edit-dia').value = a.dia_pagamento||10;
-  g('edit-pgto').value = a.forma_pagamento||'PIX';
-  g('edit-status').value = a.status||'ativo';
+  g('edit-dia').value = a.dia_pagamento||10; g('edit-pgto').value = a.forma_pagamento||'PIX'; g('edit-status').value = a.status||'ativo';
   g('modal-edit').classList.add('open');
 }
 function closeEdit(){ g('modal-edit').classList.remove('open'); editingId=null; }
 
 async function saveEdit(){
   if(!editingId) return;
-  const updates = {
-    nome: g('edit-nome').value.trim(),
-    cpf: g('edit-cpf').value,
-    telefone: g('edit-tel').value,
-    email: g('edit-email').value,
-    profissao: g('edit-prof').value,
-    valor_contribuicao: parseFloat(g('edit-valor').value.replace(',','.'))||30,
-    dia_pagamento: parseInt(g('edit-dia').value)||10,
-    forma_pagamento: g('edit-pgto').value,
-    status: g('edit-status').value
-  };
-  try{
-    const {error} = await sb.from('associados').update(updates).eq('id',editingId);
-    if(error) throw error;
-  }catch(e){ console.error('Erro ao atualizar:', e.message); }
-  // Update local
+  const updates = { nome: g('edit-nome').value.trim(), cpf: g('edit-cpf').value, telefone: g('edit-tel').value, email: g('edit-email').value, profissao: g('edit-prof').value, valor_contribuicao: parseFloat(g('edit-valor').value.replace(',','.'))||30, dia_pagamento: parseInt(g('edit-dia').value)||10, forma_pagamento: g('edit-pgto').value, status: g('edit-status').value };
+  try{ const {error} = await sb.from('associados').update(updates).eq('id',editingId); if(error) throw error; }
+  catch(e){ console.error(e.message); }
   const idx = associados.findIndex(x=>x.id===editingId);
   if(idx>-1) associados[idx] = {...associados[idx], ...updates};
-  closeEdit();
-  toast('Associado atualizado com sucesso!');
-  renderTable(); updateKPIs();
+  closeEdit(); toast('Associado atualizado com sucesso!'); renderTable(); updateKPIs();
 }
 
-// ── DELETE ──
 let deleteId = null;
-function confirmDelete(aid){
-  deleteId = aid;
-  const a = associados.find(x=>x.id===aid);
-  g('delete-name').textContent = a?.nome||'este associado';
-  g('modal-delete').classList.add('open');
-}
+function confirmDelete(aid){ deleteId = aid; const a = associados.find(x=>x.id===aid); g('delete-name').textContent = a?.nome||'este associado'; g('modal-delete').classList.add('open'); }
 function closeDelete(){ g('modal-delete').classList.remove('open'); deleteId=null; }
 
 async function doDelete(){
   if(!deleteId) return;
-  try{
-    await sb.from('pagamentos').delete().eq('associado_id',deleteId);
-    const {error} = await sb.from('associados').delete().eq('id',deleteId);
-    if(error) throw error;
-  }catch(e){ console.error('Erro ao excluir:', e.message); }
-  associados = associados.filter(x=>x.id!==deleteId);
-  delete pagamentos[deleteId];
-  closeDelete();
-  toast('Associado removido.');
-  renderTable(); updateKPIs();
+  try{ await sb.from('pagamentos').delete().eq('associado_id',deleteId); const {error} = await sb.from('associados').delete().eq('id',deleteId); if(error) throw error; }
+  catch(e){ console.error(e.message); }
+  associados = associados.filter(x=>x.id!==deleteId); delete pagamentos[deleteId];
+  closeDelete(); toast('Associado removido.'); renderTable(); updateKPIs();
 }
 
 // ═══════════════════════════════════════════
@@ -1417,25 +1309,12 @@ function openCobranca(aid){
   const a = associados.find(x=>x.id===aid);
   if(!a) return;
   cobrancaAssociadoId = aid;
-  const mesAtual = getMesAtual();
   const pend = (pagamentos[aid]||[]).filter(p=>p.status==='pendente');
   const totalPend = pend.reduce((s,p)=>s+p.valor,0);
   const hoje = new Date();
-  const vencimento = `${String(a.dia_pagamento||10).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
-  const msg = `Olá, ${a.nome.split(' ')[0]}! 😊
+  const msg = `Olá, ${a.nome.split(' ')[0]}! 😊\n\nGostaríamos de lembrar que há uma contribuição em aberto com a *ONG Por Amor*.\n\n📋 *Associado:* ${a.nome}\n💰 *Valor mensal:* R$ ${(a.valor_contribuicao||30).toFixed(2).replace('.',',')}\n📅 *Vencimento:* Todo dia ${a.dia_pagamento||10}${totalPend>0?`\n⚠️ *Total pendente:* R$ ${totalPend.toFixed(2).replace('.',',')}`:''}
 
-Gostaríamos de lembrar que há uma contribuição em aberto com a *ONG Por Amor*.
-
-📋 *Associado:* ${a.nome}
-💰 *Valor mensal:* R$ ${(a.valor_contribuicao||30).toFixed(2).replace('.',',')}
-📅 *Vencimento:* Todo dia ${a.dia_pagamento||10}${totalPend>0?`\n⚠️ *Total pendente:* R$ ${totalPend.toFixed(2).replace('.',',')}`:''}
-
-🔑 *Chave PIX:* (83) 98231-5427
-🏷️ *Tipo:* Celular — ONG Por Amor
-
-Após o pagamento, envie o comprovante para confirmar. Qualquer dúvida, estamos à disposição! ❤️
-— Equipe ONG Por Amor | (83) 98231-5427`;
-
+🔑 *Chave PIX:* (83) 98231-5427\n🏷️ *Tipo:* Celular — ONG Por Amor\n\nApós o pagamento, envie o comprovante para confirmar. Qualquer dúvida, estamos à disposição! ❤️\n— Equipe ONG Por Amor | (83) 98231-5427`;
   g('msg-template').textContent = msg;
   const waNum = (a.telefone||'').replace(/\D/g,'');
   g('btn-wa-send').onclick = () => window.open(`https://wa.me/55${waNum}?text=${encodeURIComponent(msg)}`,'_blank');
@@ -1446,7 +1325,7 @@ function closeModal(){ g('modal-cobranca').classList.remove('open'); }
 function copyMsg(){ navigator.clipboard.writeText(g('msg-template').textContent).then(()=>toast('Mensagem copiada!')); }
 
 // ═══════════════════════════════════════════
-//  PRINT — FULL DATA + SIGNATURE
+//  PRINT
 // ═══════════════════════════════════════════
 function printTable(){ window.print(); }
 
@@ -1459,31 +1338,9 @@ function printAssociado(aid){
   const statusColor = {ativo:'#059669',inativo:'#94a3b8',suspenso:'#dc2626'}[a.status]||'#94a3b8';
   const pagRows = pags.map(p=>`<tr><td>${p.mes_referencia}</td><td>R$ ${(p.valor||0).toFixed(2)}</td><td>${p.data_vencimento||'—'}</td><td style="color:${p.status==='pago'?'#059669':'#d97706'};font-weight:700">${p.status==='pago'?'✓ Pago':'○ Pendente'}</td></tr>`).join('');
   const sigSrc = a.assinatura_data||'';
-
   const w = window.open('','_blank');
   w.document.write(`<!DOCTYPE html><html><head><title>Ficha — ${a.nome}</title>
-<style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Segoe UI',sans-serif;padding:2.5rem;color:#0f172a;max-width:800px;margin:0 auto;font-size:13px}
-  .logo{display:flex;align-items:center;gap:.8rem;margin-bottom:.3rem}
-  .logo-heart{font-size:2rem}
-  .logo-title{font-size:1.6rem;font-weight:800;color:#0b1f31}
-  .logo-title em{font-style:italic;color:#0d8f8f}
-  .sub{font-size:.75rem;color:#64748b;margin-bottom:.2rem}
-  .hr{border:none;border-top:3px solid #0b1f31;margin:1rem 0 1.5rem}
-  h2{font-size:1rem;font-weight:700;color:#fff;background:#0b1f31;padding:.5rem 1rem;border-radius:6px;margin:1.2rem 0 .6rem}
-  table{width:100%;border-collapse:collapse;margin-bottom:.5rem}
-  td,th{border:1px solid #e2e8f0;padding:.45rem .7rem;font-size:.8rem}
-  th{background:#f1f5f9;font-weight:700;color:#475569}
-  .key{background:#f8fafc;font-weight:600;color:#334155;width:35%}
-  .status-badge{display:inline-block;padding:.15rem .6rem;border-radius:100px;font-size:.72rem;font-weight:700;background:${statusColor}20;color:${statusColor}}
-  .sig-area{display:flex;gap:2rem;margin-top:2.5rem}
-  .sig-box{flex:1;text-align:center}
-  .sig-box .label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:.4rem}
-  .sig-box .line{border-bottom:2px solid #0b1f31;min-height:60px;display:flex;align-items:center;justify-content:center}
-  .footer{margin-top:2rem;padding-top:1rem;border-top:1px solid #e2e8f0;text-align:center;font-size:.72rem;color:#94a3b8}
-  @media print{body{padding:1.5rem}}
-</style></head><body>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;padding:2.5rem;color:#0f172a;max-width:800px;margin:0 auto;font-size:13px}.logo{display:flex;align-items:center;gap:.8rem;margin-bottom:.3rem}.logo-heart{font-size:2rem}.logo-title{font-size:1.6rem;font-weight:800;color:#0b1f31}.logo-title em{font-style:italic;color:#0d8f8f}.sub{font-size:.75rem;color:#64748b;margin-bottom:.2rem}.hr{border:none;border-top:3px solid #0b1f31;margin:1rem 0 1.5rem}h2{font-size:1rem;font-weight:700;color:#fff;background:#0b1f31;padding:.5rem 1rem;border-radius:6px;margin:1.2rem 0 .6rem}table{width:100%;border-collapse:collapse;margin-bottom:.5rem}td,th{border:1px solid #e2e8f0;padding:.45rem .7rem;font-size:.8rem}th{background:#f1f5f9;font-weight:700;color:#475569}.key{background:#f8fafc;font-weight:600;color:#334155;width:35%}.status-badge{display:inline-block;padding:.15rem .6rem;border-radius:100px;font-size:.72rem;font-weight:700;background:${statusColor}20;color:${statusColor}}.sig-area{display:flex;gap:2rem;margin-top:2.5rem}.sig-box{flex:1;text-align:center}.sig-box .label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:.4rem}.sig-box .line{border-bottom:2px solid #0b1f31;min-height:60px;display:flex;align-items:center;justify-content:center}.footer{margin-top:2rem;padding-top:1rem;border-top:1px solid #e2e8f0;text-align:center;font-size:.72rem;color:#94a3b8}@media print{body{padding:1.5rem}}</style></head><body>
 <div class="logo"><span class="logo-heart">❤️</span><div><div class="logo-title">ONG <em>Por Amor</em></div><div class="sub">CNPJ: 54.286.499/0001-74 &nbsp;|&nbsp; Rua Fernandes Vieira 1148, José Pinheiro, Campina Grande - PB &nbsp;|&nbsp; (83) 98231-5427</div></div></div>
 <hr class="hr">
 <div style="text-align:right;font-size:.75rem;color:#64748b">Impresso em: ${dataImpressao} &nbsp;|&nbsp; Nº Associado: #${String(a.numero_associado||'--').padStart(3,'0')}</div>
@@ -1535,13 +1392,9 @@ function updateKPIs(){
 function renderPendencias(){
   const tbody = g('pend-body');
   const mesAtual = getMesAtual();
-  const list = associados
-    .filter(a=>a.status==='ativo')
-    .map(a=>({a, p:(pagamentos[a.id]||[]).find(x=>x.mes_referencia===mesAtual)}))
-    .filter(({p})=>!p||p.status==='pendente');
-
+  const list = associados.filter(a=>a.status==='ativo').map(a=>({a, p:(pagamentos[a.id]||[]).find(x=>x.mes_referencia===mesAtual)})).filter(({p})=>!p||p.status==='pendente');
+  const hoje = new Date();
   tbody.innerHTML = list.slice(0,15).map(({a})=>{
-    const hoje = new Date();
     const venc = `${String(a.dia_pagamento||10).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
     const isOverdue = hoje.getDate() > (a.dia_pagamento||10);
     return `<tr><td class="td-name">${a.nome}</td><td>${a.telefone||'—'}</td><td style="font-weight:700">R$ ${(a.valor_contribuicao||30).toFixed(2)}</td><td><span style="color:${isOverdue?'var(--error)':'var(--warn)'}">⏰ ${venc}</span></td><td><button class="btn-sm btn-sm-warn" onclick="openCobranca('${a.id}')"><i class="fas fa-paper-plane"></i> Enviar cobrança</button></td></tr>`;
@@ -1556,34 +1409,18 @@ function renderCharts(){
   const ativos = associados.filter(a=>a.status==='ativo');
   const receitaMensal = ativos.reduce((s,a)=>s+(a.valor_contribuicao||30),0);
   const hoje = new Date();
-  const mesesLabels = Array.from({length:6},(_,i)=>{
-    const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
-    return d.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'});
-  });
+  const mesesLabels = Array.from({length:6},(_,i)=>{ const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1); return d.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}); });
   const proj = mesesLabels.map((_,i)=> receitaMensal * (1 + i*0.025));
-
   if(charts.projecao) charts.projecao.destroy();
-  charts.projecao = new Chart(g('chart-projecao').getContext('2d'),{
-    type:'bar',
-    data:{labels:mesesLabels,datasets:[{label:'Receita Projetada (R$)',data:proj,backgroundColor:'rgba(13,143,143,.15)',borderColor:'rgba(13,143,143,.9)',borderWidth:2,borderRadius:6},{type:'line',label:'Tendência',data:proj,borderColor:'#e8c96a',borderWidth:2,pointBackgroundColor:'#e8c96a',tension:.4,fill:false}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:11},boxWidth:12}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>'R$'+v.toFixed(0),font:{family:'DM Sans',size:10}},grid:{color:'rgba(0,0,0,.05)'}},x:{ticks:{font:{family:'DM Sans',size:11}},grid:{display:false}}}}
-  });
+  charts.projecao = new Chart(g('chart-projecao').getContext('2d'),{ type:'bar', data:{labels:mesesLabels,datasets:[{label:'Receita Projetada (R$)',data:proj,backgroundColor:'rgba(13,143,143,.15)',borderColor:'rgba(13,143,143,.9)',borderWidth:2,borderRadius:6},{type:'line',label:'Tendência',data:proj,borderColor:'#e8c96a',borderWidth:2,pointBackgroundColor:'#e8c96a',tension:.4,fill:false}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:11},boxWidth:12}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>'R$'+v.toFixed(0),font:{family:'DM Sans',size:10}},grid:{color:'rgba(0,0,0,.05)'}},x:{ticks:{font:{family:'DM Sans',size:11}},grid:{display:false}}}} });
   const diasCount = {};
   associados.forEach(a=>{ const d=`Dia ${a.dia_pagamento||10}`; diasCount[d]=(diasCount[d]||0)+1; });
   if(charts.dias) charts.dias.destroy();
-  charts.dias = new Chart(g('chart-dias').getContext('2d'),{
-    type:'doughnut',
-    data:{labels:Object.keys(diasCount),datasets:[{data:Object.values(diasCount),backgroundColor:['rgba(13,143,143,.8)','rgba(11,31,49,.8)','rgba(232,201,106,.8)','rgba(30,74,107,.8)','rgba(94,163,163,.8)'],borderWidth:2,borderColor:'#fff'}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:10},boxWidth:10}}}}
-  });
+  charts.dias = new Chart(g('chart-dias').getContext('2d'),{ type:'doughnut', data:{labels:Object.keys(diasCount),datasets:[{data:Object.values(diasCount),backgroundColor:['rgba(13,143,143,.8)','rgba(11,31,49,.8)','rgba(232,201,106,.8)','rgba(30,74,107,.8)','rgba(94,163,163,.8)'],borderWidth:2,borderColor:'#fff'}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:10},boxWidth:10}}}} });
   const sc = {ativo:0,inativo:0,suspenso:0};
   associados.forEach(a=>{ sc[a.status||'ativo']++; });
   if(charts.status) charts.status.destroy();
-  charts.status = new Chart(g('chart-status').getContext('2d'),{
-    type:'pie',
-    data:{labels:['Ativos','Inativos','Suspensos'],datasets:[{data:[sc.ativo,sc.inativo,sc.suspenso],backgroundColor:['rgba(5,150,105,.8)','rgba(148,163,184,.8)','rgba(220,38,38,.8)'],borderWidth:2,borderColor:'#fff'}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:10},boxWidth:10}}}}
-  });
+  charts.status = new Chart(g('chart-status').getContext('2d'),{ type:'pie', data:{labels:['Ativos','Inativos','Suspensos'],datasets:[{data:[sc.ativo,sc.inativo,sc.suspenso],backgroundColor:['rgba(5,150,105,.8)','rgba(148,163,184,.8)','rgba(220,38,38,.8)'],borderWidth:2,borderColor:'#fff'}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:10},boxWidth:10}}}} });
 }
 
 function showAdminTab(id){
