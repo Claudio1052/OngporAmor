@@ -1,0 +1,21 @@
+# ══════════════════════════════════════════
+#  .gitignore — ONG Por Amor
+#  IMPORTANTE: config.js contém credenciais
+#  sensíveis e NUNCA deve ser commitado!
+# ══════════════════════════════════════════
+
+# Credenciais e dados sensíveis
+config.js
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Node (se usar)
+node_modules/
+npm-debug.log*
+
+# Variáveis de ambiente
+.env
+.env.*
+*.env
