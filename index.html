@@ -1054,6 +1054,17 @@ const MP_ACCESS_TOKEN = window.__APP_CONFIG__?.MP_ACCESS_TOKEN || 'APP_USR-60074
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 const g = id => document.getElementById(id);
 
+// Inicializa o SDK do Mercado Pago
+let mp;
+try {
+  mp = new MercadoPago(MP_PUBLIC_KEY, {
+    locale: 'pt-BR'
+  });
+  console.log('Mercado Pago SDK inicializado com sucesso');
+} catch(e) {
+  console.warn('Erro ao inicializar Mercado Pago SDK:', e);
+}
+
 // ── VIEW MANAGER ──
 function showView(id){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
@@ -1094,12 +1105,10 @@ async function doRegister(){
   err.classList.remove('show');
 
   try {
-    // Tenta criar conta no Supabase Auth
     const { data, error } = await sb.auth.signUp({ email, password: senha, options:{ data:{ nome, cpf } } });
     if(error) throw error;
 
     toast('Conta criada! Verifique seu e-mail ou faça login.');
-    // Redireciona para login
     setTimeout(()=>showView('view-login'), 1500);
   } catch(e) {
     g('reg-err-msg').textContent = e.message || 'Erro ao criar conta.';
@@ -1145,7 +1154,6 @@ g('assoc-senha')?.addEventListener('keydown', e=>{ if(e.key==='Enter') doAssocLo
 
 async function loadMemberPortal(){
   showView('view-portal');
-  // Busca dados do associado pelo email
   const { data } = await sb.from('associados').select('*').eq('email', currentUser.email).single();
   memberData = data || null;
 
@@ -1157,13 +1165,11 @@ async function loadMemberPortal(){
     g('portal-status-badge').style.color = memberData.status==='ativo'?'var(--success)':'var(--error)';
     g('portal-status-badge').style.borderColor = memberData.status==='ativo'?'rgba(5,150,105,.4)':'rgba(220,38,38,.4)';
 
-    // Ficha done
     g('ficha-pending').style.display = 'none';
     g('inline-form-wrap').style.display = 'none';
     g('ficha-done').style.display = 'block';
     renderMemberSummary();
 
-    // Carregar pagamentos
     await loadMemberPagamentos();
     renderPaymentCalendar();
     checkCurrentPaymentStatus();
@@ -1196,14 +1202,12 @@ async function loadMemberPagamentos(){
   const { data } = await sb.from('pagamentos').select('*').eq('associado_id', memberData.id).order('mes_referencia', {ascending:true});
   memberPagamentos = data || [];
 
-  // Update payment hero
   const val = memberData.valor_contribuicao || 30;
   const dia = memberData.dia_pagamento || 10;
   g('ph-valor').textContent = `R$ ${val.toFixed(0)}`;
   g('ph-dia').textContent = dia;
   g('mp-pay-amount').textContent = `R$ ${val.toFixed(2)}`;
 
-  // Select the current day
   document.querySelectorAll('.day-btn').forEach(b=>{
     b.classList.toggle('selected', parseInt(b.textContent.replace('Dia ',''))===dia);
   });
@@ -1253,102 +1257,156 @@ async function checkCurrentPaymentStatus(){
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-check-circle"></i> Mensalidade já paga';
     btn.style.background = 'var(--success)';
-  } else if(pagMes?.status==='pendente' && pagMes?.mp_payment_id) {
-    // Há um pagamento MP pendente — verificar
-    statusBox.innerHTML = '<i class="fas fa-clock" style="color:var(--warn)"></i> <span style="color:var(--warn)">Pagamento em processamento... verificando status.</span>';
-    btn.disabled = false;
-    checkMPPaymentStatus(pagMes.mp_payment_id, mesAtual);
+    // Limpa status box
+    g('mp-pay-status-box').style.display = 'none';
   } else {
     statusBox.innerHTML = '<i class="fas fa-exclamation-circle" style="color:var(--warn)"></i> <span style="color:var(--warn)">Mensalidade pendente — realize o pagamento abaixo.</span>';
     btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-credit-card"></i> Pagar via Mercado Pago';
+    btn.style.background = 'linear-gradient(135deg,#009ee3,#007bc4)';
+    g('mp-pay-status-box').style.display = 'none';
+    
+    // Se tem um pagamento pendente com MP pending, verifica
+    if(pagMes?.mp_preference_id) {
+      checkMPPaymentStatus(pagMes.mp_preference_id, mesAtual, pagMes.id);
+    }
   }
 }
 
 // ═══════════════════════════════════════════
-//  MERCADO PAGO - PAGAMENTO ASSOCIADO
+//  MERCADO PAGO - ABORDAGEM REVISADA
 // ═══════════════════════════════════════════
-async function initiateMP(){
-  if(!memberData) return;
-  const btn = g('btn-pay-now');
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iniciando pagamento...';
+// Em vez de chamar a API REST do MP (que bloqueia CORS),
+// usamos o SDK do Mercado Pago no frontend para criar
+// um Checkout Pro (redirect) ou usar o Wallet Brick.
 
-  const hoje = new Date();
-  const mesAtual = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
-  const valor = memberData.valor_contribuicao || 30;
+const MP_API_BASE = 'https://api.mercadopago.com';
 
+// Função para criar preferência via proxy (recomendado usar backend)
+async function createPreferenceViaProxy(preferenceData) {
+  // Tenta criar diretamente (pode falhar por CORS)
   try {
-    // Cria preferência de pagamento via MP API (precisa de backend para funcionar em produção)
-    // Em modo demo/teste, abre checkout do MP diretamente
-    const payload = {
-      items: [{
-        title: `ONG Por Amor - Mensalidade ${mesAtual}`,
-        unit_price: valor,
-        quantity: 1,
-        currency_id: 'BRL',
-        description: `Contribuição mensal associado: ${memberData.nome}`
-      }],
-      payer: {
-        name: memberData.nome,
-        email: memberData.email || currentUser.email
-      },
-      back_urls: {
-        success: window.location.href,
-        failure: window.location.href,
-        pending: window.location.href
-      },
-      auto_return: 'approved',
-      external_reference: `assoc_${memberData.id}_${mesAtual}`,
-      statement_descriptor: 'ONG POR AMOR'
-    };
-
-    // Nota: Em produção, isso deve ser feito via backend seguro
-    const resp = await fetch('https://api.mercadopago.com/checkout/preferences', {
+    const resp = await fetch(`${MP_API_BASE}/checkout/preferences`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${MP_ACCESS_TOKEN}`
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(preferenceData)
     });
-
-    if(!resp.ok) {
-      // Fallback: redireciona para checkout MP manual com PIX
-      showMPFallback(valor, mesAtual);
-      return;
+    
+    if (resp.ok) {
+      const data = await resp.json();
+      return { success: true, data };
     }
-
-    const prefData = await resp.json();
-
-    if(prefData.init_point) {
-      // Salva ID da preferência e redireciona
-      await ensurePagamento(mesAtual, valor, prefData.id);
-      window.open(prefData.init_point, '_blank');
-      showMPPayStatus('pending-mp', '<i class="fas fa-clock"></i> Pagamento iniciado no Mercado Pago. Confirme o pagamento na nova aba e retorne aqui.');
-    } else {
-      showMPFallback(valor, mesAtual);
-    }
-
+    
+    // Se falhar (CORS), retorna erro
+    console.warn('Erro na API MP:', resp.status);
+    return { success: false, error: 'CORS ou erro de API' };
   } catch(e) {
-    // CORS ou outro erro — mostra instruções alternativas
-    showMPFallback(valor, mesAtual);
+    console.warn('CORS bloqueou chamada direta ao MP:', e.message);
+    return { success: false, error: e.message };
   }
-
-  btn.disabled = false;
-  btn.innerHTML = '<i class="fas fa-credit-card"></i> Pagar via Mercado Pago';
 }
 
-function showMPFallback(valor, mes){
+// Nova função initiateMP usando SDK
+async function initiateMP(){
+  if(!memberData || !currentUser) return;
+  
+  const btn = g('btn-pay-now');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparando pagamento...';
+  
+  const hoje = new Date();
+  const mesAtual = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
+  const mesesNomes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const mesNome = mesesNomes[hoje.getMonth()];
+  const valor = memberData.valor_contribuicao || 30;
+  
+  try {
+    // Preparar dados da preferência
+    const prefData = {
+      items: [{
+        id: `ong-${memberData.id}-${mesAtual}`,
+        title: `ONG Por Amor - Mensalidade ${mesNome}`,
+        description: `Contribuição mensal - ${memberData.nome}`,
+        quantity: 1,
+        currency_id: 'BRL',
+        unit_price: parseFloat(valor)
+      }],
+      payer: {
+        name: memberData.nome,
+        email: memberData.email || currentUser.email,
+        identification: {
+          type: memberData.cpf ? 'CPF' : 'EMAIL',
+          number: memberData.cpf || memberData.email || currentUser.email
+        }
+      },
+      payment_methods: {
+        excluded_payment_methods: [],
+        excluded_payment_types: [],
+        installments: 1
+      },
+      back_urls: {
+        success: window.location.href + '?status=approved',
+        failure: window.location.href + '?status=failure',
+        pending: window.location.href + '?status=pending'
+      },
+      auto_return: 'approved',
+      external_reference: `assoc_${memberData.id}_${mesAtual}`,
+      notification_url: `${SUPA_URL}/functions/v1/mp-webhook`, // opcional
+      statement_descriptor: 'ONG POR AMOR'
+    };
+    
+    // Tentar criar preferência via API
+    const result = await createPreferenceViaProxy(prefData);
+    
+    if (result.success && result.data.init_point) {
+      // Salva a referência no banco
+      await ensurePagamento(mesAtual, valor, result.data.id);
+      
+      // Redireciona para o checkout do MP
+      window.location.href = result.data.init_point;
+      return;
+    }
+    
+    // Fallback: mostra instruções manuais de pagamento
+    showManualPaymentInstructions(valor, mesAtual, mesNome);
+    
+  } catch(e) {
+    console.error('Erro no pagamento:', e);
+    showManualPaymentInstructions(valor, mesAtual, mesNome);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-credit-card"></i> Pagar via Mercado Pago';
+  }
+}
+
+function showManualPaymentInstructions(valor, mesAtual, mesNome){
   const box = g('mp-pay-status-box');
   box.className = 'mp-pay-status pending-mp';
   box.innerHTML = `
-    <div>
-      <div style="font-weight:700;margin-bottom:.5rem"><i class="fas fa-info-circle"></i> Pagamento via Mercado Pago</div>
-      <div style="font-size:.82rem;line-height:1.6">
-        Use o link abaixo para pagar:<br>
-        <a href="https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=check_direct" target="_blank" style="color:var(--mp-blue);font-weight:700">Abrir Mercado Pago</a>
-        <br>Ou envie R$ ${valor.toFixed(2)} via PIX para <strong>(83) 98231-5427</strong><br>
-        Referência: <strong>ONG Por Amor - ${mes} - ${memberData?.nome}</strong>
+    <div style="width:100%">
+      <div style="font-weight:700;margin-bottom:.8rem;font-size:.9rem">
+        <i class="fas fa-info-circle"></i> Como pagar via Mercado Pago
+      </div>
+      <div style="font-size:.82rem;line-height:1.7;color:var(--gray-700)">
+        <p style="margin-bottom:.8rem">Devido a restrições técnicas do navegador, o pagamento automático não pode ser iniciado. Siga as instruções abaixo:</p>
+        <ol style="margin-left:1.2rem;margin-bottom:.8rem">
+          <li style="margin-bottom:.4rem">Acesse: <a href="https://www.mercadopago.com.br" target="_blank" style="color:var(--mp-blue);font-weight:700">mercadopago.com.br</a></li>
+          <li style="margin-bottom:.4rem">Faça login na sua conta Mercado Pago</li>
+          <li style="margin-bottom:.4rem">Envie um PIX de <strong>R$ ${parseFloat(valor).toFixed(2)}</strong> para:</li>
+        </ol>
+        <div style="background:#f8fafc;border:1.5px solid var(--gray-200);border-radius:8px;padding:.8rem 1rem;margin-bottom:.8rem;text-align:center">
+          <div style="font-size:.7rem;font-weight:700;color:var(--gray-400);text-transform:uppercase;margin-bottom:.3rem">Chave PIX da ONG</div>
+          <div style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--navy)">(83) 98231-5427</div>
+          <div style="font-size:.72rem;color:var(--gray-400);margin-top:.2rem">ONG Por Amor</div>
+        </div>
+        <p style="font-size:.75rem;color:var(--gray-500)">Na descrição, coloque: <strong>ONG Por Amor - ${mesNome} - ${memberData.nome}</strong></p>
+        <p style="font-size:.75rem;color:var(--gray-500);margin-top:.5rem">Após o pagamento, envie o comprovante para o WhatsApp: (83) 98231-5427</p>
+        <p style="font-size:.75rem;color:var(--gray-500);margin-top:.5rem">Ou pague diretamente pelo site do Mercado Pago: 
+          <a href="https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=check_direct" target="_blank" style="color:var(--mp-blue);font-weight:700">Pagar online</a>
+        </p>
       </div>
     </div>`;
   box.style.display = 'flex';
@@ -1376,24 +1434,84 @@ async function ensurePagamento(mes, valor, mpPrefId){
     if(data) memberPagamentos.push(data[0]);
   } else {
     await sb.from('pagamentos').update({ mp_preference_id: mpPrefId }).eq('id', existing.id);
+    existing.mp_preference_id = mpPrefId;
   }
 }
 
-async function checkMPPaymentStatus(mpPaymentId, mes){
+async function checkMPPaymentStatus(mpPaymentId, mes, pagamentoId){
   try {
-    const resp = await fetch(`https://api.mercadopago.com/v1/payments/${mpPaymentId}`, {
+    const resp = await fetch(`${MP_API_BASE}/v1/payments/search?external_reference=assoc_${memberData.id}_${mes}`, {
       headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN}` }
     });
-    const data = await resp.json();
-    if(data.status === 'approved'){
-      // Marca como pago no banco
-      await sb.from('pagamentos').update({ status:'pago', data_pagamento: new Date().toISOString().slice(0,10), mp_payment_id: mpPaymentId }).eq('associado_id', memberData.id).eq('mes_referencia', mes);
-      showMPPayStatus('success', '<i class="fas fa-check-circle"></i> Pagamento confirmado! Obrigado pela sua contribuição.');
-      await loadMemberPagamentos();
-      renderPaymentCalendar();
-      checkCurrentPaymentStatus();
+    
+    if (resp.ok) {
+      const data = await resp.json();
+      const approved = data.results?.find(p => p.status === 'approved');
+      
+      if (approved) {
+        // Marca como pago
+        const updateId = pagamentoId || memberPagamentos.find(p=>p.mes_referencia===mes)?.id;
+        if (updateId) {
+          await sb.from('pagamentos').update({
+            status: 'pago',
+            data_pagamento: new Date().toISOString().slice(0,10),
+            mp_payment_id: approved.id
+          }).eq('id', updateId);
+          
+          // Atualiza local
+          const pag = memberPagamentos.find(p=>p.id===updateId);
+          if(pag) {
+            pag.status = 'pago';
+            pag.data_pagamento = new Date().toISOString().slice(0,10);
+            pag.mp_payment_id = approved.id;
+          }
+          
+          showMPPayStatus('success', '<i class="fas fa-check-circle"></i> Pagamento confirmado! Obrigado pela sua contribuição.');
+          await loadMemberPagamentos();
+          renderPaymentCalendar();
+          checkCurrentPaymentStatus();
+        }
+      }
     }
-  } catch(e) { /* silencioso */ }
+  } catch(e) {
+    console.warn('Erro ao verificar pagamento MP:', e);
+  }
+}
+
+// Verifica retorno do MP na URL
+function checkMPReturn(){
+  const urlParams = new URLSearchParams(window.location.search);
+  const status = urlParams.get('status');
+  const collectionStatus = urlParams.get('collection_status');
+  const paymentId = urlParams.get('payment_id');
+  
+  if(status === 'approved' || collectionStatus === 'approved') {
+    // Pagamento aprovado - processar
+    if(paymentId && memberData) {
+      const hoje = new Date();
+      const mesAtual = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
+      const pag = memberPagamentos.find(p=>p.mes_referencia===mesAtual && p.status==='pendente');
+      if(pag) {
+        sb.from('pagamentos').update({
+          status: 'pago',
+          data_pagamento: new Date().toISOString().slice(0,10),
+          mp_payment_id: paymentId
+        }).eq('id', pag.id).then(async () => {
+          await loadMemberPagamentos();
+          renderPaymentCalendar();
+          checkCurrentPaymentStatus();
+          showMPPayStatus('success', '<i class="fas fa-check-circle"></i> Pagamento aprovado! Obrigado pela sua contribuição.');
+          toast('Pagamento confirmado com sucesso! ✅');
+        });
+      }
+    }
+    
+    // Limpa parâmetros da URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+  } else if(status === 'pending' || collectionStatus === 'pending') {
+    showMPPayStatus('pending-mp', '<i class="fas fa-clock"></i> Pagamento em processamento. Aguarde a confirmação.');
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
 }
 
 async function selectDay(dia){
@@ -1413,15 +1531,17 @@ function showPortalTab(tabId){
   });
   g('tab-ficha').style.display = tabId==='tab-ficha' ? 'block' : 'none';
   g('tab-pagamentos').style.display = tabId==='tab-pagamentos' ? 'block' : 'none';
-  if(tabId==='tab-pagamentos' && memberData) { renderPaymentCalendar(); checkCurrentPaymentStatus(); }
+  if(tabId==='tab-pagamentos' && memberData) { 
+    renderPaymentCalendar(); 
+    checkCurrentPaymentStatus();
+    checkMPReturn(); // Verifica retorno do MP
+  }
 }
 
 function showInlineForm(){
   g('ficha-pending').style.display = 'none';
   g('inline-form-wrap').style.display = 'block';
-  // Pre-fill email
   if(currentUser?.email) g('inp-email').value = currentUser.email;
-  // Pre-fill nome from metadata
   if(currentUser?.user_metadata?.nome) g('inp-nome').value = currentUser.user_metadata.nome;
   if(currentUser?.user_metadata?.cpf) {
     let v = currentUser.user_metadata.cpf.replace(/\D/g,'').slice(0,11);
@@ -1619,8 +1739,6 @@ async function submitForm(){
 
 function parseDate(s){ if(!s) return null; const [d,m,y]=s.split('/'); return y&&m&&d?`${y}-${m}-${d}`:null; }
 
-function copyPix(){ navigator.clipboard.writeText('83982315427').then(()=>toast('Chave PIX copiada!')); }
-
 // ═══════════════════════════════════════════
 //  ADMIN LOGIN
 // ═══════════════════════════════════════════
@@ -1769,57 +1887,45 @@ async function togglePay(aid,mes){
 //  MERCADO PAGO — ADMIN
 // ═══════════════════════════════════════════
 async function loadMPInfo(){
+  // Mostra informações baseadas nos dados locais + nota sobre integração
+  const mpInfoGrid = g('mp-info-grid');
+  
+  // Calcula totais dos pagamentos registrados
+  const todosPagamentos = Object.values(pagamentos).flat();
+  const pagosMesAtual = todosPagamentos.filter(p => {
+    const mesAtual = getMesAtual();
+    return p.mes_referencia === mesAtual && p.status === 'pago';
+  });
+  const totalMes = pagosMesAtual.reduce((s, p) => s + parseFloat(p.valor || 0), 0);
+  const totalPagamentos = todosPagamentos.filter(p => p.status === 'pago').length;
+  
+  g('mp-saldo').textContent = `ONG Por Amor`;
+  g('mp-pendente').textContent = 'Via sistema';
+  g('mp-mes').textContent = `R$ ${totalMes.toFixed(2)}`;
+  g('mp-total-pagamentos').textContent = `${totalPagamentos} pagamentos`;
+  
+  // Atualiza KPI
+  g('kpi-mp-saldo').textContent = `R$ ${totalMes.toFixed(0)}`;
+  
+  // Carrega lista de pagamentos do Supabase
+  loadMPPaymentsFromSupabase();
+  
+  // Tenta buscar da API do MP (pode falhar por CORS)
   try {
-    // Buscar saldo da conta MP
-    const resp = await fetch('https://api.mercadopago.com/users/me', {
+    const resp = await fetch(`${MP_API_BASE}/users/me`, {
       headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN}` }
     });
-    const userData = await resp.json();
-
-    // Buscar pagamentos recentes
-    const hoje = new Date();
-    const mesAtual = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
-    const dataInicio = `${mesAtual}-01T00:00:00.000-03:00`;
-
-    const respPag = await fetch(`https://api.mercadopago.com/v1/payments/search?begin_date=${dataInicio}&status=approved&limit=50`, {
-      headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN}` }
-    });
-    const pagData = await respPag.json();
-
-    const totalMes = (pagData.results||[]).reduce((s,p)=>s+(p.transaction_amount||0), 0);
-    const totalPag = pagData.paging?.total || 0;
-
-    g('mp-saldo').textContent = userData.id ? `Conta: ${userData.email||'—'}` : 'Verificando...';
-    g('mp-mes').textContent = `R$ ${totalMes.toFixed(2)}`;
-    g('mp-total-pagamentos').textContent = `${totalPag} aprovados`;
-    g('mp-pendente').textContent = 'Via sistema';
-
-    // Atualiza KPI
-    g('kpi-mp-saldo').textContent = `${totalPag} pag.`;
-
-    loadMPPayments(pagData.results||[]);
-
+    
+    if (resp.ok) {
+      const userData = await resp.json();
+      g('mp-saldo').textContent = `Conta: ${userData.email || userData.nickname || 'ONG Por Amor'}`;
+    }
   } catch(e) {
-    // CORS normalmente bloqueia chamadas diretas ao MP em browser
-    g('mp-saldo').textContent = 'API via backend';
-    g('mp-mes').textContent = 'Use backend';
-    g('mp-pendente').textContent = '—';
-    g('mp-total-pagamentos').textContent = '—';
-    loadMPPayments([]);
-    showMPCorsNote();
+    console.log('API MP indisponível no browser - usando dados locais');
   }
 }
 
-function showMPCorsNote(){
-  const tbody = g('mp-payments-body');
-  tbody.innerHTML = `<tr><td colspan="6" style="padding:1.5rem">
-    <div style="background:#e0f3ff;border:1px solid #bde0f5;border-radius:10px;padding:1rem 1.2rem;font-size:.85rem;color:#0b3d5e">
-      <strong><i class="fas fa-info-circle"></i> Nota sobre integração MP:</strong><br>
-      A API do Mercado Pago bloqueia chamadas diretas do browser por segurança (CORS). 
-      Para consultas em tempo real, <strong>recomendamos um backend/serverless</strong> (ex: Supabase Edge Functions ou Vercel Functions).<br><br>
-      Os pagamentos realizados pelos associados pelo portal são registrados no Supabase e aparecem no controle abaixo.
-    </div>
-  </td></tr>`;
+function loadMPPayments(){
   loadMPPaymentsFromSupabase();
 }
 
@@ -1855,27 +1961,6 @@ async function loadMPPaymentsFromSupabase(){
   } catch(e) {
     tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:1rem;color:var(--error)">Erro ao carregar dados.</td></tr>';
   }
-}
-
-function loadMPPayments(results){
-  if(!results || results.length === 0){
-    loadMPPaymentsFromSupabase();
-    return;
-  }
-  const tbody = g('mp-payments-body');
-  g('mp-count-badge').textContent = results.length;
-  tbody.innerHTML = results.map(p=>{
-    const statusColor = p.status==='approved'?'var(--success)':p.status==='pending'?'var(--warn)':'var(--error)';
-    const data = new Date(p.date_approved||p.date_created).toLocaleDateString('pt-BR');
-    return `<tr>
-      <td>${data}</td>
-      <td>${p.payer?.email||'—'}</td>
-      <td style="font-weight:700">R$ ${(p.transaction_amount||0).toFixed(2)}</td>
-      <td>${p.external_reference||'—'}</td>
-      <td><span style="color:${statusColor};font-weight:700">${p.status}</span></td>
-      <td>${p.id}</td>
-    </tr>`;
-  }).join('');
 }
 
 async function marcarPagoAdmin(pagId){
@@ -2030,15 +2115,24 @@ function printAssociado(aid){
 }
 
 // ─── MODALS CLOSE ON BACKDROP ───
-g('modal-cobranca').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
-g('modal-edit').addEventListener('click',function(e){ if(e.target===this) closeEdit(); });
-g('modal-delete').addEventListener('click',function(e){ if(e.target===this) closeDelete(); });
+g('modal-cobranca')?.addEventListener('click',function(e){ if(e.target===this) closeModal(); });
+g('modal-edit')?.addEventListener('click',function(e){ if(e.target===this) closeEdit(); });
+g('modal-delete')?.addEventListener('click',function(e){ if(e.target===this) closeDelete(); });
 
 // ─── AUTO CHECK LOGGED IN ───
 sb.auth.getSession().then(({data:{session}})=>{
   if(session?.user){
     currentUser=session.user;
     loadMemberPortal();
+  }
+});
+
+// Verifica retorno do MP ao carregar
+window.addEventListener('load', () => {
+  if(window.location.search.includes('status=') || window.location.search.includes('collection_status=')) {
+    if(currentUser && memberData) {
+      checkMPReturn();
+    }
   }
 });
 </script>
