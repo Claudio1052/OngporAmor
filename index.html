@@ -53,7 +53,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);min-height:100vh;co
 
 /* ── APP SHELL ── */
 #app{display:flex;flex-direction:column;min-height:100vh}
-.view{display:none}
+.view{display:none;min-height:100vh}
 .view.active{display:block}
 
 /* ── NAVIGATION BAR ── */
@@ -286,9 +286,17 @@ canvas#sig-canvas{display:block;touch-action:none;width:100%;height:180px}
 /* ═══════════════════════════════════════
    LOGIN UNIFICADO (Abas: Entrar / Cadastrar / Admin)
 ═══════════════════════════════════════ */
-#view-admin-login{background:var(--navy);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;position:relative;overflow:hidden}
-#view-admin-login::before{content:'';position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(13,143,143,.12),transparent 70%);top:-200px;right:-150px;pointer-events:none}
-#view-admin-login::after{content:'';position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(232,201,106,.07),transparent 70%);bottom:-100px;left:-100px;pointer-events:none}
+#view-admin-login{
+  background:var(--navy);
+  min-height:100vh;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:2rem;
+  position:relative;
+  overflow:hidden;
+}
+#view-admin-login.active{display:flex;}
 .login-card{background:var(--white);border-radius:var(--R);padding:0;width:100%;max-width:440px;box-shadow:var(--shadow);text-align:center;overflow:hidden;position:relative;z-index:1}
 .login-card-top{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,var(--navy-light) 100%);padding:2rem 2.5rem 0;text-align:center}
 .login-logo-img{height:72px;width:auto;border-radius:10px;margin-bottom:.8rem}
@@ -1139,7 +1147,9 @@ const g = id => document.getElementById(id);
 // ═══════════════════════════════════════════
 function showView(id){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  g(id).classList.add('active');
+  const el = g(id);
+  if(el){ el.classList.add('active'); }
+  window.scrollTo({top:0,behavior:'instant'});
 }
 
 // ═══════════════════════════════════════════
@@ -1544,10 +1554,10 @@ async function doAssocLogin(){
     const senhaHash = btoa(unescape(encodeURIComponent(senha)));
     const {data, error} = await sb.from('usuarios_associados').select('*').eq('email', email).eq('senha_hash', senhaHash).single();
     if(error || !data){ msgEl.textContent='E-mail ou senha incorretos.'; errEl.classList.add('show'); return; }
-    // Salva sessão e abre nova aba limpa
-    sessionStorage.setItem('assoc_sessao', JSON.stringify(data));
-    const url = window.location.href.split('?')[0] + '?modo=associado&t=' + Date.now();
-    window.open(url, '_blank');
+    associadoLogado = data;
+    await carregarDadosAssociado();
+    showView('view-associado');
+    toast('Bem-vindo(a), ' + data.nome.split(' ')[0] + '! ❤️');
   } catch(e) {
     msgEl.textContent = 'Erro ao fazer login: ' + (e.message||'tente novamente.');
     errEl.classList.add('show');
@@ -1557,8 +1567,13 @@ async function doAssocLogin(){
 }
 
 function doAssocLogout(){
-  sessionStorage.removeItem('assoc_sessao');
-  window.close();
+  associadoLogado = null;
+  fichaAssociado = null;
+  pagamentosAssociado = [];
+  showView('view-admin-login');
+  switchLoginTab('tab-login');
+  const el = g('assoc-email-login'); if(el) el.value='';
+  const el2 = g('assoc-senha-login'); if(el2) el2.value='';
 }
 
 // ═══════════════════════════════════════════
