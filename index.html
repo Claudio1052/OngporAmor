@@ -1544,11 +1544,10 @@ async function doAssocLogin(){
     const senhaHash = btoa(unescape(encodeURIComponent(senha)));
     const {data, error} = await sb.from('usuarios_associados').select('*').eq('email', email).eq('senha_hash', senhaHash).single();
     if(error || !data){ msgEl.textContent='E-mail ou senha incorretos.'; errEl.classList.add('show'); return; }
-    associadoLogado = data;
-    // Busca ficha de associado pelo CPF ou e-mail
-    await carregarDadosAssociado();
-    showView('view-associado');
-    toast('Bem-vindo(a), ' + data.nome.split(' ')[0] + '! ❤️');
+    // Salva sessão e abre nova aba limpa
+    sessionStorage.setItem('assoc_sessao', JSON.stringify(data));
+    const url = window.location.href.split('?')[0] + '?modo=associado&t=' + Date.now();
+    window.open(url, '_blank');
   } catch(e) {
     msgEl.textContent = 'Erro ao fazer login: ' + (e.message||'tente novamente.');
     errEl.classList.add('show');
@@ -1558,13 +1557,8 @@ async function doAssocLogin(){
 }
 
 function doAssocLogout(){
-  associadoLogado = null;
-  fichaAssociado = null;
-  pagamentosAssociado = [];
-  showView('view-admin-login');
-  switchLoginTab('tab-login');
-  g('assoc-email-login').value='';
-  g('assoc-senha-login').value='';
+  sessionStorage.removeItem('assoc_sessao');
+  window.close();
 }
 
 // ═══════════════════════════════════════════
@@ -1602,10 +1596,8 @@ function abrirFormularioAssociado(){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-// Após enviar o formulário, volta para área do associado e recarrega dados
 async function submitFormAndReturn(){
   await submitForm();
-  // Recarrega dados do associado e volta para a área dele
   await carregarDadosAssociado();
   showView('view-associado');
   showAssocTab('tab-assoc-cadastro');
@@ -1835,11 +1827,28 @@ function doLogout(){ window.close(); }
 // Verifica se deve abrir diretamente em modo admin (nova aba)
 async function checkAdminMode(){
   const params = new URLSearchParams(window.location.search);
-  if(params.get('modo') === 'admin'){
+  const modo = params.get('modo');
+
+  if(modo === 'admin'){
     showView('view-admin');
     showPopup('Login realizado com sucesso! 🎉', 'Bem-vindo, Administrador ONG Por Amor.', 'success');
     await loadAssociados();
     renderCharts();
+    return;
+  }
+
+  if(modo === 'associado'){
+    const sessaoRaw = sessionStorage.getItem('assoc_sessao');
+    if(!sessaoRaw){ showView('view-admin-login'); return; }
+    try {
+      associadoLogado = JSON.parse(sessaoRaw);
+      await carregarDadosAssociado();
+      showView('view-associado');
+    } catch(e){
+      sessionStorage.removeItem('assoc_sessao');
+      showView('view-admin-login');
+    }
+    return;
   }
 }
 
