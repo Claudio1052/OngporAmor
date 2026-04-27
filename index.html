@@ -666,6 +666,106 @@ tr:hover td{background:var(--gray-50)}
   .table-scroll{overflow:visible!important}
 }
 
+
+/* ═══════════════════════════════════════════════════════
+   BOTTOM NAV — barra inferior estilo app (só mobile)
+═══════════════════════════════════════════════════════ */
+.bottom-nav{
+  display:none; /* oculta no desktop */
+}
+
+@media (max-width:768px){
+  /* Mostra a bottom nav */
+  .bottom-nav{
+    display:flex;
+    position:fixed;
+    bottom:0; left:0; right:0;
+    height:64px;
+    background:var(--navy);
+    border-top:1px solid rgba(255,255,255,.1);
+    z-index:200;
+    box-shadow:0 -4px 20px rgba(0,0,0,.25);
+    padding-bottom:env(safe-area-inset-bottom, 0px); /* iPhone X+ */
+  }
+
+  /* Esconde abas do topo no mobile */
+  .assoc-tabs{display:none!important}
+  .assoc-spacer{display:none!important}
+  .btn-logout{ display:none!important } /* agora está na bottom nav */
+
+  /* Topbar mobile: só logo + badge + sync dot */
+  .assoc-topbar{
+    height:52px;
+    padding:0 1rem;
+    justify-content:space-between;
+  }
+
+  /* Conteúdo: margem inferior para não ficar atrás da bottom nav */
+  .assoc-content{
+    padding-bottom:80px!important;
+  }
+
+  /* Cada item da bottom nav */
+  .bnav-item{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:4px;
+    background:transparent;
+    border:none;
+    color:rgba(255,255,255,.4);
+    font-family:'DM Sans',sans-serif;
+    font-size:.62rem;
+    font-weight:600;
+    cursor:pointer;
+    transition:all .18s ease;
+    padding:.4rem .2rem;
+    position:relative;
+    letter-spacing:.02em;
+    text-transform:uppercase;
+  }
+
+  .bnav-item i{
+    font-size:1.2rem;
+    transition:all .18s ease;
+  }
+
+  .bnav-item:hover{
+    color:rgba(255,255,255,.7);
+    background:rgba(255,255,255,.04);
+  }
+
+  /* Estado ativo */
+  .bnav-item.active{
+    color:var(--gold);
+  }
+
+  .bnav-item.active i{
+    transform:translateY(-2px);
+    filter:drop-shadow(0 0 6px rgba(232,201,106,.5));
+  }
+
+  /* Linha indicadora no topo do item ativo */
+  .bnav-item.active::before{
+    content:'';
+    position:absolute;
+    top:0; left:20%; right:20%;
+    height:2px;
+    background:var(--gold);
+    border-radius:0 0 4px 4px;
+  }
+
+  /* Botão Sair: cor diferente */
+  .bnav-item:last-child{
+    color:rgba(255,255,255,.25);
+  }
+  .bnav-item:last-child:hover{
+    color:rgba(220,38,38,.7);
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1060,6 +1160,27 @@ tr:hover td{background:var(--gray-50)}
     </div>
 
   </div><!-- /assoc-content -->
+
+  <!-- BOTTOM NAV (só aparece em mobile) -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="bnav-item active" id="bnav-inicio" onclick="showAssocTab('tab-assoc-inicio')">
+      <i class="fas fa-home"></i>
+      <span>Início</span>
+    </button>
+    <button class="bnav-item" id="bnav-cadastro" onclick="showAssocTab('tab-assoc-cadastro')">
+      <i class="fas fa-id-card"></i>
+      <span>Cadastro</span>
+    </button>
+    <button class="bnav-item" id="bnav-pagamentos" onclick="showAssocTab('tab-assoc-pagamentos')">
+      <i class="fas fa-wallet"></i>
+      <span>Pagamentos</span>
+    </button>
+    <button class="bnav-item" onclick="doAssocLogout()">
+      <i class="fas fa-sign-out-alt"></i>
+      <span>Sair</span>
+    </button>
+  </nav>
+
 </div>
 
 <div id="view-admin" class="view">
@@ -2151,11 +2272,19 @@ async function pagarViaMPAssociado(mesRef, valor){
 function showAssocTab(id){
   document.querySelectorAll('.assoc-panel').forEach(p=>p.classList.remove('active'));
   g(id)?.classList.add('active');
+
+  // Abas topo (desktop)
   const tabMap = {'tab-assoc-inicio':'atab-inicio','tab-assoc-cadastro':'atab-cadastro','tab-assoc-pagamentos':'atab-pagamentos'};
   document.querySelectorAll('.assoc-tab').forEach(t=>t.classList.remove('active'));
   const activeTab = tabMap[id];
   if(activeTab) g(activeTab)?.classList.add('active');
-  // Persiste a aba atual
+
+  // Bottom nav (mobile) — sincroniza estado ativo
+  const bnavMap = {'tab-assoc-inicio':'bnav-inicio','tab-assoc-cadastro':'bnav-cadastro','tab-assoc-pagamentos':'bnav-pagamentos'};
+  document.querySelectorAll('.bnav-item').forEach(b=>b.classList.remove('active'));
+  const activeBnav = bnavMap[id];
+  if(activeBnav) g(activeBnav)?.classList.add('active');
+
   localStorage.setItem('assoc_ultima_aba', id);
   window.scrollTo({top:0,behavior:'smooth'});
 }
