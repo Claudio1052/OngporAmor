@@ -1603,92 +1603,120 @@ let pagamentosAssociado = [];
 async function carregarDadosAssociado(){
   if(!associadoLogado) return;
 
-  // Busca a ficha do associado pelo e-mail do usuário logado
+  // Busca a ficha principal pelo e-mail do login
   try {
     const {data: ficha} = await sb.from('associados').select('*').eq('email', associadoLogado.email).single();
     fichaAssociado = ficha || null;
   } catch(e){ fichaAssociado = null; }
 
-  if(fichaAssociado){
+  // Se não achou pelo e-mail exato, tenta pelo nome (casos de e-mail diferente entre login e ficha)
+  if(!fichaAssociado && associadoLogado.nome){
     try {
-      // Busca pagamentos por associado_id E também busca todos os associados
-      // com o mesmo e-mail (caso existam duplicatas de cadastro) para pegar
-      // pagamentos que foram vinculados a outro ID do mesmo associado
-      const {data: todosAssocComEmail} = await sb.from('associados')
-        .select('id')
-        .eq('email', associadoLogado.email);
+      const {data: fichas} = await sb.from('associados').select('*').ilike('nome', associadoLogado.nome.trim());
+      if(fichas && fichas.length > 0) fichaAssociado = fichas[0];
+    } catch(e){}
+  }
 
-      const idsParaBuscar = todosAssocComEmail
-        ? [...new Set(todosAssocComEmail.map(a => a.id))]
-        : [fichaAssociado.id];
-
-      const {data: pags} = await sb.from('pagamentos')
-        .select('*')
-        .in('associado_id', idsParaBuscar)
-        .order('mes_referencia', {ascending: false});
-
-      // Agrupa por mês: se houver duplicatas, mantém o mais recente / pago
-      const porMes = {};
-      for(const p of (pags||[])){
-        const m = p.mes_referencia;
-        if(!porMes[m] || p.status === 'pago' || new Date(p.created_at) > new Date(porMes[m].created_at)){
-          porMes[m] = p;
-        }
-      }
-      pagamentosAssociado = Object.values(porMes).sort((a,b) => b.mes_referencia.localeCompare(a.mes_referencia));
-    } catch(e){ pagamentosAssociado = []; }
+  if(fichaAssociado){
+    pagamentosAssociado = await _buscarTodosPagamentosAssociado();
   }
   renderAreaAssociado();
 }
 
+// Busca pagamentos considerando todos os cadastros possíveis do associado
+// (resolve o problema de duplicatas de e-mail/cadastro)
+async function _buscarTodosPagamentosAssociado(){
+  if(!fichaAssociado) return [];
+  try {
+    // Coleta todos os IDs possíveis: por e-mail do login, por e-mail da ficha, por nome
+    const queries = [];
+    if(associadoLogado.email){
+      const {data: r1} = await sb.from('associados').select('id').eq('email', associadoLogado.email);
+      if(r1) queries.push(...r1.map(a=>a.id));
+    }
+    if(fichaAssociado.email && fichaAssociado.email !== associadoLogado.email){
+      const {data: r2} = await sb.from('associados').select('id').eq('email', fichaAssociado.email);
+      if(r2) queries.push(...r2.map(a=>a.id));
+    }
+    queries.push(fichaAssociado.id);
+    const ids = [...new Set(queries)];
+
+    const {data: pags} = await sb.from('pagamentos')
+      .select('*')
+      .in('associado_id', ids)
+      .order('mes_referencia', {ascending: false});
+
+    // Agrupa por mês: se houver duplicatas mantém o PAGO (ou o mais recente)
+    const porMes = {};
+    for(const p of (pags||[])){
+      const m = p.mes_referencia;
+      if(!porMes[m] || p.status==='pago' || new Date(p.created_at||0) > new Date(porMes[m].created_at||0)){
+        porMes[m] = p;
+      }
+    }
+    return Object.values(porMes).sort((a,b)=>b.mes_referencia.localeCompare(a.mes_referencia));
+  } catch(e){ return []; }
+}
+
 // ─── SINCRONIZAÇÃO MANUAL DO ASSOCIADO ───────────────────────────────────────
-// Consulta MP, atualiza Supabase e recarrega a tela. Chamada pelo botão "Atualizar"
-// e também automaticamente ao abrir a aba de pagamentos via pagarViaMPAssociado.
 async function sincronizarPagamentosAssociado(){
   if(!fichaAssociado || !associadoLogado) return;
   const btn = g('btn-sync-pags');
   if(btn){ btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Sincronizando...'; }
 
   try{
-    // 1) Busca pagamentos aprovados no MP
+    // Coleta todos os e-mails e IDs possíveis deste associado
+    const emails = [...new Set([
+      associadoLogado.email,
+      fichaAssociado.email
+    ].filter(Boolean).map(e=>e.toLowerCase()))];
+
+    const {data: todosAssoc} = await sb.from('associados').select('id,email').ilike('nome', fichaAssociado.nome.trim());
+    const idsAssoc = [...new Set([
+      fichaAssociado.id,
+      ...(todosAssoc||[]).map(a=>a.id)
+    ])];
+    const emailsAssoc = [...new Set([
+      ...emails,
+      ...(todosAssoc||[]).map(a=>a.email).filter(Boolean).map(e=>e.toLowerCase())
+    ])];
+
+    // Busca pagamentos aprovados no MP
     const mpResp = await fetch(
       'https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=50&status=approved',
       { headers:{ 'Authorization':'Bearer '+MP_ACCESS_TOKEN } }
     );
     const mpData = await mpResp.json();
 
-    // 2) Filtra apenas os deste associado (por ID na external_reference OU por e-mail)
+    // Filtra pagamentos deste associado: por ID, email OU nome
     const aprovados = (mpData.results||[]).filter(mp => {
-      const ext = mp.external_reference||'';
-      if(ext.startsWith(fichaAssociado.id+'-')) return true;
-      return mp.payer?.email && fichaAssociado.email &&
-             mp.payer.email.toLowerCase() === fichaAssociado.email.toLowerCase();
+      const { assoc } = identificarAssociadoMP(mp, todosAssoc||[fichaAssociado]);
+      return !!assoc;
     });
 
-    // 3) Para cada pagamento aprovado, garante que está gravado no Supabase como 'pago'
+    // Para cada aprovado: garante registro pago no Supabase
     for(const mp of aprovados){
-      const ext = mp.external_reference||'';
-      const extMatch = ext.match(/^(.+)-(\d{4}-\d{2})$/);
-      const mesRef = extMatch ? extMatch[2] : new Date(mp.date_created).toISOString().slice(0,7);
+      const { mesRef } = identificarAssociadoMP(mp, todosAssoc||[fichaAssociado]);
+      if(!mesRef) continue;
       const dataPag = new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10);
+      const mpId = String(mp.id);
 
-      // Busca diretamente no Supabase (evita depender do array local desatualizado)
-      const {data: pagSupa} = await sb.from('pagamentos')
-        .select('id,status,mp_payment_id')
-        .eq('associado_id', fichaAssociado.id)
-        .eq('mes_referencia', mesRef)
-        .maybeSingle();
+      // Busca em TODOS os IDs do associado
+      const {data: pagsSupa} = await sb.from('pagamentos')
+        .select('id,status,mp_payment_id,associado_id')
+        .in('associado_id', idsAssoc)
+        .eq('mes_referencia', mesRef);
 
-      if(pagSupa){
-        // Existe: atualiza se não está pago ou sem mp_payment_id
-        if(pagSupa.status !== 'pago' || !pagSupa.mp_payment_id){
-          await sb.from('pagamentos').update({
-            status:'pago', data_pagamento:dataPag,
-            confirmado_por:'mercadopago', mp_payment_id:String(mp.id)
-          }).eq('id', pagSupa.id);
-        }
+      const pagPago   = (pagsSupa||[]).find(p=>p.status==='pago');
+      const pagExist  = (pagsSupa||[]).find(p=>p.associado_id===fichaAssociado.id) || pagsSupa?.[0];
+
+      if(pagPago){ continue; } // já está pago, não faz nada
+      if(pagExist){
+        await sb.from('pagamentos').update({
+          status:'pago', data_pagamento:dataPag,
+          confirmado_por:'mercadopago', mp_payment_id:mpId
+        }).eq('id', pagExist.id);
       } else {
-        // Não existe: cria novo registro como pago
         await sb.from('pagamentos').insert([{
           associado_id: fichaAssociado.id,
           mes_referencia: mesRef,
@@ -1697,25 +1725,19 @@ async function sincronizarPagamentosAssociado(){
           data_vencimento: `${mesRef}-${String(fichaAssociado.dia_pagamento||10).padStart(2,'0')}`,
           data_pagamento: dataPag,
           confirmado_por: 'mercadopago',
-          mp_payment_id: String(mp.id)
+          mp_payment_id: mpId
         }]);
       }
     }
   }catch(eMp){
-    console.warn('MP indisponível, apenas recarregando do Supabase:', eMp.message);
+    console.warn('MP sync:', eMp.message);
   }
 
-  // 4) Sempre recarrega do Supabase e atualiza a UI (independente do MP)
-  try{
-    const {data: pags} = await sb.from('pagamentos')
-      .select('*')
-      .eq('associado_id', fichaAssociado.id)
-      .order('mes_referencia',{ascending:false});
-    pagamentosAssociado = pags || [];
-    renderPagamentosAssociado();
-    renderAreaAssociado();
-    toast('✅ Extrato atualizado!');
-  }catch(e){ toast('Erro ao carregar pagamentos: '+e.message,'err'); }
+  // Sempre recarrega do Supabase usando todos os IDs
+  pagamentosAssociado = await _buscarTodosPagamentosAssociado();
+  renderPagamentosAssociado();
+  renderAreaAssociado();
+  toast('✅ Extrato atualizado!');
 
   if(btn){ btn.disabled=false; btn.innerHTML='<i class="fas fa-rotate-right"></i> Atualizar'; }
 }
@@ -2552,15 +2574,9 @@ function renderMPPayments(){
     const val = (p.transaction_amount||0).toFixed(2).replace('.',',');
     const statusColor = {approved:'var(--success)',pending:'var(--warn)',rejected:'var(--error)',cancelled:'var(--gray-400)'}[p.status]||'var(--gray-400)';
     const statusLabel = {approved:'✓ Aprovado',pending:'⏳ Pendente',rejected:'✗ Recusado',cancelled:'Cancelado'}[p.status]||p.status;
-    // Tenta identificar o associado pelo external_reference ou email
-    let assocNome = '—';
-    const extRef = p.external_reference || '';
-    const extMatch = extRef.match(/^(.+)-(\d{4}-\d{2})$/);
-    if(extMatch){ const a = associados.find(x=>x.id===extMatch[1]); if(a) assocNome = a.nome; }
-    if(assocNome==='—'){
-      const email = p.payer?.email;
-      if(email){ const a = associados.find(x=>x.email && x.email.toLowerCase()===email.toLowerCase()); if(a) assocNome=a.nome; }
-    }
+    // Identifica associado via helper (ext_ref → email → nome)
+    const { assoc: assocMP } = identificarAssociadoMP(p, associados);
+    let assocNome = assocMP ? assocMP.nome : '—';
     const payerDisplay = assocNome !== '—'
       ? `<strong style="color:var(--teal)">${assocNome}</strong><br><span style="font-size:.72rem;color:var(--gray-400)">${p.payer?.email||''}</span>`
       : `<span style="color:var(--gray-600)">${p.payer?.first_name||''} ${p.payer?.last_name||''}</span><br><span style="font-size:.72rem;color:var(--gray-400)">${p.payer?.email||''}</span>`;
@@ -2575,36 +2591,70 @@ function renderMPPayments(){
   }).join('');
 }
 
+
+// ═══════════════════════════════════════════════════════════════
+//  HELPER: identifica associado e mês de referência a partir
+//  de um pagamento do Mercado Pago.
+//  Ordem de prioridade:
+//  1) external_reference  (formato assocId-YYYY-MM)
+//  2) e-mail do pagador
+//  3) nome do pagador (first_name + last_name, case-insensitive)
+// ═══════════════════════════════════════════════════════════════
+function identificarAssociadoMP(mp, listaAssociados){
+  let assoc = null, mesRef = null;
+
+  // 1) external_reference
+  const ext = mp.external_reference || '';
+  const extMatch = ext.match(/^(.+)-(\d{4}-\d{2})$/);
+  if(extMatch){
+    assoc = listaAssociados.find(a => a.id === extMatch[1]);
+    mesRef = extMatch[2];
+  }
+
+  // 2) e-mail do pagador
+  if(!assoc && mp.payer?.email){
+    const mpEmail = mp.payer.email.toLowerCase();
+    assoc = listaAssociados.find(a => a.email && a.email.toLowerCase() === mpEmail);
+  }
+
+  // 3) nome do pagador (first_name + last_name)
+  if(!assoc && (mp.payer?.first_name || mp.payer?.last_name)){
+    const mpNome = ((mp.payer.first_name||'') + ' ' + (mp.payer.last_name||'')).trim().toLowerCase();
+    if(mpNome.length > 2){
+      // Procura associado cujo nome contenha o nome do pagador ou vice-versa
+      assoc = listaAssociados.find(a => {
+        if(!a.nome) return false;
+        const aNome = a.nome.toLowerCase();
+        return aNome.includes(mpNome) || mpNome.includes(aNome) ||
+               // Compara apenas o primeiro e último token
+               (mpNome.split(' ')[0] === aNome.split(' ')[0] &&
+                mpNome.split(' ').pop() === aNome.split(' ').pop());
+      });
+    }
+  }
+
+  if(!mesRef && assoc){
+    mesRef = new Date(mp.date_created).toISOString().slice(0,7);
+  }
+
+  return { assoc, mesRef };
+}
+
 async function sincronizarPagamentosMP(){
-  // Busca no Supabase quais mp_payment_id já estão gravados (fonte da verdade)
-  // Isso evita o bug de re-sincronizar pagamentos já gravados quando o array local é resetado
-  let jaGravadosNoDB = new Set();
+  // Busca mp_payment_ids já gravados como PAGO no Supabase
+  let jaGravados = new Set();
   try{
-    const {data: gravados} = await sb.from('pagamentos')
-      .select('mp_payment_id')
-      .not('mp_payment_id','is',null);
-    (gravados||[]).forEach(p => { if(p.mp_payment_id) jaGravadosNoDB.add(p.mp_payment_id); });
-  }catch(e){ console.warn('Erro ao checar IDs gravados:', e.message); }
+    const {data: g2} = await sb.from('pagamentos').select('mp_payment_id').not('mp_payment_id','is',null);
+    (g2||[]).forEach(p => { if(p.mp_payment_id) jaGravados.add(p.mp_payment_id); });
+  }catch(e){}
 
   const aprovados = mpPayments.filter(p => p.status === 'approved');
   let sincCount = 0;
 
   for(const mp of aprovados){
-    // Pula se já está no banco — evita toast repetido e re-gravação
-    if(jaGravadosNoDB.has(String(mp.id))) continue;
+    if(jaGravados.has(String(mp.id))) continue;
 
-    let assoc = null, mesRef = null;
-    const extRef = mp.external_reference || '';
-    const extMatch = extRef.match(/^(.+)-(\d{4}-\d{2})$/);
-    if(extMatch){
-      assoc = associados.find(a => a.id === extMatch[1]);
-      mesRef = extMatch[2];
-    }
-    if(!assoc){
-      const email = mp.payer?.email;
-      if(email) assoc = associados.find(a => a.email && a.email.toLowerCase() === email.toLowerCase());
-      if(!mesRef) mesRef = new Date(mp.date_created).toISOString().slice(0,7);
-    }
+    const { assoc, mesRef } = identificarAssociadoMP(mp, associados);
     if(!assoc || !mesRef) continue;
 
     const pags = pagamentos[assoc.id]||[];
@@ -2617,9 +2667,9 @@ async function sincronizarPagamentosMP(){
           status:'pago', data_pagamento:dataPag,
           confirmado_por:'mercadopago', mp_payment_id:String(mp.id)
         }).eq('id',pagExist.id);
-        // Atualiza array local também
         pagExist.status='pago'; pagExist.mp_payment_id=String(mp.id);
         pagExist.data_pagamento=dataPag; pagExist.confirmado_por='mercadopago';
+        jaGravados.add(String(mp.id));
         sincCount++;
       }catch(e){ console.warn(e); }
     } else {
@@ -2634,13 +2684,13 @@ async function sincronizarPagamentosMP(){
         if(data?.[0]){
           if(!pagamentos[assoc.id]) pagamentos[assoc.id]=[];
           pagamentos[assoc.id].push(data[0]);
+          jaGravados.add(String(mp.id));
           sincCount++;
         }
       }catch(e){ console.warn(e); }
     }
   }
 
-  // Toast e atualização de UI só quando há algo novo — e só nesta função (chamada manual)
   const el = g('mp-sinc-info');
   if(sincCount > 0){
     toast(`✅ ${sincCount} pagamento(s) sincronizado(s) do Mercado Pago!`);
@@ -2724,21 +2774,12 @@ async function forceSincronizacaoTotal(){
         continue;
       }
 
-      // Identifica o associado
-      let assoc = null, mesRef = null;
-      const extMatch = ext.match(/^(.+)-(\d{4}-\d{2})$/);
-      if(extMatch){
-        assoc  = associados.find(a => a.id === extMatch[1]);
-        mesRef = extMatch[2];
-      }
-      // Fallback por email
-      if(!assoc && email){
-        assoc = associados.find(a => a.email && a.email.toLowerCase() === email.toLowerCase());
-        if(!mesRef) mesRef = new Date(mp.date_created).toISOString().slice(0, 7);
-      }
+      // Identifica usando helper (external_reference → email → nome do pagador)
+      const { assoc, mesRef } = identificarAssociadoMP(mp, associados);
 
       if(!assoc){
-        dlog(`⚠️ MP ID ${mpId} (R$${valor.toFixed(2)}) — associado não encontrado (ext: "${ext}", email: "${email}")`, '#d97706');
+        const nomeMP = ((mp.payer?.first_name||'')+' '+(mp.payer?.last_name||'')).trim();
+        dlog(`⚠️ MP ID ${mpId} — não identificado (email:"${email}", nome:"${nomeMP}")`, '#d97706');
         pulados++;
         continue;
       }
@@ -2866,24 +2907,7 @@ function iniciarPolling(){
     if(viewAssoc && associadoLogado){
       try{
         if(fichaAssociado){
-          // Busca por TODOS os IDs do mesmo e-mail (resolve duplicatas de cadastro)
-          const {data: todosAssoc} = await sb.from('associados')
-            .select('id').eq('email', associadoLogado.email);
-          const ids = todosAssoc ? [...new Set(todosAssoc.map(a=>a.id))] : [fichaAssociado.id];
-
-          const {data: rawPags} = await sb.from('pagamentos')
-            .select('*').in('associado_id', ids)
-            .order('mes_referencia',{ascending:false});
-
-          // Agrupa por mês: mantém o registro pago (ou o mais recente)
-          const porMes = {};
-          for(const p of (rawPags||[])){
-            const m = p.mes_referencia;
-            if(!porMes[m] || p.status==='pago' || new Date(p.created_at)>new Date(porMes[m].created_at)){
-              porMes[m] = p;
-            }
-          }
-          const novosPags = Object.values(porMes).sort((a,b)=>b.mes_referencia.localeCompare(a.mes_referencia));
+          const novosPags = await _buscarTodosPagamentosAssociado();
           const novosPagsStr = JSON.stringify(novosPags);
           const anteriorStr  = JSON.stringify(pagamentosAssociado);
 
