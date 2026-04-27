@@ -520,6 +520,7 @@ tr:hover td{background:var(--gray-50)}
   body{background:#fff!important}
   .card,.table-wrap{box-shadow:none!important;border:1px solid #ccc!important}
 }
+@keyframes pulse-sync{0%,100%{opacity:1;box-shadow:0 0 5px var(--teal-light)}50%{opacity:.5;box-shadow:0 0 12px var(--teal-light)}}
 
 /* ── POPUP OVERLAY ── */
 .popup-overlay{position:fixed;inset:0;background:rgba(11,31,49,.5);backdrop-filter:blur(6px);z-index:600;display:none;align-items:center;justify-content:center;padding:1.5rem}
@@ -825,6 +826,7 @@ tr:hover td{background:var(--gray-50)}
       <button class="assoc-tab" id="atab-pagamentos" onclick="showAssocTab('tab-assoc-pagamentos')"><i class="fas fa-wallet"></i> Pagamentos</button>
     </div>
     <span class="assoc-spacer"></span>
+    <span id="rt-sync-dot-assoc" title="Sincronização em tempo real ativa" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--teal-light);box-shadow:0 0 6px var(--teal-light);animation:pulse-sync 2s ease-in-out infinite;margin-right:.3rem" title="Tempo real ativo"></span>
     <button class="btn-logout" onclick="doAssocLogout()"><i class="fas fa-sign-out-alt"></i> Sair</button>
   </div>
 
@@ -941,6 +943,7 @@ tr:hover td{background:var(--gray-50)}
       <button class="atab" onclick="showAdminTab('tab-financeiro');loadMPFinanceiro()"><i class="fas fa-money-bill-wave"></i> Financeiro MP</button>
     </div>
     <span class="atab-spacer"></span>
+    <span id="rt-sync-dot" title="Sincronização em tempo real ativa" style="display:inline-flex;align-items:center;gap:.4rem;font-size:.72rem;color:rgba(255,255,255,.4);margin-right:.5rem"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--teal-light);box-shadow:0 0 5px var(--teal-light);animation:pulse-sync 2s ease-in-out infinite"></span> Tempo real</span>
     <button class="btn-logout" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Sair</button>
   </div>
 
@@ -1665,7 +1668,6 @@ function renderPagamentosAssociado(){
 
 async function pagarViaMPAssociado(mesRef, valor){
   if(!fichaAssociado || !associadoLogado) return;
-  const statusEl = document.createElement('div');
   toast('Gerando link de pagamento...');
   try {
     const [ano, mes] = mesRef.split('-');
@@ -1684,7 +1686,35 @@ async function pagarViaMPAssociado(mesRef, valor){
       body:JSON.stringify(payload)
     });
     const data = await resp.json();
-    if(data.init_point){ window.open(data.init_point,'_blank'); toast('Checkout aberto em nova aba! ✅'); }
+    if(data.init_point){
+      window.open(data.init_point,'_blank');
+      toast('Checkout aberto em nova aba! Aguardando confirmação... ⏳');
+      // Polling agressivo: verifica a cada 3s por 2 minutos após abrir o checkout
+      let tentativas = 0;
+      const maxTentativas = 40; // 40 × 3s = 2min
+      const snapAnterior = JSON.stringify(pagamentosAssociado);
+      const pollPagamento = setInterval(async () => {
+        tentativas++;
+        if(tentativas > maxTentativas){ clearInterval(pollPagamento); return; }
+        try{
+          const {data: novosPags} = await sb.from('pagamentos').select('*').eq('associado_id',fichaAssociado.id).order('mes_referencia',{ascending:false});
+          if(!novosPags) return;
+          // Verifica se o pagamento do mês foi confirmado
+          const pagAtualizado = novosPags.find(p => p.mes_referencia === mesRef && p.status === 'pago');
+          const pagAnterior = JSON.parse(snapAnterior).find(p => p.mes_referencia === mesRef);
+          if(pagAtualizado && (!pagAnterior || pagAnterior.status !== 'pago')){
+            clearInterval(pollPagamento);
+            pagamentosAssociado = novosPags;
+            renderPagamentosAssociado();
+            renderAreaAssociado();
+            toast('🎉 Pagamento confirmado! Obrigado pela sua contribuição!');
+          } else if(JSON.stringify(novosPags) !== snapAnterior){
+            pagamentosAssociado = novosPags;
+            renderPagamentosAssociado();
+          }
+        }catch(e){ /* silencioso */ }
+      }, 3000);
+    }
     else throw new Error(data.message||'Erro ao gerar link');
   } catch(e){ toast('Erro Mercado Pago: '+e.message,'err'); }
 }
@@ -2445,6 +2475,29 @@ async function sincronizarPagamentosMP(){
 // Inicialização: verifica modo admin na URL
 checkAdminMode();
 
+// Detecta retorno do Mercado Pago (payment_id, status, etc na URL)
+(function detectMPReturn(){
+  const params = new URLSearchParams(window.location.search);
+  const mpStatus = params.get('status') || params.get('payment_status');
+  const mpPaymentId = params.get('payment_id');
+  if(mpPaymentId || mpStatus){
+    // Limpa params da URL sem recarregar
+    const cleanUrl = window.location.pathname;
+    window.history.replaceState({}, '', cleanUrl);
+    // Se veio de um pagamento aprovado, aguarda carregamento e força refresh
+    if(mpStatus === 'approved' || mpStatus === 'success'){
+      setTimeout(async () => {
+        if(associadoLogado && fichaAssociado){
+          await carregarDadosAssociado();
+          toast('🎉 Pagamento recebido! Seu cadastro foi atualizado.');
+        } else if(associados.length > 0){
+          await loadAssociados();
+        }
+      }, 1500);
+    }
+  }
+})();
+
 // Event listeners — com guards para não quebrar quando elemento não existe
 const _admSenha = g('adm-senha');
 if(_admSenha) _admSenha.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
@@ -2463,6 +2516,77 @@ if(_mEdit) _mEdit.addEventListener('click', function(e){ if(e.target===this) clo
 
 const _mDelete = g('modal-delete');
 if(_mDelete) _mDelete.addEventListener('click', function(e){ if(e.target===this) closeDelete(); });
+
+// ═══════════════════════════════════════════
+//  POLLING TEMPO REAL — atualiza a cada 5s
+// ═══════════════════════════════════════════
+let _pollingInterval = null;
+let _pollingAtivo = false;
+
+function iniciarPolling(){
+  if(_pollingInterval) return; // já rodando
+  _pollingAtivo = true;
+  _pollingInterval = setInterval(async () => {
+    if(!_pollingAtivo) return;
+    const viewAdmin  = document.querySelector('#view-admin.active');
+    const viewAssoc  = document.querySelector('#view-associado.active');
+    if(viewAdmin){
+      // Admin: recarrega dados silenciosamente e atualiza UI
+      try{
+        const {data: novosAssoc} = await sb.from('associados').select('*').order('created_at',{ascending:false});
+        if(novosAssoc) associados = novosAssoc;
+        const ids = associados.map(a=>a.id);
+        if(ids.length > 0){
+          const {data: novosPags} = await sb.from('pagamentos').select('*').in('associado_id',ids).order('mes_referencia',{ascending:false});
+          pagamentos = {};
+          (novosPags||[]).forEach(p=>{ if(!pagamentos[p.associado_id]) pagamentos[p.associado_id]=[]; pagamentos[p.associado_id].push(p); });
+        }
+        renderTable(); updateKPIs(); renderPendencias();
+        // Também sincroniza MP em background
+        await sincronizarMPBackground();
+        // Atualiza indicador de sync
+        const syncDot = g('rt-sync-dot');
+        if(syncDot){ syncDot.style.background='var(--success)'; syncDot.title='Atualizado: '+new Date().toLocaleTimeString('pt-BR'); setTimeout(()=>{ if(syncDot) syncDot.style.background='var(--teal-light)'; },800); }
+      }catch(e){ console.warn('Polling admin:', e.message); }
+    }
+    if(viewAssoc && associadoLogado){
+      // Associado: recarrega ficha e pagamentos silenciosamente
+      try{
+        if(fichaAssociado){
+          const {data: novosPags} = await sb.from('pagamentos').select('*').eq('associado_id',fichaAssociado.id).order('mes_referencia',{ascending:false});
+          const anterior = JSON.stringify(pagamentosAssociado);
+          pagamentosAssociado = novosPags || [];
+          // Só re-renderiza se mudou algo
+          if(JSON.stringify(pagamentosAssociado) !== anterior){
+            renderPagamentosAssociado();
+            renderAreaAssociado();
+            // Notifica se algum pagamento foi aprovado
+            const novoPago = pagamentosAssociado.find(p=>{
+              const old = JSON.parse(anterior).find(x=>x.id===p.id);
+              return old && old.status !== 'pago' && p.status === 'pago';
+            });
+            if(novoPago) toast('🎉 Pagamento confirmado! Obrigado pela sua contribuição!');
+          }
+        }
+        // Indicador visual de sync
+        const syncDotA = g('rt-sync-dot-assoc');
+        if(syncDotA){ syncDotA.style.background='var(--success)'; setTimeout(()=>{ if(syncDotA) syncDotA.style.background='var(--teal-light)'; },800); }
+      }catch(e){ console.warn('Polling assoc:', e.message); }
+    }
+  }, 5000);
+}
+
+function pararPolling(){
+  _pollingAtivo = false;
+  if(_pollingInterval){ clearInterval(_pollingInterval); _pollingInterval = null; }
+}
+
+// Inicia polling quando a página carrega
+window.addEventListener('load', () => setTimeout(iniciarPolling, 2000));
+// Para polling quando a aba fica em background (economiza recursos)
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden){ pararPolling(); } else { iniciarPolling(); }
+});
 </script>
 </body>
 </html>
