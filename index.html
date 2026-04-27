@@ -941,7 +941,7 @@ tr:hover td{background:var(--gray-50)}
     <div class="admin-tabs">
       <button class="atab active" onclick="showAdminTab('tab-associados')"><i class="fas fa-users"></i> Associados</button>
       <button class="atab" onclick="showAdminTab('tab-dashboard')"><i class="fas fa-chart-line"></i> Dashboard</button>
-      <button class="atab" onclick="showAdminTab('tab-financeiro');loadMPFinanceiro()"><i class="fas fa-money-bill-wave"></i> Financeiro MP</button>
+      <button class="atab" onclick="showAdminTab('tab-financeiro')"><i class="fas fa-money-bill-wave"></i> Financeiro MP</button>
     </div>
     <span class="atab-spacer"></span>
     <span id="rt-sync-dot" title="Sincronização em tempo real ativa" style="display:inline-flex;align-items:center;gap:.4rem;font-size:.72rem;color:rgba(255,255,255,.4);margin-right:.5rem"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--teal-light);box-shadow:0 0 5px var(--teal-light);animation:pulse-sync 2s ease-in-out infinite"></span> Tempo real</span>
@@ -1039,13 +1039,8 @@ tr:hover td{background:var(--gray-50)}
             <button onclick="loadMPFinanceiro()" style="background:linear-gradient(135deg,#009ee3,#0070b4);border:none;color:#fff;padding:.5rem 1.1rem;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:.5rem"><i class="fas fa-sync-alt"></i> Atualizar</button>
           </div>
         </div>
-        <div style="padding:.8rem 1.5rem;background:rgba(0,158,226,.05);border-bottom:1px solid rgba(0,158,226,.15);display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
-          <span style="font-size:.78rem;color:var(--gray-600);flex:1"><i class="fas fa-info-circle" style="color:#009ee3"></i> Pagamentos aprovados no Mercado Pago são sincronizados automaticamente ao Supabase.</span>
-          <button onclick="forceSincronizacaoTotal()" id="btn-force-sinc" style="background:linear-gradient(135deg,#059669,#047857);border:none;color:#fff;padding:.5rem 1.2rem;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:.5rem"><i class="fas fa-bolt"></i> Forçar Sincronização Completa</button>
-        </div>
-        <div id="painel-diagnostico" style="display:none;padding:1rem 1.5rem;background:rgba(5,150,105,.05);border-bottom:1px solid rgba(5,150,105,.15)">
-          <div style="font-size:.8rem;font-weight:700;color:var(--success);margin-bottom:.6rem"><i class="fas fa-stethoscope"></i> Resultado da Sincronização</div>
-          <div id="diagnostico-log" style="font-family:monospace;font-size:.77rem;line-height:1.9;max-height:220px;overflow-y:auto;background:rgba(0,0,0,.04);padding:.8rem;border-radius:8px"></div>
+        <div style="padding:.6rem 1.5rem;background:rgba(0,158,226,.05);border-bottom:1px solid rgba(0,158,226,.15)">
+          <span style="font-size:.78rem;color:var(--gray-600)"><i class="fas fa-info-circle" style="color:#009ee3"></i> Pagamentos aprovados no Mercado Pago são sincronizados automaticamente ao Supabase.</span>
         </div>
         <div class="table-scroll">
           <table>
@@ -2433,8 +2428,14 @@ async function openCobranca(aid){
   const mesNome = new Date(+ano, +mes-1, 1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
 
   const buildMsg = (linkMP) => {
-    const linkTxt = linkMP && linkMP !== 'gerando' ? `\n\n💳 *Pague com Mercado Pago (cartão, PIX, boleto):*\n${linkMP}` : (linkMP === 'gerando' ? '\n\n💳 *Gerando link de pagamento Mercado Pago...*' : '');
-    return `Olá, ${a.nome.split(' ')[0]}! 😊\n\nGostaríamos de lembrar que há uma contribuição em aberto com a *ONG Por Amor*.\n\n📋 *Associado:* ${a.nome}\n💰 *Valor:* R$ ${valor.toFixed(2).replace('.',',')}\n📅 *Vencimento:* Todo dia ${a.dia_pagamento||10}${totalPend>0?`\n⚠️ *Total pendente:* R$ ${totalPend.toFixed(2).replace('.',',')}`:''}${linkTxt}\n\n🔑 *Chave PIX:* (83) 98231-5427\n🏷️ *Tipo:* Celular — ONG Por Amor\n\nApós o pagamento, envie o comprovante para confirmar. ❤️\n— Equipe ONG Por Amor | (83) 98231-5427`;
+    const gerando  = linkMP === 'gerando';
+    const temLink  = linkMP && !gerando;
+    const linkTxt  = temLink
+      ? `\n\n💳 *Pague agora pelo Mercado Pago* (cartão, PIX ou boleto — confirmação automática no sistema):\n${linkMP}`
+      : (gerando ? '\n\n💳 *Gerando link de pagamento...*' : '');
+    const atrasado = totalPend > valor
+      ? `\n⚠️ *Total em atraso:* R$ ${totalPend.toFixed(2).replace('.',',')}` : '';
+    return `Olá, ${a.nome.split(' ')[0]}! 😊\n\nPassamos para lembrar que há uma contribuição em aberto com a *ONG Por Amor*.\n\n📋 *Associado:* ${a.nome} — #${String(a.numero_associado||'').padStart(3,'0')}\n💰 *Valor do mês:* R$ ${valor.toFixed(2).replace('.',',')}\n📅 *Vencimento:* Todo dia ${a.dia_pagamento||10}${atrasado}${linkTxt}\n\nAo pagar pelo link acima, a confirmação é feita automaticamente. ❤️\n— Equipe ONG Por Amor | (83) 98231-5427`;
   };
 
   const msgTemplate = g('msg-template');
@@ -2575,8 +2576,12 @@ function showAdminTab(id){
   document.querySelectorAll('.admin-view').forEach(v=>v.classList.remove('active'));
   g(id).classList.add('active');
   document.querySelectorAll('.atab').forEach(t=>t.classList.remove('active'));
-  document.querySelector(`.atab[onclick="showAdminTab('${id}')"]`).classList.add('active');
-  if(id==='tab-dashboard'){ setTimeout(()=>{ renderCharts(); updateKPIs(); renderPendencias(); },100); }
+  // Atualiza o botão ativo (suporta onclick simples ou composto com ponto-e-vírgula)
+  document.querySelectorAll('.atab').forEach(t=>{
+    if((t.getAttribute('onclick')||'').includes(`showAdminTab('${id}')`)) t.classList.add('active');
+  });
+  if(id==='tab-dashboard')  { setTimeout(()=>{ renderCharts(); updateKPIs(); renderPendencias(); },100); }
+  if(id==='tab-financeiro') { setTimeout(()=> loadMPFinanceiro(), 100); }
 }
 
 // ═══════════════════════════════════════════
