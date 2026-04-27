@@ -535,6 +535,137 @@ tr:hover td{background:var(--gray-50)}
 /* Responsive */
 @media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.charts-grid{grid-template-columns:1fr}.chart-card.wide{grid-column:span 1}.g2,.g3,.g4{grid-template-columns:1fr}.s2,.s3,.s4{grid-column:span 1}.sig-grid{grid-template-columns:1fr}}
 @media(max-width:600px){.hdr-inner{padding:1.5rem;flex-direction:column;gap:1rem}.hdr-title{font-size:1.7rem}.card-body{padding:1.5rem}.step-nav{flex-wrap:wrap}.sn-item{min-width:50%}.sn-sub{display:none}.admin-tabs{display:none}}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVO / MOBILE — breakpoints 768px e 480px
+═══════════════════════════════════════════════════════════════ */
+@media (max-width:768px){
+
+  /* ── Topbar associado ── */
+  .assoc-topbar{padding:0 1rem;height:auto;min-height:56px;flex-wrap:wrap;gap:.5rem;padding-top:.5rem;padding-bottom:.5rem}
+  .assoc-brand{font-size:.9rem}
+  .assoc-tabs{margin-left:0;gap:.1rem;width:100%;overflow-x:auto;padding-bottom:.25rem;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .assoc-tabs::-webkit-scrollbar{display:none}
+  .assoc-tab{font-size:.72rem;padding:.35rem .7rem;white-space:nowrap;flex-shrink:0}
+  .assoc-spacer{display:none}
+  .btn-logout{font-size:.7rem;padding:.3rem .7rem}
+
+  /* ── Conteúdo associado ── */
+  .assoc-content{padding:1rem .75rem;gap:1rem}
+
+  /* ── Boas-vindas ── */
+  .assoc-welcome{padding:1.2rem 1rem;gap:1rem;margin-bottom:1rem}
+  .assoc-welcome::after{font-size:3rem;right:1rem}
+  .assoc-welcome-avatar{width:44px;height:44px;font-size:1.1rem;flex-shrink:0}
+  .assoc-welcome-name{font-size:1.15rem}
+  .assoc-welcome-sub{font-size:.75rem}
+
+  /* ── Cards de resumo ── */
+  .assoc-cards{grid-template-columns:repeat(2,1fr);gap:.7rem;margin-bottom:1rem}
+  .assoc-card{padding:1rem}
+  .assoc-card-value{font-size:1.3rem}
+
+  /* ── Grid dos atalhos (Meu Cadastro / Pagamentos) ── */
+  div[style*="grid-template-columns:1fr 1fr"]{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+  }
+
+  /* ── Seção / ficha ── */
+  .assoc-section-hdr{flex-direction:column;align-items:flex-start;gap:.5rem;padding:.85rem 1rem}
+  .assoc-section-body{padding:1rem}
+  .assoc-row{flex-direction:column;gap:.2rem;padding:.5rem 0}
+  .assoc-key{min-width:unset;font-size:.72rem}
+  .assoc-val{font-size:.85rem}
+
+  /* ── Cabeçalho pagamentos + botão atualizar ── */
+  .assoc-section-hdr > div:last-child{width:100%;justify-content:space-between}
+  #btn-sync-pags{font-size:.75rem;padding:.4rem .9rem}
+
+  /* ── Itens de pagamento ── */
+  .pay-item{flex-wrap:wrap;gap:.7rem;padding:.85rem 1rem}
+  .pay-item-val{margin-left:0;width:100%;text-align:right;font-size:.9rem}
+  .pay-item-mes{font-size:.85rem}
+  .pay-item-info{font-size:.73rem}
+  .btn-mp-pagar{width:100%;justify-content:center;margin-top:.3rem;font-size:.8rem;padding:.6rem 1rem}
+
+  /* ── Topbar admin ── */
+  .admin-topbar{padding:0 .75rem;height:auto;min-height:52px;flex-wrap:wrap;gap:.4rem;padding-top:.4rem;padding-bottom:.4rem}
+  .admin-brand{font-size:.9rem}
+  .admin-badge{display:none}
+  .admin-tabs{margin-left:0;gap:.1rem;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .admin-tabs::-webkit-scrollbar{display:none}
+  .atab{font-size:.72rem;padding:.35rem .65rem;white-space:nowrap;flex-shrink:0}
+  .atab-spacer{display:none}
+
+  /* ── Admin content ── */
+  .admin-content{padding:1rem .75rem}
+
+  /* ── Filters bar ── */
+  .filters-bar{padding:.9rem;gap:.7rem}
+  .filter-group{min-width:calc(50% - .35rem);flex:1}
+
+  /* ── KPI grid (dashboard) ── */
+  .kpi-grid{grid-template-columns:repeat(2,1fr);gap:.7rem}
+  .kpi{padding:1rem}
+  .kpi-value{font-size:1.3rem}
+
+  /* ── Tabela associados ── */
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  th,td{padding:.55rem .7rem;font-size:.78rem}
+  .pay-month-row{gap:.3rem}
+  .pay-chip{font-size:.65rem;padding:.2rem .45rem}
+  .actions-cell{flex-wrap:wrap;gap:.3rem}
+  .btn-sm{font-size:.7rem;padding:.3rem .6rem}
+
+  /* ── Modal ── */
+  .modal{max-width:100%;margin:.5rem;border-radius:var(--r)}
+  .modal-body{padding:1rem}
+
+  /* ── Page wrap (formulário) ── */
+  .page-wrap{padding:1rem .75rem}
+  .card-body{padding:1.2rem 1rem}
+  .fg.g2,.fg.g3,.fg.g4{grid-template-columns:1fr}
+  .s2,.s3,.s4{grid-column:span 1}
+  .hdr-inner{padding:1.4rem 1.2rem;gap:1rem;flex-wrap:wrap}
+  .hdr-title{font-size:1.5rem}
+  .step-nav{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .sn-item{min-width:110px}
+  .nav-btns{flex-direction:column;gap:.8rem}
+  .btn-back,.btn-next,.btn-submit-final{width:100%;justify-content:center;margin-left:0}
+  .sig-grid{grid-template-columns:1fr;gap:1rem}
+
+  /* ── Login ── */
+  .login-card{max-width:100%;margin:.5rem}
+  .login-card-top{padding:1.5rem 1.2rem 0}
+  .login-body{padding:1.5rem 1.2rem 2rem}
+  .login-tabs .login-tab{font-size:.72rem;padding:.65rem .3rem}
+
+  /* ── Toast ── */
+  .toast{font-size:.8rem;padding:.6rem 1rem;max-width:calc(100vw - 2rem);white-space:normal;text-align:center}
+
+  /* ── MP financeiro cards ── */
+  .mp-kpi-row{flex-direction:column!important;gap:.7rem!important}
+}
+
+@media (max-width:480px){
+  .assoc-cards{grid-template-columns:1fr}
+  .kpi-grid{grid-template-columns:1fr}
+  .filter-group{min-width:100%;flex:1 1 100%}
+  .assoc-welcome{flex-direction:column;align-items:flex-start;gap:.8rem}
+  .modal{margin:.25rem;border-radius:12px}
+  .modal-actions{flex-direction:column}
+  .btn-wa,.btn-email-send{width:100%;justify-content:center}
+  table{font-size:.75rem}
+}
+
+/* ── Print ── */
+@media print{
+  .assoc-topbar,.admin-topbar,.topbar,.toast,.modal-overlay{display:none!important}
+  .admin-content,.assoc-content,.page-wrap{padding:.5rem!important;max-width:100%!important}
+  .table-scroll{overflow:visible!important}
+}
+
 </style>
 </head>
 <body>
@@ -997,7 +1128,7 @@ tr:hover td{background:var(--gray-50)}
 
       <!-- ABA FINANCEIRO MP -->
     <div class="admin-view" id="tab-financeiro">
-      <div class="kpi-grid" style="margin-bottom:1.5rem">
+      <div class="kpi-grid mp-kpi-row" style="margin-bottom:1.5rem">
         <div class="kpi teal" style="cursor:default">
           <div class="kpi-icon"><i class="fas fa-wallet"></i></div>
           <div class="kpi-label">Saldo Disponível</div>
