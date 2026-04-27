@@ -1638,6 +1638,9 @@ async function carregarDadosAssociado(){
   if(fichaAssociado){
     await _garantirPagamentosPendentes();
     pagamentosAssociado = await _buscarTodosPagamentosAssociado();
+    // Sincroniza MP automaticamente ao carregar (sem bloquear UI)
+    // Usa setTimeout para não atrasar a renderização inicial
+    setTimeout(() => sincronizarPagamentosAssociado().catch(()=>{}), 1500);
   } else {
     pagamentosAssociado = [];
   }
@@ -1741,75 +1744,71 @@ async function sincronizarPagamentosAssociado(){
   if(btn){ btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Sincronizando...'; }
 
   try{
-    // Coleta todos os e-mails e IDs possíveis deste associado
-    const emails = [...new Set([
-      associadoLogado.email,
-      fichaAssociado.email
-    ].filter(Boolean).map(e=>e.toLowerCase()))];
+    // Monta lista de todos os cadastros com mesmo nome ou email
+    const {data: todosNoBanco} = await sb.from('associados').select('*');
+    const nomeFicha   = (fichaAssociado.nome||'').toLowerCase().trim();
+    const emailLogin  = (associadoLogado.email||'').toLowerCase();
+    const emailFicha  = (fichaAssociado.email||'').toLowerCase();
 
-    const {data: todosAssoc} = await sb.from('associados').select('id,email').ilike('nome', fichaAssociado.nome.trim());
-    const idsAssoc = [...new Set([
-      fichaAssociado.id,
-      ...(todosAssoc||[]).map(a=>a.id)
-    ])];
-    const emailsAssoc = [...new Set([
-      ...emails,
-      ...(todosAssoc||[]).map(a=>a.email).filter(Boolean).map(e=>e.toLowerCase())
-    ])];
+    const todosAssoc = (todosNoBanco||[]).filter(a => {
+      const nA = (a.nome||'').toLowerCase().trim();
+      const eA = (a.email||'').toLowerCase();
+      return nA === nomeFicha || eA === emailLogin || eA === emailFicha;
+    });
+    if(!todosAssoc.find(a=>a.id===fichaAssociado.id)) todosAssoc.push(fichaAssociado);
+    const idsAssoc = [...new Set(todosAssoc.map(a=>a.id))];
 
-    // Busca pagamentos aprovados no MP
+    // Busca TODOS aprovados no MP (sem filtro — identificamos pelo nome/email depois)
     const mpResp = await fetch(
-      'https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=50&status=approved',
+      'https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=100&status=approved',
       { headers:{ 'Authorization':'Bearer '+MP_ACCESS_TOKEN } }
     );
     const mpData = await mpResp.json();
+    const todosAprovados = mpData.results || [];
 
-    // Filtra pagamentos deste associado: por ID, email OU nome
-    const aprovados = (mpData.results||[]).filter(mp => {
-      const { assoc } = identificarAssociadoMP(mp, todosAssoc||[fichaAssociado]);
+    // Filtra apenas os que pertencem a este associado
+    const aprovados = todosAprovados.filter(mp => {
+      const { assoc } = identificarAssociadoMP(mp, todosAssoc);
       return !!assoc;
     });
 
-    // Para cada aprovado: garante registro pago no Supabase
+    // Para cada aprovado: grava/atualiza no Supabase
     for(const mp of aprovados){
-      const { mesRef } = identificarAssociadoMP(mp, todosAssoc||[fichaAssociado]);
+      const mpId    = String(mp.id);
+      const mesRef  = identificarAssociadoMP(mp, todosAssoc).mesRef;
       if(!mesRef) continue;
       const dataPag = new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10);
-      const mpId = String(mp.id);
 
-      // Busca em TODOS os IDs do associado
+      // Busca registro existente para este mês em QUALQUER ID do associado
       const {data: pagsSupa} = await sb.from('pagamentos')
-        .select('id,status,mp_payment_id,associado_id')
+        .select('id,status,mp_payment_id')
         .in('associado_id', idsAssoc)
         .eq('mes_referencia', mesRef);
 
-      const pagPago   = (pagsSupa||[]).find(p=>p.status==='pago');
-      const pagExist  = (pagsSupa||[]).find(p=>p.associado_id===fichaAssociado.id) || pagsSupa?.[0];
+      const pagPago  = (pagsSupa||[]).find(p => p.status==='pago' && p.mp_payment_id);
+      const pagExist = (pagsSupa||[]).find(p => p.associado_id===fichaAssociado.id) || pagsSupa?.[0];
 
-      if(pagPago){ continue; } // já está pago, não faz nada
+      if(pagPago) continue; // já está correto
+
+      const updates = { status:'pago', data_pagamento:dataPag, confirmado_por:'mercadopago', mp_payment_id:mpId };
+
       if(pagExist){
-        await sb.from('pagamentos').update({
-          status:'pago', data_pagamento:dataPag,
-          confirmado_por:'mercadopago', mp_payment_id:mpId
-        }).eq('id', pagExist.id);
+        await sb.from('pagamentos').update(updates).eq('id', pagExist.id);
       } else {
         await sb.from('pagamentos').insert([{
-          associado_id: fichaAssociado.id,
-          mes_referencia: mesRef,
-          valor: mp.transaction_amount,
-          status: 'pago',
+          associado_id:    fichaAssociado.id,
+          mes_referencia:  mesRef,
+          valor:           mp.transaction_amount,
           data_vencimento: `${mesRef}-${String(fichaAssociado.dia_pagamento||10).padStart(2,'0')}`,
-          data_pagamento: dataPag,
-          confirmado_por: 'mercadopago',
-          mp_payment_id: mpId
+          ...updates
         }]);
       }
     }
-  }catch(eMp){
-    console.warn('MP sync:', eMp.message);
+  } catch(eMp){
+    console.warn('MP sync erro:', eMp.message);
   }
 
-  // Sempre recarrega do Supabase usando todos os IDs
+  // Recarrega do Supabase e atualiza UI
   pagamentosAssociado = await _buscarTodosPagamentosAssociado();
   renderPagamentosAssociado();
   renderAreaAssociado();
@@ -3050,6 +3049,7 @@ function iniciarPolling(){
     if(viewAssoc && associadoLogado){
       try{
         if(fichaAssociado){
+          // 1) Lê Supabase (fonte da verdade)
           const novosPags = await _buscarTodosPagamentosAssociado();
           const novosPagsStr = JSON.stringify(novosPags);
           const anteriorStr  = JSON.stringify(pagamentosAssociado);
@@ -3068,6 +3068,8 @@ function iniciarPolling(){
               }
             });
           }
+
+
         }
         const syncDotA = g('rt-sync-dot-assoc');
         if(syncDotA){ syncDotA.style.background='var(--success)'; setTimeout(()=>{ if(syncDotA) syncDotA.style.background='var(--teal-light)'; },800); }
