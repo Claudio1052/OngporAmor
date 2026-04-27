@@ -1684,6 +1684,8 @@ async function _garantirPagamentosPendentes(){
       .filter(m => !mesesComRegistro.has(m))
       .map(m => ({
         associado_id:    fichaAssociado.id,
+        email:           fichaAssociado.email || associadoLogado.email || null,
+        nome_completo:   fichaAssociado.nome  || associadoLogado.nome  || null,
         mes_referencia:  m,
         valor:           fichaAssociado.valor_contribuicao || 30,
         status:          'pendente',
@@ -1718,10 +1720,26 @@ async function _buscarTodosPagamentosAssociado(){
     });
 
     const ids = [...idsRelacionados];
-    const {data: pags} = await sb.from('pagamentos')
-      .select('*')
-      .in('associado_id', ids)
-      .order('mes_referencia', {ascending: false});
+    // Busca por associado_id OU por email diretamente na tabela pagamentos
+    // (captura pagamentos PIX avulsos que foram gravados sem associado_id correto)
+    const emailsParaBuscar = [...new Set([
+      (fichaAssociado.email||'').toLowerCase(),
+      (associadoLogado.email||'').toLowerCase()
+    ].filter(Boolean))];
+
+    const [{data: pagsPorId}, {data: pagsPorEmail}] = await Promise.all([
+      sb.from('pagamentos').select('*').in('associado_id', ids).order('mes_referencia',{ascending:false}),
+      emailsParaBuscar.length > 0
+        ? sb.from('pagamentos').select('*').in('email', emailsParaBuscar).order('mes_referencia',{ascending:false})
+        : Promise.resolve({data:[]})
+    ]);
+
+    // Une os dois resultados sem duplicatas
+    const pagMap = new Map();
+    for(const p of [...(pagsPorId||[]), ...(pagsPorEmail||[])]){
+      if(!pagMap.has(p.id)) pagMap.set(p.id, p);
+    }
+    const pags = [...pagMap.values()];
 
     // Agrupa por mês: prioriza pago > mais recente
     const porMes = {};
@@ -1790,7 +1808,12 @@ async function sincronizarPagamentosAssociado(){
 
       if(pagPago) continue; // já está correto
 
-      const updates = { status:'pago', data_pagamento:dataPag, confirmado_por:'mercadopago', mp_payment_id:mpId };
+      const updates = {
+        status:'pago', data_pagamento:dataPag,
+        confirmado_por:'mercadopago', mp_payment_id:mpId,
+        email:         fichaAssociado.email || associadoLogado.email || null,
+        nome_completo: fichaAssociado.nome  || associadoLogado.nome  || null
+      };
 
       if(pagExist){
         await sb.from('pagamentos').update(updates).eq('id', pagExist.id);
@@ -2336,7 +2359,7 @@ async function togglePay(aid, mes){
     catch(e){ console.error(e.message); }
   } else {
     const a = associados.find(x=>x.id===aid);
-    const novoPag = { associado_id: aid, mes_referencia: mes, valor: a?.valor_contribuicao||30, status: newStatus, data_vencimento: `${mes}-${String(a?.dia_pagamento||10).padStart(2,'0')}`, confirmado_por: newStatus==='pago'?'ongadmin':null, data_pagamento: newStatus==='pago'?new Date().toISOString().slice(0,10):null };
+    const novoPag = { associado_id: aid, mes_referencia: mes, valor: a?.valor_contribuicao||30, status: newStatus, data_vencimento: `${mes}-${String(a?.dia_pagamento||10).padStart(2,'0')}`, confirmado_por: newStatus==='pago'?'ongadmin':null, data_pagamento: newStatus==='pago'?new Date().toISOString().slice(0,10):null, email: a?.email||null, nome_completo: a?.nome||null };
     try{ const {data, error} = await sb.from('pagamentos').insert([novoPag]).select(); if(error) throw error; if(!pagamentos[aid]) pagamentos[aid]=[]; pagamentos[aid].push(data[0]); }
     catch(e){ console.error(e.message); }
   }
@@ -2803,11 +2826,14 @@ async function sincronizarPagamentosMP(){
     const pagExist = pags.find(p => p.mes_referencia === mesRef);
     const dataPag = new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10);
 
+    const emailMP  = mp.payer?.email && !mp.payer.email.includes('XXXX') ? mp.payer.email : (assoc.email||null);
+    const nomeMP   = assoc.nome || ((mp.payer?.first_name||'')+' '+(mp.payer?.last_name||'')).trim() || null;
     if(pagExist){
       try{
         await sb.from('pagamentos').update({
           status:'pago', data_pagamento:dataPag,
-          confirmado_por:'mercadopago', mp_payment_id:String(mp.id)
+          confirmado_por:'mercadopago', mp_payment_id:String(mp.id),
+          email: emailMP, nome_completo: nomeMP
         }).eq('id',pagExist.id);
         pagExist.status='pago'; pagExist.mp_payment_id=String(mp.id);
         pagExist.data_pagamento=dataPag; pagExist.confirmado_por='mercadopago';
@@ -2819,7 +2845,8 @@ async function sincronizarPagamentosMP(){
         associado_id:assoc.id, mes_referencia:mesRef,
         valor:mp.transaction_amount, status:'pago',
         data_vencimento:`${mesRef}-${String(assoc.dia_pagamento||10).padStart(2,'0')}`,
-        data_pagamento:dataPag, confirmado_por:'mercadopago', mp_payment_id:String(mp.id)
+        data_pagamento:dataPag, confirmado_por:'mercadopago', mp_payment_id:String(mp.id),
+        email: emailMP, nome_completo: nomeMP
       };
       try{
         const {data} = await sb.from('pagamentos').insert([novo]).select();
@@ -2929,6 +2956,8 @@ async function forceSincronizacaoTotal(){
       // Busca registro no Supabase para este associado+mês
       const pagExist = todosPags.find(p => p.associado_id === assoc.id && p.mes_referencia === mesRef);
 
+      const emailPag = mp.payer?.email && !mp.payer.email.includes('XXXX') ? mp.payer.email : (assoc?.email||null);
+      const nomePag  = assoc?.nome || ((mp.payer?.first_name||'')+' '+(mp.payer?.last_name||'')).trim() || null;
       try {
         if(pagExist){
           // Atualiza para pago
@@ -2936,7 +2965,9 @@ async function forceSincronizacaoTotal(){
             status: 'pago',
             data_pagamento: dataPag,
             confirmado_por: 'mercadopago',
-            mp_payment_id: mpId
+            mp_payment_id: mpId,
+            email: emailPag,
+            nome_completo: nomePag
           }).eq('id', pagExist.id);
           // Atualiza array local também
           pagExist.status = 'pago';
@@ -2954,7 +2985,9 @@ async function forceSincronizacaoTotal(){
             data_vencimento: `${mesRef}-${String(assoc.dia_pagamento || 10).padStart(2,'0')}`,
             data_pagamento: dataPag,
             confirmado_por: 'mercadopago',
-            mp_payment_id: mpId
+            mp_payment_id: mpId,
+            email: emailPag,
+            nome_completo: nomePag
           };
           const {data: criado} = await sb.from('pagamentos').insert([novo]).select();
           if(criado?.[0]){
