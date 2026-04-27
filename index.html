@@ -1602,59 +1602,81 @@ let pagamentosAssociado = [];
 
 async function carregarDadosAssociado(){
   if(!associadoLogado) return;
+  fichaAssociado = null;
 
-  // 1) Busca ficha pelo e-mail do login
+  // 1) Por e-mail exato do login
   try {
-    const {data: ficha} = await sb.from('associados').select('*').eq('email', associadoLogado.email).single();
-    fichaAssociado = ficha || null;
-  } catch(e){ fichaAssociado = null; }
+    const {data: r} = await sb.from('associados').select('*').eq('email', associadoLogado.email).maybeSingle();
+    if(r) fichaAssociado = r;
+  } catch(e){}
 
-  // 2) Fallback: busca pelo nome (e-mail pode ser diferente entre login e ficha)
+  // 2) Por nome completo (fallback: email diferente na ficha)
   if(!fichaAssociado && associadoLogado.nome){
     try {
-      const {data: fichas} = await sb.from('associados').select('*').ilike('nome', associadoLogado.nome.trim());
-      if(fichas && fichas.length > 0) fichaAssociado = fichas[0];
+      const nome = associadoLogado.nome.trim();
+      const {data: r} = await sb.from('associados').select('*').ilike('nome', nome);
+      if(r && r.length > 0) fichaAssociado = r[0];
+    } catch(e){}
+  }
+
+  // 3) Último recurso: busca TODOS os associados e compara nome token a token
+  if(!fichaAssociado && associadoLogado.nome){
+    try {
+      const {data: todos} = await sb.from('associados').select('*');
+      const nomeBusca = associadoLogado.nome.trim().toLowerCase();
+      const tokensLogin = nomeBusca.split(' ').filter(Boolean);
+      fichaAssociado = (todos||[]).find(a => {
+        if(!a.nome) return false;
+        const nomeA = a.nome.toLowerCase();
+        // Bate se primeiro E último token coincidem
+        return tokensLogin[0] === nomeA.split(' ')[0] &&
+               tokensLogin[tokensLogin.length-1] === nomeA.split(' ').pop();
+      }) || null;
     } catch(e){}
   }
 
   if(fichaAssociado){
-    // 3) Garante que existem registros de pagamento para todos os meses
-    //    desde o mês de associação até o mês atual
     await _garantirPagamentosPendentes();
-    // 4) Busca todos os pagamentos (incluindo os recém-criados)
     pagamentosAssociado = await _buscarTodosPagamentosAssociado();
+  } else {
+    pagamentosAssociado = [];
   }
   renderAreaAssociado();
 }
 
-// Cria registros PENDENTES para meses sem registro algum,
-// do mês de associação até o mês atual.
+// Garante registros de pagamento para os últimos 12 meses + mês atual.
+// Se o associado tiver created_at, começa naquele mês; senão começa 11 meses atrás.
 async function _garantirPagamentosPendentes(){
   if(!fichaAssociado) return;
   try {
-    // Determina o mês inicial (mês em que o associado foi criado)
-    const dataCriacao = fichaAssociado.created_at
-      ? new Date(fichaAssociado.created_at)
-      : new Date();
-    const mesInicio = `${dataCriacao.getFullYear()}-${String(dataCriacao.getMonth()+1).padStart(2,'0')}`;
-    const mesAtual  = getMesAtual();
+    const hoje = new Date();
+    const mesAtual = getMesAtual();
+
+    // Mês de início: data de criação do associado (ou 11 meses atrás)
+    let inicio;
+    if(fichaAssociado.created_at){
+      const dc = new Date(fichaAssociado.created_at);
+      inicio = new Date(dc.getFullYear(), dc.getMonth(), 1);
+    } else {
+      inicio = new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1);
+    }
+    const fim = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
 
     // Gera lista de todos os meses do período
     const meses = [];
-    let cur = new Date(mesInicio + '-01');
-    const fim = new Date(mesAtual  + '-01');
+    const cur = new Date(inicio);
     while(cur <= fim){
       meses.push(`${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}`);
       cur.setMonth(cur.getMonth() + 1);
     }
 
-    // Busca quais meses já têm registro
+    // Busca quais meses JÁ têm registro (qualquer status)
     const {data: pagsExist} = await sb.from('pagamentos')
       .select('mes_referencia')
       .eq('associado_id', fichaAssociado.id);
     const mesesComRegistro = new Set((pagsExist||[]).map(p=>p.mes_referencia));
 
-    // Cria pendentes para meses sem registro
+    // Insere apenas os meses sem nenhum registro
     const novos = meses
       .filter(m => !mesesComRegistro.has(m))
       .map(m => ({
@@ -1671,34 +1693,40 @@ async function _garantirPagamentosPendentes(){
   } catch(e){ console.warn('_garantirPagamentosPendentes:', e.message); }
 }
 
-// Busca pagamentos considerando todos os cadastros possíveis do associado
-// (resolve o problema de duplicatas de e-mail/cadastro)
+// Busca todos os pagamentos do associado considerando possíveis duplicatas de cadastro.
+// Consolida por mês, priorizando registros com status 'pago'.
 async function _buscarTodosPagamentosAssociado(){
   if(!fichaAssociado) return [];
   try {
-    // Coleta todos os IDs possíveis: por e-mail do login, por e-mail da ficha, por nome
-    const queries = [];
-    if(associadoLogado.email){
-      const {data: r1} = await sb.from('associados').select('id').eq('email', associadoLogado.email);
-      if(r1) queries.push(...r1.map(a=>a.id));
-    }
-    if(fichaAssociado.email && fichaAssociado.email !== associadoLogado.email){
-      const {data: r2} = await sb.from('associados').select('id').eq('email', fichaAssociado.email);
-      if(r2) queries.push(...r2.map(a=>a.id));
-    }
-    queries.push(fichaAssociado.id);
-    const ids = [...new Set(queries)];
+    // Coleta todos os IDs do mesmo associado (mesmo nome ou email)
+    const {data: todos} = await sb.from('associados').select('id,nome,email');
+    const nomeFicha = (fichaAssociado.nome||'').toLowerCase().trim();
+    const emailFicha = (fichaAssociado.email||'').toLowerCase();
+    const emailLogin = (associadoLogado.email||'').toLowerCase();
 
+    const idsRelacionados = new Set([fichaAssociado.id]);
+    (todos||[]).forEach(a => {
+      const nomeA  = (a.nome||'').toLowerCase().trim();
+      const emailA = (a.email||'').toLowerCase();
+      // Mesmo nome OU mesmo email (login ou ficha)
+      if(nomeA === nomeFicha || emailA === emailFicha || emailA === emailLogin){
+        idsRelacionados.add(a.id);
+      }
+    });
+
+    const ids = [...idsRelacionados];
     const {data: pags} = await sb.from('pagamentos')
       .select('*')
       .in('associado_id', ids)
       .order('mes_referencia', {ascending: false});
 
-    // Agrupa por mês: se houver duplicatas mantém o PAGO (ou o mais recente)
+    // Agrupa por mês: prioriza pago > mais recente
     const porMes = {};
     for(const p of (pags||[])){
       const m = p.mes_referencia;
-      if(!porMes[m] || p.status==='pago' || new Date(p.created_at||0) > new Date(porMes[m].created_at||0)){
+      if(!porMes[m] || p.status==='pago'){
+        porMes[m] = p;
+      } else if(porMes[m].status !== 'pago' && new Date(p.created_at||0) > new Date(porMes[m].created_at||0)){
         porMes[m] = p;
       }
     }
@@ -1817,36 +1845,103 @@ function renderPagamentosAssociado(){
     return;
   }
   if(pagamentosAssociado.length === 0){
-    el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gray-400)"><i class="fas fa-inbox"></i> Nenhum pagamento registrado ainda.</div>';
+    el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gray-400)"><i class="fas fa-inbox"></i> Carregando pagamentos...</div>';
     return;
   }
+
   const mesAtual = getMesAtual();
   const hoje = new Date();
-  const totalPago = pagamentosAssociado.filter(p=>p.status==='pago').reduce((s,p)=>s+p.valor,0);
-  if(resumoEl) resumoEl.textContent = `Total pago: R$ ${totalPago.toFixed(2).replace('.',',')}`;
+  const diaPag = fichaAssociado.dia_pagamento || 10;
+  const totalPago = pagamentosAssociado.filter(p=>p.status==='pago').reduce((s,p)=>s+(p.valor||0),0);
+  const qtdAtrasado = pagamentosAssociado.filter(p=>p.status!=='pago' && p.mes_referencia < mesAtual).length;
 
-  el.innerHTML = pagamentosAssociado.map(p => {
-    const isPago = p.status === 'pago';
-    const isVencido = !isPago && p.mes_referencia < mesAtual;
-    const cls = isPago ? 'pago' : isVencido ? 'vencido' : 'pendente';
-    const icon = isPago ? 'fa-check-circle' : isVencido ? 'fa-exclamation-circle' : 'fa-clock';
+  // Resumo no cabeçalho
+  if(resumoEl){
+    const qtdPago = pagamentosAssociado.filter(p=>p.status==='pago').length;
+    resumoEl.innerHTML =
+      `<span style="color:var(--success);font-weight:600">✓ ${qtdPago} pago(s)</span>` +
+      (qtdAtrasado > 0 ? `&ensp;<span style="color:var(--error);font-weight:600">⚠ ${qtdAtrasado} atrasado(s)</span>` : '') +
+      `&ensp;<span style="color:var(--gray-600)">Total: R$ ${totalPago.toFixed(2).replace('.',',')}</span>`;
+  }
+
+  // Agrupa: pagos / mês atual e futuros / atrasados
+  const pagos     = pagamentosAssociado.filter(p => p.status === 'pago');
+  const atrasados = pagamentosAssociado.filter(p => p.status !== 'pago' && p.mes_referencia < mesAtual);
+  const pendentes = pagamentosAssociado.filter(p => p.status !== 'pago' && p.mes_referencia >= mesAtual);
+
+  function renderItem(p){
+    const isPago    = p.status === 'pago';
+    const isAtraso  = !isPago && p.mes_referencia < mesAtual;
+    const isMesAtual = p.mes_referencia === mesAtual;
+
+    // Verifica se ainda está dentro do prazo (dia de vencimento no mês atual)
+    let isPendenteDentroPrazo = false;
+    if(!isPago && isMesAtual){
+      const venc = new Date(p.mes_referencia + '-' + String(diaPag).padStart(2,'0') + 'T23:59:59');
+      isPendenteDentroPrazo = hoje <= venc;
+    }
+
+    const cls  = isPago ? 'pago' : isAtraso ? 'vencido' : 'pendente';
+    const icon = isPago ? 'fa-check-circle' : isAtraso ? 'fa-exclamation-circle' : 'fa-clock';
     const [ano, mes] = p.mes_referencia.split('-');
     const mesNome = new Date(+ano, +mes-1, 1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-    const badge = isPago ? '<span class="pay-item-badge pay-badge-pago">✓ Pago</span>' :
-                  isVencido ? '<span class="pay-item-badge pay-badge-venc">Vencido</span>' :
-                  '<span class="pay-item-badge pay-badge-pend">Pendente</span>';
-    const dtPag = p.data_pagamento ? ' · Pago em ' + new Date(p.data_pagamento+'T12:00:00').toLocaleDateString('pt-BR') : '';
-    const mpBtn = (!isPago) ? `<button class="btn-mp-pagar" onclick="pagarViaMPAssociado('${p.mes_referencia}',${p.valor})" style="font-size:.75rem;padding:.5rem 1rem;border-radius:var(--r);margin-top:.5rem"><i class="fas fa-credit-card"></i> Pagar com MP</button>` : '';
+    const mesNomeFmt = mesNome.charAt(0).toUpperCase() + mesNome.slice(1);
+
+    let badge;
+    if(isPago)                badge = '<span class="pay-item-badge pay-badge-pago">✓ Pago</span>';
+    else if(isAtraso)         badge = '<span class="pay-item-badge pay-badge-venc">⚠ Atrasado</span>';
+    else if(isPendenteDentroPrazo) badge = '<span class="pay-item-badge pay-badge-pend">📅 Vence dia '+diaPag+'</span>';
+    else                      badge = '<span class="pay-item-badge pay-badge-pend">Pendente</span>';
+
+    const dtPag = p.data_pagamento
+      ? ' · Pago em ' + new Date(p.data_pagamento+'T12:00:00').toLocaleDateString('pt-BR') : '';
+    const metodo = p.confirmado_por==='mercadopago'
+      ? '<i class="fas fa-credit-card" style="color:#009ee3"></i> Mercado Pago'
+      : 'PIX / Manual';
+    const mpBtn = (!isPago)
+      ? `<button class="btn-mp-pagar" onclick="pagarViaMPAssociado('${p.mes_referencia}',${p.valor})"
+           style="font-size:.75rem;padding:.45rem .9rem;border-radius:var(--r);margin-top:.5rem;display:inline-flex;align-items:center;gap:.4rem">
+           <i class="fas fa-credit-card"></i> Pagar com MP</button>`
+      : '';
+
     return `<div class="pay-item ${cls}">
       <div class="pay-item-icon"><i class="fas ${icon}"></i></div>
       <div style="flex:1">
-        <div class="pay-item-mes">${mesNome.charAt(0).toUpperCase()+mesNome.slice(1)} ${badge}</div>
-        <div class="pay-item-info">Vencimento: dia ${fichaAssociado.dia_pagamento||10}${dtPag} · ${p.confirmado_por==='mercadopago'?'<i class="fas fa-credit-card" style="color:#009ee3"></i> Mercado Pago':'PIX / Manual'}</div>
+        <div class="pay-item-mes">${mesNomeFmt} ${badge}</div>
+        <div class="pay-item-info">Vencimento: dia ${diaPag}${dtPag} · ${metodo}</div>
         ${mpBtn}
       </div>
-      <div class="pay-item-val">R$ ${(p.valor||0).toFixed(2).replace('.',',')}</div>
+      <div class="pay-item-val" style="font-weight:700;font-size:1rem;color:${isPago?'var(--success)':isAtraso?'var(--error)':'var(--warn)'}">
+        R$ ${(p.valor||0).toFixed(2).replace('.',',')}
+      </div>
     </div>`;
-  }).join('');
+  }
+
+  function separador(label, cor='var(--gray-400)'){
+    return `<div style="padding:.5rem 0 .3rem;font-size:.72rem;font-weight:700;text-transform:uppercase;
+      letter-spacing:.1em;color:${cor};display:flex;align-items:center;gap:.5rem;margin-top:.5rem">
+      <span style="flex:1;height:1px;background:currentColor;opacity:.2"></span>
+      ${label}
+      <span style="flex:1;height:1px;background:currentColor;opacity:.2"></span>
+    </div>`;
+  }
+
+  let html = '';
+
+  if(atrasados.length > 0){
+    html += separador('⚠ Atrasados', 'var(--error)');
+    html += atrasados.map(renderItem).join('');
+  }
+  if(pendentes.length > 0){
+    html += separador('📅 Pendentes / Próximos', 'var(--warn)');
+    html += pendentes.map(renderItem).join('');
+  }
+  if(pagos.length > 0){
+    html += separador('✓ Pagos', 'var(--success)');
+    html += pagos.map(renderItem).join('');
+  }
+
+  el.innerHTML = html;
 }
 
 async function pagarViaMPAssociado(mesRef, valor){
