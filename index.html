@@ -1603,13 +1603,13 @@ let pagamentosAssociado = [];
 async function carregarDadosAssociado(){
   if(!associadoLogado) return;
 
-  // Busca a ficha principal pelo e-mail do login
+  // 1) Busca ficha pelo e-mail do login
   try {
     const {data: ficha} = await sb.from('associados').select('*').eq('email', associadoLogado.email).single();
     fichaAssociado = ficha || null;
   } catch(e){ fichaAssociado = null; }
 
-  // Se não achou pelo e-mail exato, tenta pelo nome (casos de e-mail diferente entre login e ficha)
+  // 2) Fallback: busca pelo nome (e-mail pode ser diferente entre login e ficha)
   if(!fichaAssociado && associadoLogado.nome){
     try {
       const {data: fichas} = await sb.from('associados').select('*').ilike('nome', associadoLogado.nome.trim());
@@ -1618,9 +1618,57 @@ async function carregarDadosAssociado(){
   }
 
   if(fichaAssociado){
+    // 3) Garante que existem registros de pagamento para todos os meses
+    //    desde o mês de associação até o mês atual
+    await _garantirPagamentosPendentes();
+    // 4) Busca todos os pagamentos (incluindo os recém-criados)
     pagamentosAssociado = await _buscarTodosPagamentosAssociado();
   }
   renderAreaAssociado();
+}
+
+// Cria registros PENDENTES para meses sem registro algum,
+// do mês de associação até o mês atual.
+async function _garantirPagamentosPendentes(){
+  if(!fichaAssociado) return;
+  try {
+    // Determina o mês inicial (mês em que o associado foi criado)
+    const dataCriacao = fichaAssociado.created_at
+      ? new Date(fichaAssociado.created_at)
+      : new Date();
+    const mesInicio = `${dataCriacao.getFullYear()}-${String(dataCriacao.getMonth()+1).padStart(2,'0')}`;
+    const mesAtual  = getMesAtual();
+
+    // Gera lista de todos os meses do período
+    const meses = [];
+    let cur = new Date(mesInicio + '-01');
+    const fim = new Date(mesAtual  + '-01');
+    while(cur <= fim){
+      meses.push(`${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}`);
+      cur.setMonth(cur.getMonth() + 1);
+    }
+
+    // Busca quais meses já têm registro
+    const {data: pagsExist} = await sb.from('pagamentos')
+      .select('mes_referencia')
+      .eq('associado_id', fichaAssociado.id);
+    const mesesComRegistro = new Set((pagsExist||[]).map(p=>p.mes_referencia));
+
+    // Cria pendentes para meses sem registro
+    const novos = meses
+      .filter(m => !mesesComRegistro.has(m))
+      .map(m => ({
+        associado_id:    fichaAssociado.id,
+        mes_referencia:  m,
+        valor:           fichaAssociado.valor_contribuicao || 30,
+        status:          'pendente',
+        data_vencimento: `${m}-${String(fichaAssociado.dia_pagamento||10).padStart(2,'0')}`
+      }));
+
+    if(novos.length > 0){
+      await sb.from('pagamentos').insert(novos);
+    }
+  } catch(e){ console.warn('_garantirPagamentosPendentes:', e.message); }
 }
 
 // Busca pagamentos considerando todos os cadastros possíveis do associado
