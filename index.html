@@ -1602,14 +1602,40 @@ let pagamentosAssociado = [];
 
 async function carregarDadosAssociado(){
   if(!associadoLogado) return;
+
+  // Busca a ficha do associado pelo e-mail do usuário logado
   try {
     const {data: ficha} = await sb.from('associados').select('*').eq('email', associadoLogado.email).single();
     fichaAssociado = ficha || null;
   } catch(e){ fichaAssociado = null; }
+
   if(fichaAssociado){
     try {
-      const {data: pags} = await sb.from('pagamentos').select('*').eq('associado_id', fichaAssociado.id).order('mes_referencia', {ascending: false});
-      pagamentosAssociado = pags || [];
+      // Busca pagamentos por associado_id E também busca todos os associados
+      // com o mesmo e-mail (caso existam duplicatas de cadastro) para pegar
+      // pagamentos que foram vinculados a outro ID do mesmo associado
+      const {data: todosAssocComEmail} = await sb.from('associados')
+        .select('id')
+        .eq('email', associadoLogado.email);
+
+      const idsParaBuscar = todosAssocComEmail
+        ? [...new Set(todosAssocComEmail.map(a => a.id))]
+        : [fichaAssociado.id];
+
+      const {data: pags} = await sb.from('pagamentos')
+        .select('*')
+        .in('associado_id', idsParaBuscar)
+        .order('mes_referencia', {ascending: false});
+
+      // Agrupa por mês: se houver duplicatas, mantém o mais recente / pago
+      const porMes = {};
+      for(const p of (pags||[])){
+        const m = p.mes_referencia;
+        if(!porMes[m] || p.status === 'pago' || new Date(p.created_at) > new Date(porMes[m].created_at)){
+          porMes[m] = p;
+        }
+      }
+      pagamentosAssociado = Object.values(porMes).sort((a,b) => b.mes_referencia.localeCompare(a.mes_referencia));
     } catch(e){ pagamentosAssociado = []; }
   }
   renderAreaAssociado();
@@ -2840,24 +2866,35 @@ function iniciarPolling(){
     if(viewAssoc && associadoLogado){
       try{
         if(fichaAssociado){
-          // FONTE DA VERDADE: lê do Supabase a cada ciclo
-          const {data: novosPags} = await sb.from('pagamentos')
-            .select('*')
-            .eq('associado_id', fichaAssociado.id)
+          // Busca por TODOS os IDs do mesmo e-mail (resolve duplicatas de cadastro)
+          const {data: todosAssoc} = await sb.from('associados')
+            .select('id').eq('email', associadoLogado.email);
+          const ids = todosAssoc ? [...new Set(todosAssoc.map(a=>a.id))] : [fichaAssociado.id];
+
+          const {data: rawPags} = await sb.from('pagamentos')
+            .select('*').in('associado_id', ids)
             .order('mes_referencia',{ascending:false});
 
-          const novosPagsStr = JSON.stringify(novosPags||[]);
+          // Agrupa por mês: mantém o registro pago (ou o mais recente)
+          const porMes = {};
+          for(const p of (rawPags||[])){
+            const m = p.mes_referencia;
+            if(!porMes[m] || p.status==='pago' || new Date(p.created_at)>new Date(porMes[m].created_at)){
+              porMes[m] = p;
+            }
+          }
+          const novosPags = Object.values(porMes).sort((a,b)=>b.mes_referencia.localeCompare(a.mes_referencia));
+          const novosPagsStr = JSON.stringify(novosPags);
           const anteriorStr  = JSON.stringify(pagamentosAssociado);
 
           if(novosPagsStr !== anteriorStr){
             const listAnterior = [...pagamentosAssociado];
-            pagamentosAssociado = novosPags || [];
+            pagamentosAssociado = novosPags;
             renderPagamentosAssociado();
             renderAreaAssociado();
-            // Notifica apenas transições pendente → pago
             pagamentosAssociado.forEach(p => {
-              const old = listAnterior.find(x => x.id === p.id);
-              if(p.status === 'pago' && old && old.status !== 'pago'){
+              const ant = listAnterior.find(x => x.mes_referencia === p.mes_referencia);
+              if(p.status==='pago' && (!ant || ant.status!=='pago')){
                 const [a,m] = p.mes_referencia.split('-');
                 const nomeMes = new Date(+a,+m-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
                 toast(`✅ Pagamento de ${nomeMes} confirmado! Obrigado! ❤️`);
