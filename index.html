@@ -1697,6 +1697,45 @@ async function pagarViaMPAssociado(mesRef, valor){
         tentativas++;
         if(tentativas > maxTentativas){ clearInterval(pollPagamento); return; }
         try{
+          // Consulta o MP diretamente buscando pagamento aprovado com o external_reference correto
+          const extRef = `${fichaAssociado.id}-${mesRef}`;
+          const mpResp = await fetch(
+            `https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=10&status=approved`,
+            { headers:{ 'Authorization':'Bearer '+MP_ACCESS_TOKEN } }
+          );
+          const mpData = await mpResp.json();
+          const mpPago = (mpData.results||[]).find(p =>
+            p.external_reference === extRef ||
+            (p.payer?.email && fichaAssociado.email && p.payer.email.toLowerCase() === fichaAssociado.email.toLowerCase())
+          );
+
+          if(mpPago){
+            // Grava/atualiza no Supabase
+            const pagExist = pagamentosAssociado.find(p => p.mes_referencia === mesRef);
+            const jaGravado = pagamentosAssociado.find(p => p.mp_payment_id === String(mpPago.id));
+            if(!jaGravado){
+              if(pagExist){
+                await sb.from('pagamentos').update({
+                  status:'pago',
+                  data_pagamento: new Date(mpPago.date_approved||mpPago.date_created).toISOString().slice(0,10),
+                  confirmado_por:'mercadopago',
+                  mp_payment_id: String(mpPago.id)
+                }).eq('id', pagExist.id);
+              } else {
+                const novo = {
+                  associado_id: fichaAssociado.id, mes_referencia: mesRef,
+                  valor: mpPago.transaction_amount, status: 'pago',
+                  data_vencimento: `${mesRef}-${String(fichaAssociado.dia_pagamento||10).padStart(2,'0')}`,
+                  data_pagamento: new Date(mpPago.date_approved||mpPago.date_created).toISOString().slice(0,10),
+                  confirmado_por:'mercadopago', mp_payment_id: String(mpPago.id)
+                };
+                const {data: criado} = await sb.from('pagamentos').insert([novo]).select();
+                if(criado?.[0]) pagamentosAssociado.push(criado[0]);
+              }
+            }
+          }
+
+          // Recarrega pagamentos do Supabase
           const {data: novosPags} = await sb.from('pagamentos').select('*').eq('associado_id',fichaAssociado.id).order('mes_referencia',{ascending:false});
           if(!novosPags) return;
           // Verifica se o pagamento do mês foi confirmado
@@ -1707,7 +1746,9 @@ async function pagarViaMPAssociado(mesRef, valor){
             pagamentosAssociado = novosPags;
             renderPagamentosAssociado();
             renderAreaAssociado();
-            toast('🎉 Pagamento confirmado! Obrigado pela sua contribuição!');
+            const [a,m] = mesRef.split('-');
+            const nomeMes = new Date(+a,+m-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+            toast(`✅ Pagamento de ${nomeMes} confirmado! Obrigado! ❤️`);
           } else if(JSON.stringify(novosPags) !== snapAnterior){
             pagamentosAssociado = novosPags;
             renderPagamentosAssociado();
@@ -2550,22 +2591,87 @@ function iniciarPolling(){
       }catch(e){ console.warn('Polling admin:', e.message); }
     }
     if(viewAssoc && associadoLogado){
-      // Associado: recarrega ficha e pagamentos silenciosamente
+      // Associado: sincroniza MP → Supabase → UI
       try{
         if(fichaAssociado){
-          const {data: novosPags} = await sb.from('pagamentos').select('*').eq('associado_id',fichaAssociado.id).order('mes_referencia',{ascending:false});
           const anterior = JSON.stringify(pagamentosAssociado);
+
+          // 1) Consulta pagamentos aprovados no MP para este associado (pelo e-mail)
+          try{
+            const mpResp = await fetch(
+              `https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=20&status=approved`,
+              { headers:{ 'Authorization':'Bearer '+MP_ACCESS_TOKEN } }
+            );
+            const mpData = await mpResp.json();
+            const aprovadosMP = (mpData.results||[]).filter(mp => {
+              // Filtra pagamentos deste associado pelo external_reference ou email
+              const extRef = mp.external_reference||'';
+              const extMatch = extRef.match(/^(.+)-(\d{4}-\d{2})$/);
+              if(extMatch && extMatch[1] === fichaAssociado.id) return true;
+              return mp.payer?.email && fichaAssociado.email &&
+                     mp.payer.email.toLowerCase() === fichaAssociado.email.toLowerCase();
+            });
+
+            // 2) Para cada pagamento aprovado, verifica se já está no Supabase
+            for(const mp of aprovadosMP){
+              const extRef = mp.external_reference||'';
+              const extMatch = extRef.match(/^(.+)-(\d{4}-\d{2})$/);
+              const mesRef = extMatch ? extMatch[2] : new Date(mp.date_created).toISOString().slice(0,7);
+
+              // Verifica se já existe no array local
+              const jaExisteLocal = pagamentosAssociado.find(p => p.mp_payment_id === String(mp.id));
+              if(jaExisteLocal) continue;
+
+              const pagExistente = pagamentosAssociado.find(p => p.mes_referencia === mesRef);
+              if(pagExistente && pagExistente.status !== 'pago'){
+                // Atualiza no Supabase
+                await sb.from('pagamentos').update({
+                  status:'pago',
+                  data_pagamento: new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10),
+                  confirmado_por:'mercadopago',
+                  mp_payment_id: String(mp.id)
+                }).eq('id', pagExistente.id);
+                // Atualiza local
+                pagExistente.status = 'pago';
+                pagExistente.mp_payment_id = String(mp.id);
+                pagExistente.data_pagamento = new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10);
+                pagExistente.confirmado_por = 'mercadopago';
+              } else if(!pagExistente){
+                // Cria registro de pagamento pago no Supabase
+                const novo = {
+                  associado_id: fichaAssociado.id,
+                  mes_referencia: mesRef,
+                  valor: mp.transaction_amount,
+                  status: 'pago',
+                  data_vencimento: `${mesRef}-${String(fichaAssociado.dia_pagamento||10).padStart(2,'0')}`,
+                  data_pagamento: new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10),
+                  confirmado_por: 'mercadopago',
+                  mp_payment_id: String(mp.id)
+                };
+                const {data: criado} = await sb.from('pagamentos').insert([novo]).select();
+                if(criado?.[0]) pagamentosAssociado.push(criado[0]);
+              }
+            }
+          }catch(eMp){ /* MP indisponível — continua com dados do Supabase */ }
+
+          // 3) Recarrega pagamentos frescos do Supabase
+          const {data: novosPags} = await sb.from('pagamentos').select('*').eq('associado_id',fichaAssociado.id).order('mes_referencia',{ascending:false});
           pagamentosAssociado = novosPags || [];
-          // Só re-renderiza se mudou algo
+
+          // 4) Re-renderiza só se algo mudou
           if(JSON.stringify(pagamentosAssociado) !== anterior){
             renderPagamentosAssociado();
             renderAreaAssociado();
-            // Notifica se algum pagamento foi aprovado
-            const novoPago = pagamentosAssociado.find(p=>{
-              const old = JSON.parse(anterior).find(x=>x.id===p.id);
-              return old && old.status !== 'pago' && p.status === 'pago';
+            // Detecta pagamentos recém-confirmados e notifica
+            const listAnterior = JSON.parse(anterior);
+            pagamentosAssociado.forEach(p => {
+              const old = listAnterior.find(x => x.id === p.id || x.mes_referencia === p.mes_referencia);
+              if(p.status === 'pago' && (!old || old.status !== 'pago')){
+                const [a,m] = p.mes_referencia.split('-');
+                const nomeMes = new Date(+a,+m-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+                toast(`✅ Pagamento de ${nomeMes} confirmado! Obrigado! ❤️`);
+              }
             });
-            if(novoPago) toast('🎉 Pagamento confirmado! Obrigado pela sua contribuição!');
           }
         }
         // Indicador visual de sync
