@@ -1751,6 +1751,10 @@ async function pagarViaMPAssociado(mesRef, valor){
             pagamentosAssociado = novosPags;
             renderPagamentosAssociado();
             renderAreaAssociado();
+            // Garante que a aba de pagamentos esteja visível
+            showView('view-associado');
+            showAssocTab('tab-assoc-pagamentos');
+            localStorage.setItem('assoc_ultima_aba', 'tab-assoc-pagamentos');
             const [a,m] = mesRef.split('-');
             const nomeMes = new Date(+a,+m-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
             toast(`✅ Pagamento de ${nomeMes} confirmado! Obrigado! ❤️`);
@@ -1940,7 +1944,6 @@ async function checkAdminMode(){
     try {
       const sessao = JSON.parse(sessaoRaw);
       // Valida se o usuário ainda existe no banco antes de restaurar
-      const senhaHash = sessao.senha_hash;
       const {data, error} = await sb.from('usuarios_associados').select('*').eq('id', sessao.id).single();
       if(error || !data){
         localStorage.removeItem('assoc_sessao');
@@ -1951,11 +1954,42 @@ async function checkAdminMode(){
       associadoLogado = data;
       // Atualiza sessão salva com dados mais recentes
       localStorage.setItem('assoc_sessao', JSON.stringify(data));
+
+      // ── Detecta retorno do Mercado Pago APÓS sessão restaurada ──
+      const mpParams = new URLSearchParams(window.location.search);
+      const mpStatus = mpParams.get('status') || mpParams.get('payment_status');
+      const mpPaymentId = mpParams.get('payment_id');
+      const retornouDoMP = !!(mpPaymentId || mpStatus);
+
+      // Limpa parâmetros da URL sem recarregar
+      if(retornouDoMP){
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+
+      // Carrega dados do associado (e força refresh se veio do MP)
       await carregarDadosAssociado();
+
       showView('view-associado');
-      // Restaura a última aba visitada (padrão: pagamentos)
-      const ultimaAba = localStorage.getItem('assoc_ultima_aba') || 'tab-assoc-pagamentos';
-      showAssocTab(ultimaAba);
+
+      if(retornouDoMP && (mpStatus === 'approved' || mpStatus === 'success')){
+        // Retornou com pagamento aprovado: vai direto para aba de pagamentos e notifica
+        showAssocTab('tab-assoc-pagamentos');
+        localStorage.setItem('assoc_ultima_aba', 'tab-assoc-pagamentos');
+        setTimeout(() => {
+          toast('🎉 Pagamento confirmado! Seu extrato foi atualizado. ❤️');
+          renderPagamentosAssociado();
+          renderAreaAssociado();
+        }, 800);
+      } else if(retornouDoMP){
+        // Retornou do MP mas status ainda pendente: vai para pagamentos e inicia polling
+        showAssocTab('tab-assoc-pagamentos');
+        localStorage.setItem('assoc_ultima_aba', 'tab-assoc-pagamentos');
+        toast('⏳ Aguardando confirmação do pagamento...');
+      } else {
+        // Retorno normal: restaura última aba visitada
+        const ultimaAba = localStorage.getItem('assoc_ultima_aba') || 'tab-assoc-pagamentos';
+        showAssocTab(ultimaAba);
+      }
       return;
     } catch(e){
       localStorage.removeItem('assoc_sessao');
@@ -2541,28 +2575,8 @@ async function sincronizarPagamentosMP(){
 // Inicialização: verifica modo admin na URL
 checkAdminMode();
 
-// Detecta retorno do Mercado Pago (payment_id, status, etc na URL)
-(function detectMPReturn(){
-  const params = new URLSearchParams(window.location.search);
-  const mpStatus = params.get('status') || params.get('payment_status');
-  const mpPaymentId = params.get('payment_id');
-  if(mpPaymentId || mpStatus){
-    // Limpa params da URL sem recarregar
-    const cleanUrl = window.location.pathname;
-    window.history.replaceState({}, '', cleanUrl);
-    // Se veio de um pagamento aprovado, aguarda carregamento e força refresh
-    if(mpStatus === 'approved' || mpStatus === 'success'){
-      setTimeout(async () => {
-        if(associadoLogado && fichaAssociado){
-          await carregarDadosAssociado();
-          toast('🎉 Pagamento recebido! Seu cadastro foi atualizado.');
-        } else if(associados.length > 0){
-          await loadAssociados();
-        }
-      }, 1500);
-    }
-  }
-})();
+// Detecção de retorno do Mercado Pago agora está integrada dentro de checkAdminMode()
+// para garantir que a sessão do associado seja restaurada ANTES de processar o retorno.
 
 // Event listeners — com guards para não quebrar quando elemento não existe
 const _admSenha = g('adm-senha');
