@@ -2530,7 +2530,18 @@ function renderMPPayments(){
 async function sincronizarPagamentosMP(){
   const aprovados = mpPayments.filter(p => p.status === 'approved');
   let sincCount = 0;
+
+  // Busca todos os mp_payment_id já gravados no Supabase para evitar duplicatas reais
+  let mpIdsJaGravados = new Set();
+  try{
+    const { data: pgsExist } = await sb.from('pagamentos').select('mp_payment_id').not('mp_payment_id','is',null);
+    (pgsExist||[]).forEach(p => { if(p.mp_payment_id) mpIdsJaGravados.add(p.mp_payment_id); });
+  }catch(e){ /* usa set vazio se falhar — melhor do que re-sincronizar tudo */ }
+
   for(const mp of aprovados){
+    // Pula pagamentos já gravados no Supabase (evita toast repetido a cada polling)
+    if(mpIdsJaGravados.has(String(mp.id))) continue;
+
     // 1) Tenta identificar pelo external_reference: formato "assocId-YYYY-MM"
     let assoc = null, mesRef = null;
     const extRef = mp.external_reference || '';
@@ -2548,19 +2559,18 @@ async function sincronizarPagamentosMP(){
     }
     if(!assoc || !mesRef) continue;
     const pags = pagamentos[assoc.id]||[];
-    const jaExiste = pags.find(p => p.mp_payment_id === String(mp.id));
-    if(jaExiste) continue;
     const pagExist = pags.find(p => p.mes_referencia === mesRef);
     if(pagExist){
       try{
         await sb.from('pagamentos').update({status:'pago',data_pagamento:new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10),confirmado_por:'mercadopago',mp_payment_id:String(mp.id)}).eq('id',pagExist.id);
         pagExist.status='pago'; pagExist.mp_payment_id=String(mp.id);
         pagExist.data_pagamento=new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10);
+        mpIdsJaGravados.add(String(mp.id));
         sincCount++;
       }catch(e){ console.warn(e); }
     } else {
       const novoPag = {associado_id:assoc.id,mes_referencia:mesRef,valor:mp.transaction_amount,status:'pago',data_vencimento:`${mesRef}-${String(assoc.dia_pagamento||10).padStart(2,'0')}`,data_pagamento:new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10),confirmado_por:'mercadopago',mp_payment_id:String(mp.id)};
-      try{ const {data} = await sb.from('pagamentos').insert([novoPag]).select(); if(data?.[0]){ if(!pagamentos[assoc.id]) pagamentos[assoc.id]=[]; pagamentos[assoc.id].push(data[0]); sincCount++; } }
+      try{ const {data} = await sb.from('pagamentos').insert([novoPag]).select(); if(data?.[0]){ if(!pagamentos[assoc.id]) pagamentos[assoc.id]=[]; pagamentos[assoc.id].push(data[0]); mpIdsJaGravados.add(String(mp.id)); sincCount++; } }
       catch(e){ console.warn(e); }
     }
   }
@@ -2635,7 +2645,7 @@ function iniciarPolling(){
         if(fichaAssociado){
           const anterior = JSON.stringify(pagamentosAssociado);
 
-          // 1) Consulta pagamentos aprovados no MP para este associado (pelo e-mail)
+          // 1) Consulta pagamentos aprovados no MP para este associado (pelo e-mail ou external_reference)
           try{
             const mpResp = await fetch(
               `https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=20&status=approved`,
@@ -2643,7 +2653,6 @@ function iniciarPolling(){
             );
             const mpData = await mpResp.json();
             const aprovadosMP = (mpData.results||[]).filter(mp => {
-              // Filtra pagamentos deste associado pelo external_reference ou email
               const extRef = mp.external_reference||'';
               const extMatch = extRef.match(/^(.+)-(\d{4}-\d{2})$/);
               if(extMatch && extMatch[1] === fichaAssociado.id) return true;
@@ -2651,15 +2660,17 @@ function iniciarPolling(){
                      mp.payer.email.toLowerCase() === fichaAssociado.email.toLowerCase();
             });
 
-            // 2) Para cada pagamento aprovado, verifica se já está no Supabase
+            // 2) Para cada pagamento aprovado, atualiza no Supabase se ainda não estiver como 'pago'
             for(const mp of aprovadosMP){
               const extRef = mp.external_reference||'';
               const extMatch = extRef.match(/^(.+)-(\d{4}-\d{2})$/);
               const mesRef = extMatch ? extMatch[2] : new Date(mp.date_created).toISOString().slice(0,7);
 
-              // Verifica se já existe no array local
-              const jaExisteLocal = pagamentosAssociado.find(p => p.mp_payment_id === String(mp.id));
-              if(jaExisteLocal) continue;
+              // Verifica se já existe como PAGO no array local (com mp_payment_id correto)
+              const jaGravoComoPago = pagamentosAssociado.find(p =>
+                p.mp_payment_id === String(mp.id) && p.status === 'pago'
+              );
+              if(jaGravoComoPago) continue;
 
               const pagExistente = pagamentosAssociado.find(p => p.mes_referencia === mesRef);
               if(pagExistente && pagExistente.status !== 'pago'){
@@ -2670,11 +2681,6 @@ function iniciarPolling(){
                   confirmado_por:'mercadopago',
                   mp_payment_id: String(mp.id)
                 }).eq('id', pagExistente.id);
-                // Atualiza local
-                pagExistente.status = 'pago';
-                pagExistente.mp_payment_id = String(mp.id);
-                pagExistente.data_pagamento = new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10);
-                pagExistente.confirmado_por = 'mercadopago';
               } else if(!pagExistente){
                 // Cria registro de pagamento pago no Supabase
                 const novo = {
@@ -2687,22 +2693,22 @@ function iniciarPolling(){
                   confirmado_por: 'mercadopago',
                   mp_payment_id: String(mp.id)
                 };
-                const {data: criado} = await sb.from('pagamentos').insert([novo]).select();
-                if(criado?.[0]) pagamentosAssociado.push(criado[0]);
+                await sb.from('pagamentos').insert([novo]).select();
               }
             }
           }catch(eMp){ /* MP indisponível — continua com dados do Supabase */ }
 
-          // 3) Recarrega pagamentos frescos do Supabase
+          // 3) Recarrega pagamentos frescos do Supabase (fonte da verdade)
           const {data: novosPags} = await sb.from('pagamentos').select('*').eq('associado_id',fichaAssociado.id).order('mes_referencia',{ascending:false});
-          pagamentosAssociado = novosPags || [];
+          const novosPagsStr = JSON.stringify(novosPags||[]);
 
-          // 4) Re-renderiza só se algo mudou
-          if(JSON.stringify(pagamentosAssociado) !== anterior){
+          // 4) Re-renderiza se algo mudou (incluindo status pago que veio do Supabase)
+          if(novosPagsStr !== anterior){
+            const listAnterior = JSON.parse(anterior);
+            pagamentosAssociado = novosPags || [];
             renderPagamentosAssociado();
             renderAreaAssociado();
             // Detecta pagamentos recém-confirmados e notifica
-            const listAnterior = JSON.parse(anterior);
             pagamentosAssociado.forEach(p => {
               const old = listAnterior.find(x => x.id === p.id || x.mes_referencia === p.mes_referencia);
               if(p.status === 'pago' && (!old || old.status !== 'pago')){
