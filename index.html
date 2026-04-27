@@ -342,8 +342,9 @@ canvas#sig-canvas{display:block;touch-action:none;width:100%;height:180px}
 .assoc-tab.active{background:rgba(232,201,106,.15);color:var(--gold)}
 .assoc-spacer{flex:1}
 .assoc-content{max-width:1100px;margin:0 auto;padding:2rem 1.5rem;display:grid;gap:1.5rem}
-.assoc-panel{display:none}
-.assoc-panel.active{display:block;animation:pgIn .3s ease both}
+.assoc-panel{display:none;min-height:60vh}
+.assoc-panel.active{display:block;animation:fadeIn .2s ease both}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
 /* Boas-vindas */
 .assoc-welcome{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,var(--navy-light) 100%);border-radius:var(--R);padding:2rem 2.5rem;color:#fff;display:flex;align-items:center;gap:2rem;margin-bottom:1.5rem;position:relative;overflow:hidden}
@@ -419,8 +420,8 @@ canvas#sig-canvas{display:block;touch-action:none;width:100%;height:180px}
 .btn-logout{background:transparent;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.4);padding:.35rem .9rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.75rem;cursor:pointer;transition:var(--tr)}
 .btn-logout:hover{color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.3)}
 .admin-content{padding:1.8rem 2rem;max-width:1300px;margin:0 auto}
-.admin-view{display:none}
-.admin-view.active{display:block;animation:pgIn .3s ease both}
+.admin-view{display:none;min-height:60vh}
+.admin-view.active{display:block;animation:fadeIn .2s ease both}
 
 /* Filters */
 .filters-bar{background:var(--white);border:1px solid var(--gray-200);border-radius:var(--R);padding:1.2rem 1.5rem;margin-bottom:1.5rem;display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end}
@@ -764,6 +765,28 @@ tr:hover td{background:var(--gray-50)}
   .bnav-item:last-child:hover{
     color:rgba(220,38,38,.7);
   }
+}
+
+
+@media (max-width:768px){
+  /* Admin: esconde abas do topo, coloca na bottom nav */
+  .admin-tabs{ display:none!important }
+  .atab-spacer{ display:none!important }
+  #view-admin .btn-logout{ display:none!important }
+
+  /* Admin: padding para não ficar atrás da bottom nav */
+  .admin-content{ padding-bottom:80px!important }
+
+  /* Admin bottom nav — reutiliza estilos do .bottom-nav */
+  .admin-bottom-nav{ display:flex!important }
+
+  /* Topbar admin mobile: só logo + badge + sync */
+  .admin-topbar{
+    height:52px;
+    padding:0 1rem;
+    justify-content:space-between;
+  }
+  #rt-sync-dot{ margin-right:0 }
 }
 
 </style>
@@ -1308,6 +1331,27 @@ tr:hover td{background:var(--gray-50)}
     </div>
 
   </div><!-- /admin-content -->
+
+  <!-- BOTTOM NAV ADMIN (só mobile) -->
+  <nav class="bottom-nav admin-bottom-nav" id="admin-bottom-nav">
+    <button class="bnav-item active" id="abnav-associados" onclick="showAdminTab('tab-associados')">
+      <i class="fas fa-users"></i>
+      <span>Associados</span>
+    </button>
+    <button class="bnav-item" id="abnav-dashboard" onclick="showAdminTab('tab-dashboard')">
+      <i class="fas fa-chart-line"></i>
+      <span>Dashboard</span>
+    </button>
+    <button class="bnav-item" id="abnav-financeiro" onclick="showAdminTab('tab-financeiro')">
+      <i class="fas fa-credit-card"></i>
+      <span>Financeiro</span>
+    </button>
+    <button class="bnav-item" onclick="doLogout()">
+      <i class="fas fa-sign-out-alt"></i>
+      <span>Sair</span>
+    </button>
+  </nav>
+
 </div><!-- /view-admin -->
 
 <!-- MODAL COBRANÇA -->
@@ -2835,11 +2879,22 @@ function renderCharts(){
 function showAdminTab(id){
   document.querySelectorAll('.admin-view').forEach(v=>v.classList.remove('active'));
   g(id).classList.add('active');
-  document.querySelectorAll('.atab').forEach(t=>t.classList.remove('active'));
-  // Atualiza o botão ativo (suporta onclick simples ou composto com ponto-e-vírgula)
+
+  // Abas topo (desktop)
   document.querySelectorAll('.atab').forEach(t=>{
-    if((t.getAttribute('onclick')||'').includes(`showAdminTab('${id}')`)) t.classList.add('active');
+    t.classList.toggle('active', (t.getAttribute('onclick')||'').includes(`showAdminTab('${id}')`));
   });
+
+  // Bottom nav admin (mobile)
+  const abnavMap = {
+    'tab-associados': 'abnav-associados',
+    'tab-dashboard':  'abnav-dashboard',
+    'tab-financeiro': 'abnav-financeiro'
+  };
+  document.querySelectorAll('.admin-bottom-nav .bnav-item').forEach(b=>b.classList.remove('active'));
+  const activeBnav = abnavMap[id];
+  if(activeBnav) g(activeBnav)?.classList.add('active');
+
   if(id==='tab-dashboard')  { setTimeout(()=>{ renderCharts(); updateKPIs(); renderPendencias(); },100); }
   if(id==='tab-financeiro') { setTimeout(()=> loadMPFinanceiro(), 100); }
 }
