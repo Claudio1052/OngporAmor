@@ -1039,8 +1039,13 @@ tr:hover td{background:var(--gray-50)}
             <button onclick="loadMPFinanceiro()" style="background:linear-gradient(135deg,#009ee3,#0070b4);border:none;color:#fff;padding:.5rem 1.1rem;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:.5rem"><i class="fas fa-sync-alt"></i> Atualizar</button>
           </div>
         </div>
-        <div style="padding:.6rem 1.5rem;background:rgba(0,158,226,.05);border-bottom:1px solid rgba(0,158,226,.15);font-size:.78rem;color:var(--gray-600)">
-          <i class="fas fa-info-circle" style="color:#009ee3"></i> Os pagamentos aprovados são sincronizados automaticamente. O link de cobrança identifica o associado pelo <strong>external_reference</strong>.
+        <div style="padding:.8rem 1.5rem;background:rgba(0,158,226,.05);border-bottom:1px solid rgba(0,158,226,.15);display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+          <span style="font-size:.78rem;color:var(--gray-600);flex:1"><i class="fas fa-info-circle" style="color:#009ee3"></i> Pagamentos aprovados no Mercado Pago são sincronizados automaticamente ao Supabase.</span>
+          <button onclick="forceSincronizacaoTotal()" id="btn-force-sinc" style="background:linear-gradient(135deg,#059669,#047857);border:none;color:#fff;padding:.5rem 1.2rem;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:.5rem"><i class="fas fa-bolt"></i> Forçar Sincronização Completa</button>
+        </div>
+        <div id="painel-diagnostico" style="display:none;padding:1rem 1.5rem;background:rgba(5,150,105,.05);border-bottom:1px solid rgba(5,150,105,.15)">
+          <div style="font-size:.8rem;font-weight:700;color:var(--success);margin-bottom:.6rem"><i class="fas fa-stethoscope"></i> Resultado da Sincronização</div>
+          <div id="diagnostico-log" style="font-family:monospace;font-size:.77rem;line-height:1.9;max-height:220px;overflow-y:auto;background:rgba(0,0,0,.04);padding:.8rem;border-radius:8px"></div>
         </div>
         <div class="table-scroll">
           <table>
@@ -2619,6 +2624,165 @@ async function sincronizarPagamentosMP(){
     if(el) el.textContent = 'Nenhum novo pagamento para sincronizar';
   }
   return sincCount;
+}
+
+// ═══════════════════════════════════════════
+//  SINCRONIZAÇÃO TOTAL FORÇADA (botão admin)
+//  Lê TODOS os aprovados do MP, compara com
+//  Supabase e corrige qualquer inconsistência
+// ═══════════════════════════════════════════
+async function forceSincronizacaoTotal(){
+  const btn = document.getElementById('btn-force-sinc');
+  const painel = document.getElementById('painel-diagnostico');
+  const logEl  = document.getElementById('diagnostico-log');
+  if(!btn || !logEl) return;
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sincronizando...';
+  painel.style.display = 'block';
+  logEl.innerHTML = '';
+
+  function dlog(msg, cor='#334155'){
+    logEl.innerHTML += `<div style="color:${cor}">${new Date().toLocaleTimeString('pt-BR')} · ${msg}</div>`;
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  let corrigidos = 0, pulados = 0, erros = 0;
+
+  try {
+    dlog('Buscando pagamentos aprovados no Mercado Pago...', '#0070b4');
+    const mpResp = await fetch(
+      'https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=100&status=approved',
+      { headers: { 'Authorization': 'Bearer ' + MP_ACCESS_TOKEN } }
+    );
+    const mpData = await mpResp.json();
+    const aprovados = mpData.results || [];
+    dlog(`✓ ${aprovados.length} pagamento(s) aprovado(s) encontrado(s) no MP`, '#059669');
+
+    // Garante que temos os associados carregados
+    if(associados.length === 0){
+      dlog('Carregando associados do Supabase...', '#0070b4');
+      const {data} = await sb.from('associados').select('*').order('created_at',{ascending:false});
+      associados = data || [];
+    }
+    dlog(`✓ ${associados.length} associado(s) carregados`, '#059669');
+
+    // Carrega TODOS os pagamentos do Supabase (incluindo mp_payment_id)
+    dlog('Carregando pagamentos do Supabase...', '#0070b4');
+    const ids = associados.map(a=>a.id);
+    let todosPags = [];
+    if(ids.length > 0){
+      const {data: pags} = await sb.from('pagamentos').select('*').in('associado_id', ids);
+      todosPags = pags || [];
+    }
+    dlog(`✓ ${todosPags.length} pagamento(s) no Supabase`, '#059669');
+
+    // Monta Set com mp_payment_ids já gravados como PAGO
+    const jaGravados = new Set(
+      todosPags.filter(p => p.status === 'pago' && p.mp_payment_id)
+               .map(p => p.mp_payment_id)
+    );
+    dlog(`ℹ️ ${jaGravados.size} pagamentos já marcados como pago com MP ID`, '#475569');
+    dlog('─'.repeat(50), '#e2e8f0');
+
+    for(const mp of aprovados){
+      const mpId  = String(mp.id);
+      const ext   = mp.external_reference || '';
+      const email = mp.payer?.email || '';
+      const dataPag = new Date(mp.date_approved || mp.date_created).toISOString().slice(0, 10);
+      const valor   = mp.transaction_amount || 0;
+
+      // Já está corretamente gravado?
+      if(jaGravados.has(mpId)){
+        pulados++;
+        continue;
+      }
+
+      // Identifica o associado
+      let assoc = null, mesRef = null;
+      const extMatch = ext.match(/^(.+)-(\d{4}-\d{2})$/);
+      if(extMatch){
+        assoc  = associados.find(a => a.id === extMatch[1]);
+        mesRef = extMatch[2];
+      }
+      // Fallback por email
+      if(!assoc && email){
+        assoc = associados.find(a => a.email && a.email.toLowerCase() === email.toLowerCase());
+        if(!mesRef) mesRef = new Date(mp.date_created).toISOString().slice(0, 7);
+      }
+
+      if(!assoc){
+        dlog(`⚠️ MP ID ${mpId} (R$${valor.toFixed(2)}) — associado não encontrado (ext: "${ext}", email: "${email}")`, '#d97706');
+        pulados++;
+        continue;
+      }
+
+      // Busca registro no Supabase para este associado+mês
+      const pagExist = todosPags.find(p => p.associado_id === assoc.id && p.mes_referencia === mesRef);
+
+      try {
+        if(pagExist){
+          // Atualiza para pago
+          await sb.from('pagamentos').update({
+            status: 'pago',
+            data_pagamento: dataPag,
+            confirmado_por: 'mercadopago',
+            mp_payment_id: mpId
+          }).eq('id', pagExist.id);
+          // Atualiza array local também
+          pagExist.status = 'pago';
+          pagExist.mp_payment_id = mpId;
+          pagExist.data_pagamento = dataPag;
+          pagExist.confirmado_por = 'mercadopago';
+          dlog(`✅ ATUALIZADO: ${assoc.nome} / ${mesRef} → pago (MP ID: ${mpId})`, '#059669');
+        } else {
+          // Cria novo registro
+          const novo = {
+            associado_id: assoc.id,
+            mes_referencia: mesRef,
+            valor: valor,
+            status: 'pago',
+            data_vencimento: `${mesRef}-${String(assoc.dia_pagamento || 10).padStart(2,'0')}`,
+            data_pagamento: dataPag,
+            confirmado_por: 'mercadopago',
+            mp_payment_id: mpId
+          };
+          const {data: criado} = await sb.from('pagamentos').insert([novo]).select();
+          if(criado?.[0]){
+            if(!pagamentos[assoc.id]) pagamentos[assoc.id] = [];
+            pagamentos[assoc.id].push(criado[0]);
+            todosPags.push(criado[0]);
+          }
+          dlog(`✅ CRIADO: ${assoc.nome} / ${mesRef} = R$${valor.toFixed(2)} pago (MP ID: ${mpId})`, '#059669');
+        }
+        jaGravados.add(mpId);
+        corrigidos++;
+      } catch(eUp){
+        dlog(`❌ ERRO ao corrigir ${assoc.nome} / ${mesRef}: ${eUp.message}`, '#dc2626');
+        erros++;
+      }
+    }
+
+    dlog('─'.repeat(50), '#e2e8f0');
+    dlog(`Concluído: ${corrigidos} corrigido(s), ${pulados} já ok, ${erros} erro(s)`,
+      corrigidos > 0 ? '#059669' : '#475569');
+
+    // Recarrega UI
+    if(corrigidos > 0){
+      await loadPagamentos();
+      renderTable(); updateKPIs(); renderPendencias();
+      toast(`✅ ${corrigidos} pagamento(s) sincronizado(s) com sucesso!`);
+    } else {
+      dlog('ℹ️ Nenhuma correção necessária — dados já estão sincronizados', '#0070b4');
+    }
+
+  } catch(e){
+    dlog('❌ ERRO GERAL: ' + e.message, '#dc2626');
+    toast('Erro na sincronização: ' + e.message, 'err');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-bolt"></i> Forçar Sincronização Completa';
 }
 
 // Inicialização: verifica modo admin na URL e restaura sessão
