@@ -808,9 +808,6 @@ tr:hover td{background:var(--gray-50)}
 
     </div><!-- /login-body -->
 
-    <div style="padding:.8rem 2.5rem 1.2rem;text-align:center;border-top:1px solid var(--gray-100)">
-      <button style="background:transparent;border:none;color:var(--gray-400);font-family:'DM Sans',sans-serif;font-size:.8rem;cursor:pointer" onclick="showView('view-form')">← Voltar à ficha pública</button>
-    </div>
   </div>
 </div>
 
@@ -994,7 +991,7 @@ tr:hover td{background:var(--gray-50)}
       </div>
     </div>
 
-    <!-- ABA FINANCEIRO MP -->
+      <!-- ABA FINANCEIRO MP -->
     <div class="admin-view" id="tab-financeiro">
       <div class="kpi-grid" style="margin-bottom:1.5rem">
         <div class="kpi teal" style="cursor:default">
@@ -1007,13 +1004,13 @@ tr:hover td{background:var(--gray-50)}
           <div class="kpi-icon"><i class="fas fa-check-circle"></i></div>
           <div class="kpi-label">Pagamentos Aprovados</div>
           <div class="kpi-value" id="mp-kpi-aprovados">—</div>
-          <div class="kpi-sub">últimas 50 transações</div>
+          <div class="kpi-sub" id="mp-kpi-periodo-label">últimas 50 transações</div>
         </div>
         <div class="kpi warn" style="cursor:default">
           <div class="kpi-icon"><i class="fas fa-clock"></i></div>
           <div class="kpi-label">Volume Total</div>
           <div class="kpi-value" id="mp-kpi-volume">—</div>
-          <div class="kpi-sub">aprovados</div>
+          <div class="kpi-sub" id="mp-kpi-volume-label">aprovados no período</div>
         </div>
         <div class="kpi navy" style="cursor:default">
           <div class="kpi-icon"><i class="fas fa-sync-alt"></i></div>
@@ -1026,18 +1023,25 @@ tr:hover td{background:var(--gray-50)}
       <div class="table-wrap">
         <div class="table-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem">
           <div class="table-title"><i class="fas fa-credit-card" style="color:#009ee3"></i> Transações Mercado Pago</div>
-          <div style="display:flex;gap:.8rem;align-items:center">
+          <div style="display:flex;gap:.8rem;align-items:center;flex-wrap:wrap">
+            <!-- Filtros de período -->
+            <div style="display:flex;gap:.4rem;background:var(--gray-100);border-radius:var(--r);padding:.3rem">
+              <button id="mp-fil-dia" onclick="setMPFiltro('dia')" style="background:var(--teal);color:#fff;border:none;padding:.35rem .9rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;transition:var(--tr)"><i class="fas fa-calendar-day"></i> Hoje</button>
+              <button id="mp-fil-semana" onclick="setMPFiltro('semana')" style="background:transparent;color:var(--gray-600);border:none;padding:.35rem .9rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;transition:var(--tr)"><i class="fas fa-calendar-week"></i> Semana</button>
+              <button id="mp-fil-mes" onclick="setMPFiltro('mes')" style="background:transparent;color:var(--gray-600);border:none;padding:.35rem .9rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;transition:var(--tr)"><i class="fas fa-calendar-alt"></i> Mês</button>
+              <button id="mp-fil-todos" onclick="setMPFiltro('todos')" style="background:transparent;color:var(--gray-600);border:none;padding:.35rem .9rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;transition:var(--tr)"><i class="fas fa-list"></i> Todos</button>
+            </div>
             <span id="mp-fin-status" style="font-size:.82rem;color:var(--gray-600)"></span>
             <button onclick="loadMPFinanceiro()" style="background:linear-gradient(135deg,#009ee3,#0070b4);border:none;color:#fff;padding:.5rem 1.1rem;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:.5rem"><i class="fas fa-sync-alt"></i> Atualizar</button>
           </div>
         </div>
         <div style="padding:.6rem 1.5rem;background:rgba(0,158,226,.05);border-bottom:1px solid rgba(0,158,226,.15);font-size:.78rem;color:var(--gray-600)">
-          <i class="fas fa-info-circle" style="color:#009ee3"></i> Os pagamentos aprovados pelo e-mail do associado são sincronizados automaticamente no sistema.
+          <i class="fas fa-info-circle" style="color:#009ee3"></i> Os pagamentos aprovados são sincronizados automaticamente. O link de cobrança identifica o associado pelo <strong>external_reference</strong>.
         </div>
         <div class="table-scroll">
           <table>
             <thead><tr>
-              <th>Data</th><th>Pagador</th><th>Valor</th><th>Método</th><th>Status</th><th>ID Transação</th>
+              <th>Data/Hora</th><th>Associado / Pagador</th><th>Valor</th><th>Método</th><th>Status</th><th>ID Transação</th>
             </tr></thead>
             <tbody id="mp-pay-tbody">
               <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--gray-400)"><i class="fas fa-arrow-up"></i> Clique em "Financeiro MP" para carregar as transações</td></tr>
@@ -1895,6 +1899,18 @@ async function loadAssociados(){
   renderTable();
   updateKPIs();
   renderPendencias();
+  // Sincroniza pagamentos MP silenciosamente em background
+  sincronizarMPBackground();
+}
+
+async function sincronizarMPBackground(){
+  try{
+    const resp = await fetch('https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=50&status=approved',{
+      headers:{'Authorization':'Bearer '+MP_ACCESS_TOKEN}
+    });
+    const data = await resp.json();
+    if(data.results){ mpPayments = data.results; await sincronizarPagamentosMP(); }
+  }catch(e){ /* silent fail */ }
 }
 
 async function loadPagamentos(){
@@ -2004,12 +2020,21 @@ function closeEdit(){ g('modal-edit').classList.remove('open'); editingId=null; 
 
 async function saveEdit(){
   if(!editingId) return;
-  const updates = { nome: g('edit-nome').value.trim(), cpf: g('edit-cpf').value, telefone: g('edit-tel').value, email: g('edit-email').value, profissao: g('edit-prof').value, valor_contribuicao: parseFloat(g('edit-valor').value.replace(',','.'))||30, dia_pagamento: parseInt(g('edit-dia').value)||10, forma_pagamento: g('edit-pgto').value, status: g('edit-status').value };
+  const novoValor = parseFloat(g('edit-valor').value.replace(',','.'))||30;
+  const updates = { nome: g('edit-nome').value.trim(), cpf: g('edit-cpf').value, telefone: g('edit-tel').value, email: g('edit-email').value, profissao: g('edit-prof').value, valor_contribuicao: novoValor, dia_pagamento: parseInt(g('edit-dia').value)||10, forma_pagamento: g('edit-pgto').value, status: g('edit-status').value };
   try{ const {error} = await sb.from('associados').update(updates).eq('id',editingId); if(error) throw error; }
   catch(e){ console.error(e.message); }
+  // Atualiza valor nos pagamentos PENDENTES do associado
+  const pagsPendentes = (pagamentos[editingId]||[]).filter(p=>p.status==='pendente');
+  for(const p of pagsPendentes){
+    try{
+      await sb.from('pagamentos').update({valor: novoValor}).eq('id', p.id);
+      p.valor = novoValor;
+    }catch(e){ console.warn('Erro ao atualizar valor do pagamento:', e.message); }
+  }
   const idx = associados.findIndex(x=>x.id===editingId);
   if(idx>-1) associados[idx] = {...associados[idx], ...updates};
-  closeEdit(); toast('Associado atualizado com sucesso!'); renderTable(); updateKPIs();
+  closeEdit(); toast('Associado e pagamentos pendentes atualizados! ✅'); renderTable(); updateKPIs();
 }
 
 let deleteId = null;
@@ -2028,21 +2053,56 @@ async function doDelete(){
 //  COBRANÇA MODAL
 // ═══════════════════════════════════════════
 let cobrancaAssociadoId = null;
-function openCobranca(aid){
+let cobrancaMPLink = '';
+
+async function openCobranca(aid){
   const a = associados.find(x=>x.id===aid);
   if(!a) return;
   cobrancaAssociadoId = aid;
   const pend = (pagamentos[aid]||[]).filter(p=>p.status==='pendente');
   const totalPend = pend.reduce((s,p)=>s+p.valor,0);
-  const hoje = new Date();
-  const msg = `Olá, ${a.nome.split(' ')[0]}! 😊\n\nGostaríamos de lembrar que há uma contribuição em aberto com a *ONG Por Amor*.\n\n📋 *Associado:* ${a.nome}\n💰 *Valor mensal:* R$ ${(a.valor_contribuicao||30).toFixed(2).replace('.',',')}\n📅 *Vencimento:* Todo dia ${a.dia_pagamento||10}${totalPend>0?`\n⚠️ *Total pendente:* R$ ${totalPend.toFixed(2).replace('.',',')}`:''}
+  const mesAtual = getMesAtual();
+  const pendMes = pend.find(p=>p.mes_referencia===mesAtual);
+  const valor = pendMes?.valor || a.valor_contribuicao || 30;
+  const [ano, mes] = mesAtual.split('-');
+  const mesNome = new Date(+ano, +mes-1, 1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
 
-🔑 *Chave PIX:* (83) 98231-5427\n🏷️ *Tipo:* Celular — ONG Por Amor\n\nApós o pagamento, envie o comprovante para confirmar. Qualquer dúvida, estamos à disposição! ❤️\n— Equipe ONG Por Amor | (83) 98231-5427`;
-  g('msg-template').textContent = msg;
+  const buildMsg = (linkMP) => {
+    const linkTxt = linkMP && linkMP !== 'gerando' ? `\n\n💳 *Pague com Mercado Pago (cartão, PIX, boleto):*\n${linkMP}` : (linkMP === 'gerando' ? '\n\n💳 *Gerando link de pagamento Mercado Pago...*' : '');
+    return `Olá, ${a.nome.split(' ')[0]}! 😊\n\nGostaríamos de lembrar que há uma contribuição em aberto com a *ONG Por Amor*.\n\n📋 *Associado:* ${a.nome}\n💰 *Valor:* R$ ${valor.toFixed(2).replace('.',',')}\n📅 *Vencimento:* Todo dia ${a.dia_pagamento||10}${totalPend>0?`\n⚠️ *Total pendente:* R$ ${totalPend.toFixed(2).replace('.',',')}`:''}${linkTxt}\n\n🔑 *Chave PIX:* (83) 98231-5427\n🏷️ *Tipo:* Celular — ONG Por Amor\n\nApós o pagamento, envie o comprovante para confirmar. ❤️\n— Equipe ONG Por Amor | (83) 98231-5427`;
+  };
+
+  const msgTemplate = g('msg-template');
+  if(msgTemplate) msgTemplate.textContent = buildMsg('gerando');
+  g('modal-cobranca').classList.add('open');
+
+  // Gera link MP personalizado com external_reference identificando o associado e o mês
+  cobrancaMPLink = '';
+  try{
+    const extRef = `${a.id}-${mesAtual}`;
+    const payload = {
+      items:[{title:`Contribuição ONG Por Amor — ${mesNome}`,quantity:1,currency_id:'BRL',unit_price:valor}],
+      payer:{name:a.nome,email:a.email||'associado@ongporamor.com.br'},
+      back_urls:{success:window.location.href,failure:window.location.href,pending:window.location.href},
+      auto_return:'approved',
+      statement_descriptor:'ONG Por Amor',
+      external_reference: extRef
+    };
+    const resp = await fetch('https://api.mercadopago.com/checkout/preferences',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+MP_ACCESS_TOKEN},
+      body:JSON.stringify(payload)
+    });
+    const data = await resp.json();
+    cobrancaMPLink = data.init_point || '';
+  }catch(e){ cobrancaMPLink = ''; toast('Aviso: não foi possível gerar link MP. PIX disponível na mensagem.', 'err'); }
+
+  const msg = buildMsg(cobrancaMPLink);
+  if(msgTemplate) msgTemplate.textContent = msg;
+
   const waNum = (a.telefone||'').replace(/\D/g,'');
   g('btn-wa-send').onclick = () => window.open(`https://wa.me/55${waNum}?text=${encodeURIComponent(msg)}`,'_blank');
   g('btn-email-send').onclick = () => window.open(`mailto:${a.email||''}?subject=${encodeURIComponent('ONG Por Amor — Contribuição Mensal')}&body=${encodeURIComponent(msg)}`,'_blank');
-  g('modal-cobranca').classList.add('open');
 }
 function closeModal(){ g('modal-cobranca').classList.remove('open'); }
 function copyMsg(){ navigator.clipboard.writeText(g('msg-template').textContent).then(()=>toast('Mensagem copiada!')); }
@@ -2263,34 +2323,76 @@ async function loadMPFinanceiro(){
   }
 }
 
+let mpFiltroAtivo = 'dia';
+function setMPFiltro(filtro){
+  mpFiltroAtivo = filtro;
+  const btns = {dia:'mp-fil-dia',semana:'mp-fil-semana',mes:'mp-fil-mes',todos:'mp-fil-todos'};
+  Object.entries(btns).forEach(([k,id])=>{
+    const btn = g(id);
+    if(!btn) return;
+    if(k===filtro){ btn.style.background='var(--teal)'; btn.style.color='#fff'; }
+    else { btn.style.background='transparent'; btn.style.color='var(--gray-600)'; }
+  });
+  renderMPPayments();
+}
+
+function filtrarPorPeriodo(payments){
+  const agora = new Date();
+  const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+  const inicioSemana = new Date(hoje); inicioSemana.setDate(hoje.getDate() - hoje.getDay());
+  const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
+  return payments.filter(p=>{
+    const dt = new Date(p.date_created);
+    if(mpFiltroAtivo==='dia') return dt >= hoje;
+    if(mpFiltroAtivo==='semana') return dt >= inicioSemana;
+    if(mpFiltroAtivo==='mes') return dt >= inicioMes;
+    return true;
+  });
+}
+
 function renderMPPayments(){
   const tbody = g('mp-pay-tbody');
   const statusEl = g('mp-fin-status');
   if(!tbody) return;
-  // KPIs
-  const aprovados = mpPayments.filter(p=>p.status==='approved');
+  const filtered = filtrarPorPeriodo(mpPayments);
+  const aprovados = filtered.filter(p=>p.status==='approved');
   const volume = aprovados.reduce((s,p)=>s+(p.transaction_amount||0),0);
   const elAp = g('mp-kpi-aprovados'); if(elAp) elAp.textContent = aprovados.length;
   const elVol = g('mp-kpi-volume'); if(elVol) elVol.textContent = 'R$ ' + volume.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
-  if(mpPayments.length === 0){
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--gray-400)"><i class="fas fa-inbox"></i> Nenhum pagamento encontrado na conta Mercado Pago</td></tr>';
+  const periodoLabel = {dia:'hoje',semana:'esta semana',mes:'este mês',todos:'total (50 últimas)'}[mpFiltroAtivo]||'';
+  const elPL = g('mp-kpi-periodo-label'); if(elPL) elPL.textContent = `aprovados — ${periodoLabel}`;
+  const elVL = g('mp-kpi-volume-label'); if(elVL) elVL.textContent = `aprovados — ${periodoLabel}`;
+  if(filtered.length === 0){
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--gray-400)"><i class="fas fa-inbox"></i> Nenhum pagamento encontrado no período selecionado</td></tr>`;
     if(statusEl) statusEl.innerHTML = '';
     return;
   }
-  if(statusEl) statusEl.innerHTML = `<i class="fas fa-check-circle" style="color:var(--success)"></i> ${mpPayments.length} transações carregadas`;
-  tbody.innerHTML = mpPayments.map(p => {
-    const dt = new Date(p.date_created).toLocaleDateString('pt-BR');
+  if(statusEl) statusEl.innerHTML = `<i class="fas fa-check-circle" style="color:var(--success)"></i> ${filtered.length} transação(ões) no período`;
+  tbody.innerHTML = filtered.map(p => {
+    const dt = new Date(p.date_created);
+    const dtStr = dt.toLocaleDateString('pt-BR') + ' ' + dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     const val = (p.transaction_amount||0).toFixed(2).replace('.',',');
     const statusColor = {approved:'var(--success)',pending:'var(--warn)',rejected:'var(--error)',cancelled:'var(--gray-400)'}[p.status]||'var(--gray-400)';
     const statusLabel = {approved:'✓ Aprovado',pending:'⏳ Pendente',rejected:'✗ Recusado',cancelled:'Cancelado'}[p.status]||p.status;
-    const payer = p.payer?.first_name ? `${p.payer.first_name} ${p.payer.last_name||''}` : (p.payer?.email||'—');
+    // Tenta identificar o associado pelo external_reference ou email
+    let assocNome = '—';
+    const extRef = p.external_reference || '';
+    const extMatch = extRef.match(/^(.+)-(\d{4}-\d{2})$/);
+    if(extMatch){ const a = associados.find(x=>x.id===extMatch[1]); if(a) assocNome = a.nome; }
+    if(assocNome==='—'){
+      const email = p.payer?.email;
+      if(email){ const a = associados.find(x=>x.email && x.email.toLowerCase()===email.toLowerCase()); if(a) assocNome=a.nome; }
+    }
+    const payerDisplay = assocNome !== '—'
+      ? `<strong style="color:var(--teal)">${assocNome}</strong><br><span style="font-size:.72rem;color:var(--gray-400)">${p.payer?.email||''}</span>`
+      : `<span style="color:var(--gray-600)">${p.payer?.first_name||''} ${p.payer?.last_name||''}</span><br><span style="font-size:.72rem;color:var(--gray-400)">${p.payer?.email||''}</span>`;
     return `<tr>
-      <td style="font-size:.78rem;color:var(--gray-600)">${dt}</td>
-      <td><strong>${payer}</strong><br><span style="font-size:.75rem;color:var(--gray-400)">${p.payer?.email||''}</span></td>
-      <td style="font-weight:700;color:var(--navy)">R$ ${val}</td>
+      <td style="font-size:.78rem;color:var(--gray-600);white-space:nowrap">${dtStr}</td>
+      <td>${payerDisplay}</td>
+      <td style="font-weight:700;color:var(--navy);white-space:nowrap">R$ ${val}</td>
       <td style="font-size:.8rem">${p.payment_method_id||'—'}</td>
       <td><span style="color:${statusColor};font-weight:700;font-size:.82rem">${statusLabel}</span></td>
-      <td style="font-size:.75rem;color:var(--gray-500)">${p.id}</td>
+      <td style="font-size:.72rem;color:var(--gray-400)">${p.id}</td>
     </tr>`;
   }).join('');
 }
@@ -2299,21 +2401,32 @@ async function sincronizarPagamentosMP(){
   const aprovados = mpPayments.filter(p => p.status === 'approved');
   let sincCount = 0;
   for(const mp of aprovados){
-    // Tenta identificar o associado pelo email do pagador
-    const email = mp.payer?.email;
-    if(!email) continue;
-    const assoc = associados.find(a => a.email && a.email.toLowerCase() === email.toLowerCase());
-    if(!assoc) continue;
-    const mesRef = new Date(mp.date_created).toISOString().slice(0,7);
+    // 1) Tenta identificar pelo external_reference: formato "assocId-YYYY-MM"
+    let assoc = null, mesRef = null;
+    const extRef = mp.external_reference || '';
+    const extMatch = extRef.match(/^(.+)-(\d{4}-\d{2})$/);
+    if(extMatch){
+      const assocId = extMatch[1];
+      mesRef = extMatch[2];
+      assoc = associados.find(a => a.id === assocId);
+    }
+    // 2) Fallback: tenta pelo e-mail do pagador
+    if(!assoc){
+      const email = mp.payer?.email;
+      if(email) assoc = associados.find(a => a.email && a.email.toLowerCase() === email.toLowerCase());
+      if(!mesRef) mesRef = new Date(mp.date_created).toISOString().slice(0,7);
+    }
+    if(!assoc || !mesRef) continue;
     const pags = pagamentos[assoc.id]||[];
     const jaExiste = pags.find(p => p.mp_payment_id === String(mp.id));
     if(jaExiste) continue;
-    // Marca pagamento como pago no Supabase
     const pagExist = pags.find(p => p.mes_referencia === mesRef);
     if(pagExist){
       try{
         await sb.from('pagamentos').update({status:'pago',data_pagamento:new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10),confirmado_por:'mercadopago',mp_payment_id:String(mp.id)}).eq('id',pagExist.id);
-        pagExist.status='pago'; pagExist.mp_payment_id=String(mp.id); sincCount++;
+        pagExist.status='pago'; pagExist.mp_payment_id=String(mp.id);
+        pagExist.data_pagamento=new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10);
+        sincCount++;
       }catch(e){ console.warn(e); }
     } else {
       const novoPag = {associado_id:assoc.id,mes_referencia:mesRef,valor:mp.transaction_amount,status:'pago',data_vencimento:`${mesRef}-${String(assoc.dia_pagamento||10).padStart(2,'0')}`,data_pagamento:new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10),confirmado_por:'mercadopago',mp_payment_id:String(mp.id)};
