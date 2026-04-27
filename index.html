@@ -1562,6 +1562,9 @@ async function doAssocLogin(){
     const {data, error} = await sb.from('usuarios_associados').select('*').eq('email', email).eq('senha_hash', senhaHash).single();
     if(error || !data){ msgEl.textContent='E-mail ou senha incorretos.'; errEl.classList.add('show'); return; }
     associadoLogado = data;
+    // Salva sessão no localStorage (persiste ao fechar/reabrir a aba)
+    localStorage.setItem('assoc_sessao', JSON.stringify(data));
+    localStorage.setItem('assoc_ultima_aba', 'tab-assoc-pagamentos');
     await carregarDadosAssociado();
     showView('view-associado');
     toast('Bem-vindo(a), ' + data.nome.split(' ')[0] + '! ❤️');
@@ -1577,6 +1580,8 @@ function doAssocLogout(){
   associadoLogado = null;
   fichaAssociado = null;
   pagamentosAssociado = [];
+  localStorage.removeItem('assoc_sessao');
+  localStorage.removeItem('assoc_ultima_aba');
   showView('view-admin-login');
   switchLoginTab('tab-login');
   const el = g('assoc-email-login'); if(el) el.value='';
@@ -1767,6 +1772,8 @@ function showAssocTab(id){
   document.querySelectorAll('.assoc-tab').forEach(t=>t.classList.remove('active'));
   const activeTab = tabMap[id];
   if(activeTab) g(activeTab)?.classList.add('active');
+  // Persiste a aba atual
+  localStorage.setItem('assoc_ultima_aba', id);
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -1927,19 +1934,37 @@ async function checkAdminMode(){
     return;
   }
 
-  if(modo === 'associado'){
-    const sessaoRaw = sessionStorage.getItem('assoc_sessao');
-    if(!sessaoRaw){ showView('view-admin-login'); return; }
+  // Restaura sessão de associado do localStorage (persiste entre recargas/fechamentos)
+  const sessaoRaw = localStorage.getItem('assoc_sessao');
+  if(sessaoRaw){
     try {
-      associadoLogado = JSON.parse(sessaoRaw);
+      const sessao = JSON.parse(sessaoRaw);
+      // Valida se o usuário ainda existe no banco antes de restaurar
+      const senhaHash = sessao.senha_hash;
+      const {data, error} = await sb.from('usuarios_associados').select('*').eq('id', sessao.id).single();
+      if(error || !data){
+        localStorage.removeItem('assoc_sessao');
+        localStorage.removeItem('assoc_ultima_aba');
+        showView('view-admin-login');
+        return;
+      }
+      associadoLogado = data;
+      // Atualiza sessão salva com dados mais recentes
+      localStorage.setItem('assoc_sessao', JSON.stringify(data));
       await carregarDadosAssociado();
       showView('view-associado');
+      // Restaura a última aba visitada (padrão: pagamentos)
+      const ultimaAba = localStorage.getItem('assoc_ultima_aba') || 'tab-assoc-pagamentos';
+      showAssocTab(ultimaAba);
+      return;
     } catch(e){
-      sessionStorage.removeItem('assoc_sessao');
-      showView('view-admin-login');
+      localStorage.removeItem('assoc_sessao');
+      localStorage.removeItem('assoc_ultima_aba');
     }
-    return;
   }
+
+  // Sem sessão salva: mostra tela de login
+  showView('view-admin-login');
 }
 
 // ── POPUP ──
