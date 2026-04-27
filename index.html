@@ -917,7 +917,7 @@ tr:hover td{background:var(--gray-50)}
           <div class="assoc-section-title"><i class="fas fa-wallet" style="color:var(--gold)"></i> Minhas Contribuições</div>
           <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
             <span id="assoc-pay-resumo" style="font-size:.82rem;color:var(--gray-600)"></span>
-            <button onclick="atualizarPagamentosAssociado()" style="background:var(--teal);border:none;color:#fff;padding:.4rem 1rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:.4rem;transition:var(--tr)" id="btn-atualizar-pags"><i class="fas fa-rotate-right"></i> Atualizar</button>
+            <button id="btn-sync-pags" onclick="sincronizarPagamentosAssociado()" style="background:var(--teal);border:none;color:#fff;padding:.4rem 1.1rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;transition:var(--tr)"><i class="fas fa-rotate-right"></i> Atualizar</button>
           </div>
         </div>
         <div class="assoc-section-body">
@@ -1597,13 +1597,10 @@ let pagamentosAssociado = [];
 
 async function carregarDadosAssociado(){
   if(!associadoLogado) return;
-  // Busca ficha pelo e-mail do usuário
   try {
     const {data: ficha} = await sb.from('associados').select('*').eq('email', associadoLogado.email).single();
     fichaAssociado = ficha || null;
   } catch(e){ fichaAssociado = null; }
-
-  // Busca pagamentos
   if(fichaAssociado){
     try {
       const {data: pags} = await sb.from('pagamentos').select('*').eq('associado_id', fichaAssociado.id).order('mes_referencia', {ascending: false});
@@ -1613,79 +1610,83 @@ async function carregarDadosAssociado(){
   renderAreaAssociado();
 }
 
-// Atualização manual: sincroniza MP → Supabase → UI
-async function atualizarPagamentosAssociado(){
+// ─── SINCRONIZAÇÃO MANUAL DO ASSOCIADO ───────────────────────────────────────
+// Consulta MP, atualiza Supabase e recarrega a tela. Chamada pelo botão "Atualizar"
+// e também automaticamente ao abrir a aba de pagamentos via pagarViaMPAssociado.
+async function sincronizarPagamentosAssociado(){
   if(!fichaAssociado || !associadoLogado) return;
-  const btn = g('btn-atualizar-pags');
-  if(btn){ btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Atualizando...'; }
+  const btn = g('btn-sync-pags');
+  if(btn){ btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Sincronizando...'; }
+
   try{
     // 1) Busca pagamentos aprovados no MP
     const mpResp = await fetch(
-      `https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=50&status=approved`,
+      'https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=50&status=approved',
       { headers:{ 'Authorization':'Bearer '+MP_ACCESS_TOKEN } }
     );
     const mpData = await mpResp.json();
-    const aprovadosMP = (mpData.results||[]).filter(mp =>
-      (mp.external_reference||'').includes(fichaAssociado.id) ||
-      (mp.payer?.email && fichaAssociado.email &&
-       mp.payer.email.toLowerCase() === fichaAssociado.email.toLowerCase())
-    );
 
-    // 2) Para cada aprovado, atualiza/cria no Supabase
-    for(const mp of aprovadosMP){
-      const extRef = mp.external_reference||'';
-      const extMatch = extRef.match(/^(.+)-(\d{4}-\d{2})$/);
+    // 2) Filtra apenas os deste associado (por ID na external_reference OU por e-mail)
+    const aprovados = (mpData.results||[]).filter(mp => {
+      const ext = mp.external_reference||'';
+      if(ext.startsWith(fichaAssociado.id+'-')) return true;
+      return mp.payer?.email && fichaAssociado.email &&
+             mp.payer.email.toLowerCase() === fichaAssociado.email.toLowerCase();
+    });
+
+    // 3) Para cada pagamento aprovado, garante que está gravado no Supabase como 'pago'
+    for(const mp of aprovados){
+      const ext = mp.external_reference||'';
+      const extMatch = ext.match(/^(.+)-(\d{4}-\d{2})$/);
       const mesRef = extMatch ? extMatch[2] : new Date(mp.date_created).toISOString().slice(0,7);
+      const dataPag = new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10);
 
-      // Busca no Supabase pelo mes_referencia e associado_id
-      const {data: pagExistSupa} = await sb.from('pagamentos')
+      // Busca diretamente no Supabase (evita depender do array local desatualizado)
+      const {data: pagSupa} = await sb.from('pagamentos')
         .select('id,status,mp_payment_id')
         .eq('associado_id', fichaAssociado.id)
         .eq('mes_referencia', mesRef)
-        .single();
+        .maybeSingle();
 
-      if(pagExistSupa){
-        if(pagExistSupa.status !== 'pago' || !pagExistSupa.mp_payment_id){
+      if(pagSupa){
+        // Existe: atualiza se não está pago ou sem mp_payment_id
+        if(pagSupa.status !== 'pago' || !pagSupa.mp_payment_id){
           await sb.from('pagamentos').update({
-            status:'pago',
-            data_pagamento: new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10),
-            confirmado_por:'mercadopago',
-            mp_payment_id: String(mp.id)
-          }).eq('id', pagExistSupa.id);
+            status:'pago', data_pagamento:dataPag,
+            confirmado_por:'mercadopago', mp_payment_id:String(mp.id)
+          }).eq('id', pagSupa.id);
         }
       } else {
-        // Não existe registro para este mês — cria
+        // Não existe: cria novo registro como pago
         await sb.from('pagamentos').insert([{
           associado_id: fichaAssociado.id,
           mes_referencia: mesRef,
           valor: mp.transaction_amount,
           status: 'pago',
           data_vencimento: `${mesRef}-${String(fichaAssociado.dia_pagamento||10).padStart(2,'0')}`,
-          data_pagamento: new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10),
+          data_pagamento: dataPag,
           confirmado_por: 'mercadopago',
           mp_payment_id: String(mp.id)
         }]);
       }
     }
+  }catch(eMp){
+    console.warn('MP indisponível, apenas recarregando do Supabase:', eMp.message);
+  }
 
-    // 3) Recarrega tudo do Supabase e atualiza UI
-    const {data: pags} = await sb.from('pagamentos').select('*').eq('associado_id', fichaAssociado.id).order('mes_referencia', {ascending:false});
+  // 4) Sempre recarrega do Supabase e atualiza a UI (independente do MP)
+  try{
+    const {data: pags} = await sb.from('pagamentos')
+      .select('*')
+      .eq('associado_id', fichaAssociado.id)
+      .order('mes_referencia',{ascending:false});
     pagamentosAssociado = pags || [];
     renderPagamentosAssociado();
     renderAreaAssociado();
-    toast('✅ Pagamentos atualizados com sucesso!');
-  }catch(e){
-    // Se MP falhou, pelo menos recarrega do Supabase
-    try{
-      const {data: pags} = await sb.from('pagamentos').select('*').eq('associado_id', fichaAssociado.id).order('mes_referencia', {ascending:false});
-      pagamentosAssociado = pags || [];
-      renderPagamentosAssociado();
-      renderAreaAssociado();
-      toast('Dados atualizados do servidor.','info');
-    }catch(e2){ toast('Erro ao atualizar: '+e2.message,'err'); }
-  }finally{
-    if(btn){ btn.disabled=false; btn.innerHTML='<i class="fas fa-rotate-right"></i> Atualizar'; }
-  }
+    toast('✅ Extrato atualizado!');
+  }catch(e){ toast('Erro ao carregar pagamentos: '+e.message,'err'); }
+
+  if(btn){ btn.disabled=false; btn.innerHTML='<i class="fas fa-rotate-right"></i> Atualizar'; }
 }
 
 function abrirFormularioAssociado(){
@@ -1753,13 +1754,14 @@ async function pagarViaMPAssociado(mesRef, valor){
   try {
     const [ano, mes] = mesRef.split('-');
     const mesNome = new Date(+ano, +mes-1, 1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    const extRef = `${fichaAssociado.id}-${mesRef}`;
     const payload = {
       items:[{title:`Contribuição ONG Por Amor — ${mesNome}`,quantity:1,currency_id:'BRL',unit_price:valor}],
       payer:{name:associadoLogado.nome, email:associadoLogado.email},
       back_urls:{success:window.location.href,failure:window.location.href,pending:window.location.href},
       auto_return:'approved',
       statement_descriptor:'ONG Por Amor',
-      external_reference:`${fichaAssociado.id}-${mesRef}`
+      external_reference: extRef
     };
     const resp = await fetch('https://api.mercadopago.com/checkout/preferences',{
       method:'POST',
@@ -1769,77 +1771,34 @@ async function pagarViaMPAssociado(mesRef, valor){
     const data = await resp.json();
     if(data.init_point){
       window.open(data.init_point,'_blank');
-      toast('Checkout aberto em nova aba! Aguardando confirmação... ⏳');
-      // Polling agressivo: verifica a cada 3s por 2 minutos após abrir o checkout
+      toast('Checkout aberto! Aguardando confirmação... ⏳');
+
+      // Polling simples: só consulta Supabase (fonte da verdade), a cada 4s por 3 min
       let tentativas = 0;
-      const maxTentativas = 40; // 40 × 3s = 2min
-      const snapAnterior = JSON.stringify(pagamentosAssociado);
       const pollPagamento = setInterval(async () => {
         tentativas++;
-        if(tentativas > maxTentativas){ clearInterval(pollPagamento); return; }
+        if(tentativas > 45){ clearInterval(pollPagamento); return; } // 45×4s = 3min
+
         try{
-          // Consulta o MP diretamente buscando pagamento aprovado com o external_reference correto
-          const extRef = `${fichaAssociado.id}-${mesRef}`;
-          const mpResp = await fetch(
-            `https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=10&status=approved`,
-            { headers:{ 'Authorization':'Bearer '+MP_ACCESS_TOKEN } }
-          );
-          const mpData = await mpResp.json();
-          const mpPago = (mpData.results||[]).find(p =>
-            p.external_reference === extRef ||
-            (p.payer?.email && fichaAssociado.email && p.payer.email.toLowerCase() === fichaAssociado.email.toLowerCase())
-          );
-
-          if(mpPago){
-            // Grava/atualiza no Supabase
-            const pagExist = pagamentosAssociado.find(p => p.mes_referencia === mesRef);
-            const jaGravado = pagamentosAssociado.find(p => p.mp_payment_id === String(mpPago.id));
-            if(!jaGravado){
-              if(pagExist){
-                await sb.from('pagamentos').update({
-                  status:'pago',
-                  data_pagamento: new Date(mpPago.date_approved||mpPago.date_created).toISOString().slice(0,10),
-                  confirmado_por:'mercadopago',
-                  mp_payment_id: String(mpPago.id)
-                }).eq('id', pagExist.id);
-              } else {
-                const novo = {
-                  associado_id: fichaAssociado.id, mes_referencia: mesRef,
-                  valor: mpPago.transaction_amount, status: 'pago',
-                  data_vencimento: `${mesRef}-${String(fichaAssociado.dia_pagamento||10).padStart(2,'0')}`,
-                  data_pagamento: new Date(mpPago.date_approved||mpPago.date_created).toISOString().slice(0,10),
-                  confirmado_por:'mercadopago', mp_payment_id: String(mpPago.id)
-                };
-                const {data: criado} = await sb.from('pagamentos').insert([novo]).select();
-                if(criado?.[0]) pagamentosAssociado.push(criado[0]);
-              }
-            }
-          }
-
-          // Recarrega pagamentos do Supabase
-          const {data: novosPags} = await sb.from('pagamentos').select('*').eq('associado_id',fichaAssociado.id).order('mes_referencia',{ascending:false});
+          const {data: novosPags} = await sb.from('pagamentos')
+            .select('*')
+            .eq('associado_id', fichaAssociado.id)
+            .order('mes_referencia',{ascending:false});
           if(!novosPags) return;
-          // Verifica se o pagamento do mês foi confirmado
-          const pagAtualizado = novosPags.find(p => p.mes_referencia === mesRef && p.status === 'pago');
-          const pagAnterior = JSON.parse(snapAnterior).find(p => p.mes_referencia === mesRef);
-          if(pagAtualizado && (!pagAnterior || pagAnterior.status !== 'pago')){
+
+          const pagConfirmado = novosPags.find(p => p.mes_referencia === mesRef && p.status === 'pago');
+          const anterior = pagamentosAssociado.find(p => p.mes_referencia === mesRef);
+
+          if(pagConfirmado && (!anterior || anterior.status !== 'pago')){
             clearInterval(pollPagamento);
             pagamentosAssociado = novosPags;
             renderPagamentosAssociado();
             renderAreaAssociado();
-            // Garante que a aba de pagamentos esteja visível
-            showView('view-associado');
             showAssocTab('tab-assoc-pagamentos');
-            localStorage.setItem('assoc_ultima_aba', 'tab-assoc-pagamentos');
-            const [a,m] = mesRef.split('-');
-            const nomeMes = new Date(+a,+m-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-            toast(`✅ Pagamento de ${nomeMes} confirmado! Obrigado! ❤️`);
-          } else if(JSON.stringify(novosPags) !== snapAnterior){
-            pagamentosAssociado = novosPags;
-            renderPagamentosAssociado();
+            toast(`✅ Pagamento de ${mesNome} confirmado! Obrigado! ❤️`);
           }
         }catch(e){ /* silencioso */ }
-      }, 3000);
+      }, 4000);
     }
     else throw new Error(data.message||'Erro ao gerar link');
   } catch(e){ toast('Erro Mercado Pago: '+e.message,'err'); }
@@ -2019,7 +1978,6 @@ async function checkAdminMode(){
   if(sessaoRaw){
     try {
       const sessao = JSON.parse(sessaoRaw);
-      // Valida se o usuário ainda existe no banco antes de restaurar
       const {data, error} = await sb.from('usuarios_associados').select('*').eq('id', sessao.id).single();
       if(error || !data){
         localStorage.removeItem('assoc_sessao');
@@ -2028,41 +1986,25 @@ async function checkAdminMode(){
         return;
       }
       associadoLogado = data;
-      // Atualiza sessão salva com dados mais recentes
       localStorage.setItem('assoc_sessao', JSON.stringify(data));
-
-      // ── Detecta retorno do Mercado Pago APÓS sessão restaurada ──
-      const mpParams = new URLSearchParams(window.location.search);
-      const mpStatus = mpParams.get('status') || mpParams.get('payment_status');
-      const mpPaymentId = mpParams.get('payment_id');
-      const retornouDoMP = !!(mpPaymentId || mpStatus);
-
-      // Limpa parâmetros da URL sem recarregar
-      if(retornouDoMP){
-        window.history.replaceState({}, '', window.location.pathname);
-      }
-
-      // Carrega dados do associado (e força refresh se veio do MP)
       await carregarDadosAssociado();
-
       showView('view-associado');
 
-      if(retornouDoMP && (mpStatus === 'approved' || mpStatus === 'success')){
-        // Retornou com pagamento aprovado: vai direto para aba de pagamentos e notifica
+      // Detecta retorno do Mercado Pago DEPOIS de ter a sessão restaurada
+      const mpParams = new URLSearchParams(window.location.search);
+      const mpStatus   = mpParams.get('status') || mpParams.get('payment_status');
+      const mpPaymentId = mpParams.get('payment_id');
+      if(mpPaymentId || mpStatus){
+        window.history.replaceState({}, '', window.location.pathname); // limpa URL
+        // Vai para aba de pagamentos e mostra feedback
         showAssocTab('tab-assoc-pagamentos');
         localStorage.setItem('assoc_ultima_aba', 'tab-assoc-pagamentos');
-        setTimeout(() => {
-          toast('🎉 Pagamento confirmado! Seu extrato foi atualizado. ❤️');
-          renderPagamentosAssociado();
-          renderAreaAssociado();
-        }, 800);
-      } else if(retornouDoMP){
-        // Retornou do MP mas status ainda pendente: vai para pagamentos e inicia polling
-        showAssocTab('tab-assoc-pagamentos');
-        localStorage.setItem('assoc_ultima_aba', 'tab-assoc-pagamentos');
-        toast('⏳ Aguardando confirmação do pagamento...');
+        if(mpStatus === 'approved' || mpStatus === 'success'){
+          setTimeout(()=> toast('🎉 Pagamento recebido! Extrato atualizado.'), 800);
+        } else {
+          setTimeout(()=> toast('⏳ Aguardando confirmação do pagamento...'), 800);
+        }
       } else {
-        // Retorno normal: restaura última aba visitada
         const ultimaAba = localStorage.getItem('assoc_ultima_aba') || 'tab-assoc-pagamentos';
         showAssocTab(ultimaAba);
       }
@@ -2073,7 +2015,6 @@ async function checkAdminMode(){
     }
   }
 
-  // Sem sessão salva: mostra tela de login
   showView('view-admin-login');
 }
 
@@ -2604,65 +2545,84 @@ function renderMPPayments(){
 }
 
 async function sincronizarPagamentosMP(){
+  // Busca no Supabase quais mp_payment_id já estão gravados (fonte da verdade)
+  // Isso evita o bug de re-sincronizar pagamentos já gravados quando o array local é resetado
+  let jaGravadosNoDB = new Set();
+  try{
+    const {data: gravados} = await sb.from('pagamentos')
+      .select('mp_payment_id')
+      .not('mp_payment_id','is',null);
+    (gravados||[]).forEach(p => { if(p.mp_payment_id) jaGravadosNoDB.add(p.mp_payment_id); });
+  }catch(e){ console.warn('Erro ao checar IDs gravados:', e.message); }
+
   const aprovados = mpPayments.filter(p => p.status === 'approved');
   let sincCount = 0;
 
-  // Busca todos os mp_payment_id já gravados no Supabase para evitar duplicatas reais
-  let mpIdsJaGravados = new Set();
-  try{
-    const { data: pgsExist } = await sb.from('pagamentos').select('mp_payment_id').not('mp_payment_id','is',null);
-    (pgsExist||[]).forEach(p => { if(p.mp_payment_id) mpIdsJaGravados.add(p.mp_payment_id); });
-  }catch(e){ /* usa set vazio se falhar — melhor do que re-sincronizar tudo */ }
-
   for(const mp of aprovados){
-    // Pula pagamentos já gravados no Supabase (evita toast repetido a cada polling)
-    if(mpIdsJaGravados.has(String(mp.id))) continue;
+    // Pula se já está no banco — evita toast repetido e re-gravação
+    if(jaGravadosNoDB.has(String(mp.id))) continue;
 
-    // 1) Tenta identificar pelo external_reference: formato "assocId-YYYY-MM"
     let assoc = null, mesRef = null;
     const extRef = mp.external_reference || '';
     const extMatch = extRef.match(/^(.+)-(\d{4}-\d{2})$/);
     if(extMatch){
-      const assocId = extMatch[1];
+      assoc = associados.find(a => a.id === extMatch[1]);
       mesRef = extMatch[2];
-      assoc = associados.find(a => a.id === assocId);
     }
-    // 2) Fallback: tenta pelo e-mail do pagador
     if(!assoc){
       const email = mp.payer?.email;
       if(email) assoc = associados.find(a => a.email && a.email.toLowerCase() === email.toLowerCase());
       if(!mesRef) mesRef = new Date(mp.date_created).toISOString().slice(0,7);
     }
     if(!assoc || !mesRef) continue;
+
     const pags = pagamentos[assoc.id]||[];
     const pagExist = pags.find(p => p.mes_referencia === mesRef);
+    const dataPag = new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10);
+
     if(pagExist){
       try{
-        await sb.from('pagamentos').update({status:'pago',data_pagamento:new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10),confirmado_por:'mercadopago',mp_payment_id:String(mp.id)}).eq('id',pagExist.id);
+        await sb.from('pagamentos').update({
+          status:'pago', data_pagamento:dataPag,
+          confirmado_por:'mercadopago', mp_payment_id:String(mp.id)
+        }).eq('id',pagExist.id);
+        // Atualiza array local também
         pagExist.status='pago'; pagExist.mp_payment_id=String(mp.id);
-        pagExist.data_pagamento=new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10);
-        mpIdsJaGravados.add(String(mp.id));
+        pagExist.data_pagamento=dataPag; pagExist.confirmado_por='mercadopago';
         sincCount++;
       }catch(e){ console.warn(e); }
     } else {
-      const novoPag = {associado_id:assoc.id,mes_referencia:mesRef,valor:mp.transaction_amount,status:'pago',data_vencimento:`${mesRef}-${String(assoc.dia_pagamento||10).padStart(2,'0')}`,data_pagamento:new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10),confirmado_por:'mercadopago',mp_payment_id:String(mp.id)};
-      try{ const {data} = await sb.from('pagamentos').insert([novoPag]).select(); if(data?.[0]){ if(!pagamentos[assoc.id]) pagamentos[assoc.id]=[]; pagamentos[assoc.id].push(data[0]); mpIdsJaGravados.add(String(mp.id)); sincCount++; } }
-      catch(e){ console.warn(e); }
+      const novo = {
+        associado_id:assoc.id, mes_referencia:mesRef,
+        valor:mp.transaction_amount, status:'pago',
+        data_vencimento:`${mesRef}-${String(assoc.dia_pagamento||10).padStart(2,'0')}`,
+        data_pagamento:dataPag, confirmado_por:'mercadopago', mp_payment_id:String(mp.id)
+      };
+      try{
+        const {data} = await sb.from('pagamentos').insert([novo]).select();
+        if(data?.[0]){
+          if(!pagamentos[assoc.id]) pagamentos[assoc.id]=[];
+          pagamentos[assoc.id].push(data[0]);
+          sincCount++;
+        }
+      }catch(e){ console.warn(e); }
     }
   }
+
+  // Toast e atualização de UI só quando há algo novo — e só nesta função (chamada manual)
+  const el = g('mp-sinc-info');
   if(sincCount > 0){
     toast(`✅ ${sincCount} pagamento(s) sincronizado(s) do Mercado Pago!`);
     renderTable(); updateKPIs(); renderPendencias();
+    if(el) el.textContent = `${sincCount} pagamento(s) sincronizado(s)`;
+  } else {
+    if(el) el.textContent = 'Nenhum novo pagamento para sincronizar';
   }
-  const el = g('mp-sinc-info');
-  if(el) el.textContent = sincCount > 0 ? `${sincCount} pagamento(s) sincronizado(s) automaticamente` : 'Nenhum novo pagamento para sincronizar';
+  return sincCount;
 }
 
-// Inicialização: verifica modo admin na URL
+// Inicialização: verifica modo admin na URL e restaura sessão
 checkAdminMode();
-
-// Detecção de retorno do Mercado Pago agora está integrada dentro de checkAdminMode()
-// para garantir que a sessão do associado seja restaurada ANTES de processar o retorno.
 
 // Event listeners — com guards para não quebrar quando elemento não existe
 const _admSenha = g('adm-senha');
@@ -2716,24 +2676,21 @@ function iniciarPolling(){
     if(viewAssoc && associadoLogado){
       try{
         if(fichaAssociado){
-          const anterior = JSON.stringify(pagamentosAssociado);
-
-          // FONTE DA VERDADE: sempre lê do Supabase primeiro
+          // FONTE DA VERDADE: lê do Supabase a cada ciclo
           const {data: novosPags} = await sb.from('pagamentos')
             .select('*')
             .eq('associado_id', fichaAssociado.id)
-            .order('mes_referencia', {ascending:false});
+            .order('mes_referencia',{ascending:false});
 
-          const frescos = novosPags || [];
-          const frescosStr = JSON.stringify(frescos);
+          const novosPagsStr = JSON.stringify(novosPags||[]);
+          const anteriorStr  = JSON.stringify(pagamentosAssociado);
 
-          // Re-renderiza se mudou algo no Supabase
-          if(frescosStr !== anterior){
-            const listAnterior = JSON.parse(anterior);
-            pagamentosAssociado = frescos;
+          if(novosPagsStr !== anteriorStr){
+            const listAnterior = [...pagamentosAssociado];
+            pagamentosAssociado = novosPags || [];
             renderPagamentosAssociado();
             renderAreaAssociado();
-            // Toast apenas para transições pendente→pago
+            // Notifica apenas transições pendente → pago
             pagamentosAssociado.forEach(p => {
               const old = listAnterior.find(x => x.id === p.id);
               if(p.status === 'pago' && old && old.status !== 'pago'){
@@ -2742,40 +2699,6 @@ function iniciarPolling(){
                 toast(`✅ Pagamento de ${nomeMes} confirmado! Obrigado! ❤️`);
               }
             });
-          }
-
-          // Em background: tenta sincronizar pagamentos MP → Supabase (sem bloquear UI)
-          // Só roda se houver pagamentos ainda pendentes
-          const temPendente = frescos.some(p => p.status !== 'pago');
-          if(temPendente){
-            (async () => {
-              try{
-                const mpResp = await fetch(
-                  `https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=20&status=approved`,
-                  { headers:{ 'Authorization':'Bearer '+MP_ACCESS_TOKEN } }
-                );
-                const mpData = await mpResp.json();
-                const aprovadosMP = (mpData.results||[]).filter(mp =>
-                  (mp.external_reference||'').includes(fichaAssociado.id) ||
-                  (mp.payer?.email && fichaAssociado.email &&
-                   mp.payer.email.toLowerCase() === fichaAssociado.email.toLowerCase())
-                );
-                for(const mp of aprovadosMP){
-                  const extRef = mp.external_reference||'';
-                  const extMatch = extRef.match(/^(.+)-(\d{4}-\d{2})$/);
-                  const mesRef = extMatch ? extMatch[2] : new Date(mp.date_created).toISOString().slice(0,7);
-                  const pag = frescos.find(p => p.mes_referencia === mesRef && p.status !== 'pago');
-                  if(pag){
-                    await sb.from('pagamentos').update({
-                      status:'pago',
-                      data_pagamento: new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10),
-                      confirmado_por:'mercadopago',
-                      mp_payment_id: String(mp.id)
-                    }).eq('id', pag.id);
-                  }
-                }
-              }catch(eMp){ /* MP indisponível — Supabase já é a fonte */ }
-            })();
           }
         }
         const syncDotA = g('rt-sync-dot-assoc');
