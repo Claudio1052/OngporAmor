@@ -1826,15 +1826,57 @@ async function doCadastro(){
       nome, email, senha_hash: senhaHash, criado_em: new Date().toISOString()
     }]).select().single();
     if(error) throw error;
-    okMsg.textContent = 'Conta criada com sucesso! Faça login para continuar.';
+    okMsg.textContent = 'Conta criada! Abrindo sua ficha de associação...';
     okEl.classList.add('show');
-    g('cad-nome').value=''; g('cad-email').value=''; g('cad-senha').value=''; g('cad-senha2').value='';
-    setTimeout(()=>{ okEl.classList.remove('show'); switchLoginTab('tab-login'); g('assoc-email-login').value=email; }, 2000);
+    // Loga automaticamente e abre o formulário
+    setTimeout(async () => {
+      okEl.classList.remove('show');
+      associadoLogado = data;
+      localStorage.setItem('assoc_sessao', JSON.stringify(data));
+      await carregarDadosAssociado(); // fichaAssociado será null (conta nova)
+      g('cad-nome').value=''; g('cad-email').value=''; g('cad-senha').value=''; g('cad-senha2').value='';
+      toast('Conta criada! Preencha sua ficha de associação. ❤️');
+      _redirecionarAposLogin(true); // sem ficha → abre formulário direto
+    }, 1200);
   } catch(e) {
     msgEl.textContent = 'Erro ao criar conta: ' + (e.message||'tente novamente.');
     errEl.classList.add('show');
   } finally {
     btn.disabled=false; btn.innerHTML='<i class="fas fa-user-plus"></i> Criar Conta';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  REDIRECIONAMENTO PÓS-LOGIN
+//  Se o associado não tem ficha → abre formulário automaticamente
+//  Se já tem ficha → vai para a área normal (última aba ou início)
+// ═══════════════════════════════════════════════════════════════
+function _redirecionarAposLogin(primeiroAcesso = false){
+  if(!fichaAssociado){
+    // Sem ficha: abre o formulário de associação diretamente
+    showView('view-form');
+    goPage(1);
+    // Pré-preenche email e nome do login
+    const emailEl = g('inp-email');
+    const nomeEl  = g('inp-nome');
+    if(emailEl && associadoLogado.email) emailEl.value = associadoLogado.email;
+    if(nomeEl  && associadoLogado.nome)  nomeEl.value  = associadoLogado.nome;
+    // Mostra botão "Voltar à minha área" no rodapé
+    const btnVoltar = g('btn-voltar-assoc');
+    if(btnVoltar) btnVoltar.style.display = 'inline-flex';
+    window.scrollTo({top:0,behavior:'smooth'});
+    // Toast explicativo
+    setTimeout(()=>
+      toast('👋 Preencha sua ficha para completar o cadastro!'), 600);
+  } else {
+    // Com ficha: área normal
+    showView('view-associado');
+    if(primeiroAcesso){
+      showAssocTab('tab-assoc-inicio');
+    } else {
+      const ultimaAba = localStorage.getItem('assoc_ultima_aba') || 'tab-assoc-inicio';
+      showAssocTab(ultimaAba);
+    }
   }
 }
 
@@ -1859,12 +1901,10 @@ async function doAssocLogin(){
     const {data, error} = await sb.from('usuarios_associados').select('*').eq('email', email).eq('senha_hash', senhaHash).single();
     if(error || !data){ msgEl.textContent='E-mail ou senha incorretos.'; errEl.classList.add('show'); return; }
     associadoLogado = data;
-    // Salva sessão no localStorage (persiste ao fechar/reabrir a aba)
     localStorage.setItem('assoc_sessao', JSON.stringify(data));
-    localStorage.setItem('assoc_ultima_aba', 'tab-assoc-pagamentos');
     await carregarDadosAssociado();
-    showView('view-associado');
     toast('Bem-vindo(a), ' + data.nome.split(' ')[0] + '! ❤️');
+    _redirecionarAposLogin(false);
   } catch(e) {
     msgEl.textContent = 'Erro ao fazer login: ' + (e.message||'tente novamente.');
     errEl.classList.add('show');
@@ -2146,7 +2186,8 @@ async function submitFormAndReturn(){
   await submitForm();
   await carregarDadosAssociado();
   showView('view-associado');
-  showAssocTab('tab-assoc-cadastro');
+  showAssocTab('tab-assoc-inicio');
+  toast('✅ Ficha enviada! Bem-vindo(a) à ONG Por Amor! ❤️');
 }
 
 function renderPagamentosAssociado(){
@@ -2505,15 +2546,16 @@ async function checkAdminMode(){
       associadoLogado = data;
       localStorage.setItem('assoc_sessao', JSON.stringify(data));
       await carregarDadosAssociado();
-      showView('view-associado');
 
       // Detecta retorno do Mercado Pago DEPOIS de ter a sessão restaurada
       const mpParams = new URLSearchParams(window.location.search);
-      const mpStatus   = mpParams.get('status') || mpParams.get('payment_status');
+      const mpStatus    = mpParams.get('status') || mpParams.get('payment_status');
       const mpPaymentId = mpParams.get('payment_id');
+
       if(mpPaymentId || mpStatus){
-        window.history.replaceState({}, '', window.location.pathname); // limpa URL
-        // Vai para aba de pagamentos e mostra feedback
+        // Retorno do MP: ignora abertura de formulário, vai para pagamentos
+        window.history.replaceState({}, '', window.location.pathname);
+        showView('view-associado');
         showAssocTab('tab-assoc-pagamentos');
         localStorage.setItem('assoc_ultima_aba', 'tab-assoc-pagamentos');
         if(mpStatus === 'approved' || mpStatus === 'success'){
@@ -2522,8 +2564,8 @@ async function checkAdminMode(){
           setTimeout(()=> toast('⏳ Aguardando confirmação do pagamento...'), 800);
         }
       } else {
-        const ultimaAba = localStorage.getItem('assoc_ultima_aba') || 'tab-assoc-pagamentos';
-        showAssocTab(ultimaAba);
+        // Fluxo normal: verifica se tem ficha
+        _redirecionarAposLogin(false);
       }
       return;
     } catch(e){
