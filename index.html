@@ -936,16 +936,16 @@ tr:hover td{background:var(--gray-50)}
           <div class="rc-wrap">
             <div class="rc"><input type="radio" name="pag" id="r-pix" value="PIX" checked><label class="rc-lbl" for="r-pix"><i class="fas fa-bolt"></i> PIX</label></div>
             <div class="rc"><input type="radio" name="pag" id="r-mp" value="Mercado Pago"><label class="rc-lbl" for="r-mp"><i class="fas fa-credit-card"></i> Mercado Pago</label></div>
-            <div class="rc"><input type="radio" name="pag" id="r-mp-assin" value="Assinatura Mercado Pago"><label class="rc-lbl" for="r-mp-assin"><i class="fas fa-repeat"></i> Assinatura MP</label></div>
+            <div class="rc"><input type="radio" name="pag" id="r-mp-assin" value="Pagamento Automático"><label class="rc-lbl" for="r-mp-assin"><i class="fas fa-repeat"></i> Pgto. Automático</label></div>
             <div class="rc"><input type="radio" name="pag" id="r-tef" value="Transferência bancária"><label class="rc-lbl" for="r-tef"><i class="fas fa-university"></i> Transferência</label></div>
             <div class="rc"><input type="radio" name="pag" id="r-bol" value="Boleto"><label class="rc-lbl" for="r-bol"><i class="fas fa-barcode"></i> Boleto</label></div>
             <div class="rc"><input type="radio" name="pag" id="r-deb" value="Débito automático"><label class="rc-lbl" for="r-deb"><i class="fas fa-calendar-check"></i> Débito Automático</label></div>
             <div class="rc"><input type="radio" name="pag" id="r-out" value="Outro"><label class="rc-lbl" for="r-out"><i class="fas fa-ellipsis-h"></i> Outro</label></div>
           </div>
-          <!-- Info: Assinatura MP -->
+          <!-- Info: Pgto. Automático -->
           <div id="mp-assin-info" style="display:none;margin-top:1.2rem;padding:1rem 1.3rem;background:rgba(0,158,226,.06);border:1.5px solid rgba(0,158,226,.3);border-radius:var(--r)">
-            <div style="font-size:.7rem;font-weight:700;color:#009ee3;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem"><i class="fas fa-repeat"></i> Assinatura Mensal — Mercado Pago</div>
-            <div style="font-size:.84rem;color:var(--gray-700);line-height:1.6">Com a <strong>Assinatura Mercado Pago</strong>, sua contribuição mensal é cobrada automaticamente todo mês, sem precisar pagar manualmente. O débito é feito no cartão de crédito ou conta MP.</div>
+            <div style="font-size:.7rem;font-weight:700;color:#009ee3;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem"><i class="fas fa-repeat"></i> Pagamento Automático — Mercado Pago</div>
+            <div style="font-size:.84rem;color:var(--gray-700);line-height:1.6">Com a <strong>Pagamento Automático</strong>, sua contribuição mensal é cobrada automaticamente todo mês, sem precisar pagar manualmente. O débito é feito no cartão de crédito ou conta MP.</div>
           </div>
           <div id="pix-info" style="margin-top:1.2rem;padding:1rem 1.3rem;background:rgba(13,143,143,.06);border:1.5px solid rgba(13,143,143,.25);border-radius:var(--r)">
             <div style="font-size:.7rem;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem"><i class="fas fa-bolt"></i> Chave PIX da ONG</div>
@@ -1197,7 +1197,7 @@ tr:hover td{background:var(--gray-50)}
           <select class="fi" id="df-pgto">
             <option value="">Selecione...</option>
             <option value="PIX">PIX</option>
-            <option value="Assinatura Mercado Pago">Assinatura Mercado Pago</option>
+            <option value="Pagamento Automático">Pagamento Automático</option>
             <option value="Transferência bancária">Transferência Bancária</option>
             <option value="Boleto">Boleto</option>
             <option value="Débito automático">Débito Automático</option>
@@ -1218,63 +1218,146 @@ tr:hover td{background:var(--gray-50)}
 
 <!-- ═══════════════ ÁREA DO DOADOR ═══════════════ -->
 <div id="view-doador" class="view">
+
+  <!-- TOPBAR DOADOR -->
   <div class="assoc-topbar">
-    <div class="assoc-brand">❤️ Por Amor</div>
-    <div class="assoc-tabs">
+    <div class="assoc-brand">
+      <span style="color:var(--gold);font-size:1.1rem">❤️</span>
+      <span style="font-family:'DM Serif Display',serif;font-style:italic">Por Amor</span>
+    </div>
+    <span class="assoc-badge" id="doador-badge-nome" style="background:rgba(220,38,38,.15);color:#f87171;border:1px solid rgba(220,38,38,.3)">Doador</span>
+    <div class="assoc-tabs" style="margin-left:1.5rem">
       <button class="assoc-tab active" id="dtab-inicio" onclick="showDoadorTab('tab-doador-inicio')"><i class="fas fa-home"></i> Início</button>
       <button class="assoc-tab" id="dtab-pagamentos" onclick="showDoadorTab('tab-doador-pagamentos')"><i class="fas fa-wallet"></i> Pagamentos</button>
     </div>
     <span class="atab-spacer"></span>
-    <span id="rt-sync-dot-doador" style="display:inline-flex;align-items:center;gap:.4rem;font-size:.72rem;color:rgba(255,255,255,.4);margin-right:.5rem"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--teal-light);box-shadow:0 0 5px var(--teal-light);animation:pulse-sync 2s ease-in-out infinite"></span> Tempo real</span>
+    <span id="rt-sync-dot-doador" style="display:inline-flex;align-items:center;gap:.4rem;font-size:.72rem;color:rgba(255,255,255,.4);margin-right:.5rem">
+      <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--teal-light);box-shadow:0 0 5px var(--teal-light);animation:pulse-sync 2s ease-in-out infinite"></span> Tempo real
+    </span>
     <button class="btn-logout" onclick="doDoadorLogout()"><i class="fas fa-sign-out-alt"></i> Sair</button>
   </div>
+
   <div class="assoc-content">
 
     <!-- ABA: INÍCIO DOADOR -->
     <div class="assoc-panel active" id="tab-doador-inicio">
-      <div class="assoc-section">
-        <div class="assoc-welcome">
-          <div class="assoc-avatar"><span id="doador-avatar-inicial">D</span></div>
+
+      <!-- HERO BOAS-VINDAS -->
+      <div style="background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,var(--navy-light) 100%);border-radius:var(--R);padding:2rem 2.5rem;margin-bottom:1.5rem;position:relative;overflow:hidden;box-shadow:var(--shadow)">
+        <div style="position:absolute;inset:0;pointer-events:none">
+          <div style="position:absolute;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(220,38,38,.18),transparent 70%);top:-120px;right:-60px"></div>
+          <div style="position:absolute;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(232,201,106,.12),transparent 70%);bottom:-60px;left:30%"></div>
+          <div style="position:absolute;right:2.5rem;top:50%;transform:translateY(-50%);font-size:5rem;opacity:.07">❤️</div>
+        </div>
+        <div style="position:relative;z-index:1;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap">
+          <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#dc2626,#991b1b);display:flex;align-items:center;justify-content:center;font-size:1.5rem;box-shadow:0 8px 20px rgba(220,38,38,.4);flex-shrink:0">
+            <span id="doador-avatar-inicial" style="color:#fff;font-family:'DM Serif Display',serif;font-weight:700;font-size:1.4rem">D</span>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:.7rem;font-weight:700;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.2rem">Área do Doador</div>
+            <div id="doador-nome-bem-vindo" style="font-family:'DM Serif Display',serif;font-size:1.7rem;color:#fff;line-height:1.1">Olá! ❤️</div>
+            <div id="doador-sub-bem-vindo" style="font-size:.82rem;color:rgba(255,255,255,.5);margin-top:.2rem">Doador · ONG Por Amor</div>
+          </div>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <span style="background:rgba(220,38,38,.2);border:1px solid rgba(220,38,38,.35);color:#fca5a5;font-size:.72rem;font-weight:700;padding:.3rem .9rem;border-radius:100px;display:flex;align-items:center;gap:.4rem"><i class="fas fa-heart" style="font-size:.65rem"></i> Doador Ativo</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARDS DE RESUMO -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem">
+
+        <!-- Card Contribuição -->
+        <div style="background:var(--white);border-radius:var(--R);padding:1.5rem;box-shadow:0 4px 16px rgba(0,0,0,.07);border:1.5px solid var(--gray-100);display:flex;flex-direction:column;gap:.5rem">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gray-400)">Contribuição</span>
+            <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--gold),#c9860a);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(232,201,106,.4)">
+              <i class="fas fa-coins" style="color:#fff;font-size:.85rem"></i>
+            </div>
+          </div>
+          <div id="doador-valor" style="font-family:'DM Serif Display',serif;font-size:1.9rem;color:var(--navy);line-height:1">R$ —</div>
+          <div id="doador-venc-sub" style="font-size:.78rem;color:var(--gray-500)">Venc. todo dia —</div>
+          <div id="doador-pgto-tipo" style="font-size:.75rem;color:var(--teal);font-weight:600;margin-top:.2rem"></div>
+        </div>
+
+        <!-- Card Situação -->
+        <div style="background:var(--white);border-radius:var(--R);padding:1.5rem;box-shadow:0 4px 16px rgba(0,0,0,.07);border:1.5px solid var(--gray-100);display:flex;flex-direction:column;gap:.5rem">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gray-400)">Situação</span>
+            <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--success),#047857);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(5,150,105,.3)">
+              <i class="fas fa-shield-check" style="color:#fff;font-size:.85rem"></i>
+            </div>
+          </div>
+          <div style="font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--success);line-height:1">✅ Ativo</div>
+          <div style="font-size:.78rem;color:var(--gray-500)">Cadastro confirmado</div>
+          <div id="doador-desde" style="font-size:.75rem;color:var(--gray-400);margin-top:.2rem"></div>
+        </div>
+
+        <!-- Card Pendência (condicional) -->
+        <div id="doador-card-pendente" style="display:none;background:linear-gradient(135deg,#fff7ed,#fff);border-radius:var(--R);padding:1.5rem;box-shadow:0 4px 16px rgba(217,119,6,.12);border:1.5px solid rgba(217,119,6,.25);display:flex;flex-direction:column;gap:.5rem">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--warn)">Pagamento Pendente</span>
+            <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--warn),#b45309);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(217,119,6,.3)">
+              <i class="fas fa-clock" style="color:#fff;font-size:.85rem"></i>
+            </div>
+          </div>
+          <div id="doador-pend-val" style="font-family:'DM Serif Display',serif;font-size:1.9rem;color:var(--warn);line-height:1">R$ —</div>
+          <div style="font-size:.78rem;color:var(--gray-600)">Mês atual em aberto</div>
+          <button onclick="showDoadorTab('tab-doador-pagamentos')" style="margin-top:.5rem;background:var(--warn);border:none;color:#fff;padding:.5rem 1rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;transition:var(--tr);align-self:flex-start">
+            <i class="fas fa-credit-card"></i> Pagar agora
+          </button>
+        </div>
+
+      </div>
+
+      <!-- ATALHOS -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div style="background:var(--white);border-radius:var(--R);border:1.5px solid var(--gray-200);padding:1.3rem 1.5rem;cursor:pointer;transition:var(--tr);display:flex;align-items:center;gap:1rem" onclick="showDoadorTab('tab-doador-pagamentos')" onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='var(--gray-200)'">
+          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--navy-light),var(--teal));display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 14px rgba(13,143,143,.25)">
+            <i class="fas fa-wallet" style="color:#fff;font-size:1rem"></i>
+          </div>
           <div>
-            <div id="doador-nome-bem-vindo" style="font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy)">Olá, Doador!</div>
-            <div id="doador-sub-bem-vindo" style="font-size:.85rem;color:var(--gray-600)">Doador · ONG Por Amor</div>
+            <div style="font-size:.9rem;font-weight:700;color:var(--navy)">Meus Pagamentos</div>
+            <div style="font-size:.75rem;color:var(--gray-500);margin-top:.15rem">Ver contribuições e pagar</div>
           </div>
-          <span class="badge badge-blue" id="doador-badge-nome"></span>
+          <i class="fas fa-chevron-right" style="color:var(--gray-300);font-size:.8rem;margin-left:auto"></i>
+        </div>
+        <div style="background:var(--white);border-radius:var(--R);border:1.5px solid var(--gray-200);padding:1.3rem 1.5rem;cursor:pointer;transition:var(--tr);display:flex;align-items:center;gap:1rem" onclick="mostrarAdiantamento()" onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='var(--gray-200)'">
+          <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--gold),#c9860a);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 14px rgba(232,201,106,.3)">
+            <i class="fas fa-forward" style="color:#fff;font-size:1rem"></i>
+          </div>
+          <div>
+            <div style="font-size:.9rem;font-weight:700;color:var(--navy)">Adiantar Meses</div>
+            <div style="font-size:.75rem;color:var(--gray-500);margin-top:.15rem">Pagar meses futuros</div>
+          </div>
+          <i class="fas fa-chevron-right" style="color:var(--gray-300);font-size:.8rem;margin-left:auto"></i>
         </div>
       </div>
-      <div id="doador-cards-resumo">
-        <div class="assoc-cards">
-          <div class="assoc-card">
-            <div class="assoc-card-icon teal"><i class="fas fa-heart"></i></div>
-            <div class="assoc-card-label">Tipo</div>
-            <div class="assoc-card-value" style="font-size:1.1rem">❤️ Doador</div>
-          </div>
-          <div class="assoc-card">
-            <div class="assoc-card-icon gold"><i class="fas fa-coins"></i></div>
-            <div class="assoc-card-label">Contribuição</div>
-            <div class="assoc-card-value" id="doador-valor">R$ —</div>
-            <div class="assoc-card-sub" id="doador-venc-sub">Venc. dia —</div>
-          </div>
-          <div class="assoc-card" id="doador-card-pendente" style="display:none">
-            <div class="assoc-card-icon" style="background:var(--warn-pale)"><i class="fas fa-clock" style="color:var(--warn)"></i></div>
-            <div class="assoc-card-label">Pendente</div>
-            <div class="assoc-card-value" id="doador-pend-val">R$ —</div>
-            <div class="assoc-card-sub"><button class="btn-mp-pagar" style="font-size:.72rem;padding:.35rem .8rem" onclick="showDoadorTab('tab-doador-pagamentos')">Ver pagamentos</button></div>
-          </div>
+
+      <!-- MENSAGEM AGRADECIMENTO -->
+      <div style="margin-top:1.5rem;background:linear-gradient(135deg,rgba(220,38,38,.05),rgba(13,143,143,.05));border:1.5px solid rgba(220,38,38,.12);border-radius:var(--R);padding:1.5rem 2rem;display:flex;align-items:center;gap:1.2rem">
+        <div style="font-size:2.2rem;flex-shrink:0">🙏</div>
+        <div>
+          <div style="font-family:'DM Serif Display',serif;font-size:1.1rem;color:var(--navy);margin-bottom:.3rem">Obrigado pela sua generosidade!</div>
+          <div style="font-size:.82rem;color:var(--gray-600);line-height:1.6">Sua contribuição mensal transforma vidas e faz toda a diferença para a nossa comunidade. A ONG Por Amor agradece de coração o seu apoio.</div>
         </div>
       </div>
-    </div>
+
+    </div><!-- /tab-doador-inicio -->
 
     <!-- ABA: PAGAMENTOS DOADOR -->
     <div class="assoc-panel" id="tab-doador-pagamentos">
       <div class="assoc-section">
         <div class="assoc-section-hdr" style="flex-wrap:wrap;gap:.8rem">
           <div class="assoc-section-title"><i class="fas fa-wallet" style="color:var(--gold)"></i> Minhas Contribuições</div>
-          <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
             <span id="doador-pay-resumo" style="font-size:.82rem;color:var(--gray-600)"></span>
-            <!-- Adiantamento de meses -->
-            <button onclick="mostrarAdiantamento()" style="background:linear-gradient(135deg,var(--teal),var(--navy-light));border:none;color:#fff;padding:.4rem 1.1rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;transition:var(--tr)"><i class="fas fa-forward"></i> Adiantar Pagamentos</button>
-            <button onclick="sincronizarPagamentosDoador()" style="background:var(--gray-100);border:1px solid var(--gray-200);color:var(--gray-700);padding:.4rem 1.1rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;transition:var(--tr)"><i class="fas fa-rotate-right"></i> Atualizar</button>
+            <button onclick="mostrarAdiantamento()" style="background:linear-gradient(135deg,var(--teal),var(--navy-light));border:none;color:#fff;padding:.45rem 1.1rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;transition:var(--tr)">
+              <i class="fas fa-forward"></i> Adiantar
+            </button>
+            <button onclick="sincronizarPagamentosDoador()" style="background:var(--gray-100);border:1px solid var(--gray-200);color:var(--gray-700);padding:.45rem 1.1rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;transition:var(--tr)">
+              <i class="fas fa-rotate-right"></i> Atualizar
+            </button>
           </div>
         </div>
         <div class="assoc-section-body">
@@ -1871,7 +1954,7 @@ document.querySelectorAll('input[name="pag"]').forEach(r=>{
   r.addEventListener('change',function(){
     g('pix-info').style.display=this.value==='PIX'?'block':'none';
     g('mp-info').style.display=this.value==='Mercado Pago'?'block':'none';
-    const mpAssinEl=g('mp-assin-info');if(mpAssinEl)mpAssinEl.style.display=this.value==='Assinatura Mercado Pago'?'block':'none';
+    const mpAssinEl=g('mp-assin-info');if(mpAssinEl)mpAssinEl.style.display=this.value==='Pagamento Automático'?'block':'none';
   });
 });
 
@@ -2545,7 +2628,7 @@ function renderPagamentosAssociado(){
            <i class="fas fa-credit-card"></i> Pagar com MP</button>
          <button onclick="pagarAssinaturaMP('${p.mes_referencia}',${p.valor})"
            style="background:linear-gradient(135deg,#009ee3,#0070b4);border:none;color:#fff;font-size:.75rem;padding:.45rem .9rem;border-radius:var(--r);margin-top:.5rem;margin-left:.4rem;display:inline-flex;align-items:center;gap:.4rem;cursor:pointer">
-           <i class="fas fa-repeat"></i> Assinatura MP</button>`
+           <i class="fas fa-repeat"></i> Pgto. Automático</button>`
       : '';
 
     return `<div class="pay-item ${cls}">
@@ -3920,6 +4003,7 @@ function renderAreaDoador(){
   const nome = fichaDoador?.nome || doadorLogado.nome || '';
   const primeiroNome = nome.split(' ')[0];
   const inicial = primeiroNome.charAt(0).toUpperCase();
+
   const avEl = g('doador-avatar-inicial'); if(avEl) avEl.textContent = inicial;
   const nvEl = g('doador-nome-bem-vindo'); if(nvEl) nvEl.textContent = 'Olá, ' + primeiroNome + '! ❤️';
   const bdgEl = g('doador-badge-nome'); if(bdgEl) bdgEl.textContent = primeiroNome;
@@ -3927,12 +4011,23 @@ function renderAreaDoador(){
 
   if(fichaDoador){
     const f = fichaDoador;
-    const valEl = g('doador-valor'); if(valEl) valEl.textContent = 'R$ '+(f.valor_contribuicao||30).toFixed(2).replace('.',',');
-    const vencEl = g('doador-venc-sub'); if(vencEl) vencEl.textContent = 'Venc. todo dia '+(f.dia_pagamento||10);
+    const valEl = g('doador-valor');
+    if(valEl) valEl.textContent = 'R$ '+(f.valor_contribuicao||30).toFixed(2).replace('.',',');
+    const vencEl = g('doador-venc-sub');
+    if(vencEl) vencEl.textContent = 'Vence todo dia '+(f.dia_pagamento||10);
+    const pgtoEl = g('doador-pgto-tipo');
+    if(pgtoEl) pgtoEl.innerHTML = '<i class="fas fa-wallet"></i> '+(f.forma_pagamento||'PIX');
+    const desdeEl = g('doador-desde');
+    if(desdeEl && f.created_at){
+      const dt = new Date(f.created_at);
+      desdeEl.textContent = 'Doador desde '+dt.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    }
+
     const mesAtual = getMesAtual();
     const pendMes = pagamentosDoador.find(p=>p.mes_referencia===mesAtual&&p.status==='pendente');
-    const cardPend = g('doador-card-pendente'); if(cardPend) cardPend.style.display=pendMes?'block':'none';
-    if(pendMes){ const pv=g('doador-pend-val'); if(pv) pv.textContent='R$'+pendMes.valor.toFixed(2).replace('.',','); }
+    const cardPend = g('doador-card-pendente');
+    if(cardPend) cardPend.style.display = pendMes ? 'flex' : 'none';
+    if(pendMes){ const pv=g('doador-pend-val'); if(pv) pv.textContent='R$ '+pendMes.valor.toFixed(2).replace('.',','); }
   }
   renderPagamentosDoador();
 }
@@ -3976,7 +4071,7 @@ function renderPagamentosDoador(){
     const mpBtn = !isPago
       ? `<button class="btn-mp-pagar" onclick="pagarViaMPDoador('${p.mes_referencia}',${p.valor})" style="font-size:.75rem;padding:.45rem .9rem;border-radius:var(--r);margin-top:.5rem;display:inline-flex;align-items:center;gap:.4rem"><i class="fas fa-credit-card"></i> Pagar com MP</button>` : '';
     const mpAssinBtn = !isPago
-      ? `<button onclick="pagarAssinaturaMP('${p.mes_referencia}',${p.valor})" style="background:linear-gradient(135deg,#009ee3,#0070b4);border:none;color:#fff;font-size:.75rem;padding:.45rem .9rem;border-radius:var(--r);margin-top:.5rem;margin-left:.4rem;display:inline-flex;align-items:center;gap:.4rem;cursor:pointer"><i class="fas fa-repeat"></i> Assinatura MP</button>` : '';
+      ? `<button onclick="pagarAssinaturaMP('${p.mes_referencia}',${p.valor})" style="background:linear-gradient(135deg,#009ee3,#0070b4);border:none;color:#fff;font-size:.75rem;padding:.45rem .9rem;border-radius:var(--r);margin-top:.5rem;margin-left:.4rem;display:inline-flex;align-items:center;gap:.4rem;cursor:pointer"><i class="fas fa-repeat"></i> Pgto. Automático</button>` : '';
     return `<div class="pay-item ${cls}">
       <div class="pay-item-icon"><i class="fas ${icon}"></i></div>
       <div style="flex:1">
@@ -4024,7 +4119,7 @@ async function pagarViaMPDoador(mesRef, valor){
 }
 
 async function pagarAssinaturaMP(mesRef, valor){
-  toast('A Assinatura MP é configurada pela administração da ONG. Entre em contato: (83) 98231-5427', 'err');
+  toast('A Pgto. Automático é configurada pela administração da ONG. Entre em contato: (83) 98231-5427', 'err');
   // Nota: MP Subscriptions requer aprovação da API e configuração específica do vendedor
 }
 
