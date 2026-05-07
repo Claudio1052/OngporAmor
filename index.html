@@ -1593,21 +1593,115 @@ tr:hover td{background:var(--gray-50)}
     </div>
 
     <div class="admin-view" id="tab-dashboard">
-      <div class="kpi-grid">
+
+      <!-- ── SEPARADOR: ASSOCIADOS ── -->
+      <div style="display:flex;align-items:center;gap:.8rem;margin-bottom:1rem">
+        <div style="width:4px;height:22px;background:var(--teal);border-radius:4px"></div>
+        <span style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gray-500)"><i class="fas fa-users" style="color:var(--teal)"></i> Associados</span>
+        <div style="flex:1;height:1px;background:var(--gray-200)"></div>
+      </div>
+
+      <!-- KPIs Associados -->
+      <div class="kpi-grid" style="margin-bottom:1.5rem">
         <div class="kpi teal"><div class="kpi-icon"><i class="fas fa-users"></i></div><div class="kpi-label">Total Associados</div><div class="kpi-value" id="kpi-total">0</div><div class="kpi-sub"><span class="kpi-up"><i class="fas fa-arrow-up"></i></span> <span id="kpi-ativos">0 ativos</span></div></div>
         <div class="kpi green"><div class="kpi-icon"><i class="fas fa-dollar-sign"></i></div><div class="kpi-label">Receita Mensal</div><div class="kpi-value" id="kpi-receita">R$ 0</div><div class="kpi-sub"><span id="kpi-rcpt">projeção confirmada</span></div></div>
         <div class="kpi warn"><div class="kpi-icon"><i class="fas fa-clock"></i></div><div class="kpi-label">Pendentes</div><div class="kpi-value" id="kpi-pend">R$ 0</div><div class="kpi-sub"><span id="kpi-npend">0 associados</span></div></div>
         <div class="kpi navy"><div class="kpi-icon"><i class="fas fa-chart-trending-up"></i></div><div class="kpi-label">Ticket Médio</div><div class="kpi-value" id="kpi-ticket">R$ 0</div><div class="kpi-sub"><span id="kpi-proj">por associado/mês</span></div></div>
       </div>
+
+      <!-- ── SEPARADOR: DOADORES ── -->
+      <div style="display:flex;align-items:center;gap:.8rem;margin-bottom:1rem">
+        <div style="width:4px;height:22px;background:#dc2626;border-radius:4px"></div>
+        <span style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gray-500)"><i class="fas fa-heart" style="color:#dc2626"></i> Doadores</span>
+        <div style="flex:1;height:1px;background:var(--gray-200)"></div>
+      </div>
+
+      <!-- KPIs Doadores -->
+      <div class="kpi-grid" style="margin-bottom:1.5rem">
+        <div class="kpi" style="background:linear-gradient(135deg,#fff5f5,#fff);border:1.5px solid rgba(220,38,38,.15)">
+          <div class="kpi-icon" style="background:linear-gradient(135deg,#dc2626,#991b1b)"><i class="fas fa-heart"></i></div>
+          <div class="kpi-label">Total Doadores</div>
+          <div class="kpi-value" id="kpi-d-total" style="color:#dc2626">0</div>
+          <div class="kpi-sub"><span id="kpi-d-ativos">0 ativos</span></div>
+        </div>
+        <div class="kpi" style="background:linear-gradient(135deg,#f0fdf4,#fff);border:1.5px solid rgba(5,150,105,.15)">
+          <div class="kpi-icon" style="background:linear-gradient(135deg,#059669,#047857)"><i class="fas fa-hand-holding-heart"></i></div>
+          <div class="kpi-label">Receita Doadores</div>
+          <div class="kpi-value" id="kpi-d-receita" style="color:#059669">R$ 0</div>
+          <div class="kpi-sub">contribuições mensais</div>
+        </div>
+        <div class="kpi" style="background:linear-gradient(135deg,#fffbeb,#fff);border:1.5px solid rgba(217,119,6,.15)">
+          <div class="kpi-icon" style="background:linear-gradient(135deg,#d97706,#b45309)"><i class="fas fa-clock"></i></div>
+          <div class="kpi-label">Pendentes Doadores</div>
+          <div class="kpi-value" id="kpi-d-pend" style="color:#d97706">R$ 0</div>
+          <div class="kpi-sub"><span id="kpi-d-npend">0 doadores</span></div>
+        </div>
+        <div class="kpi" style="background:linear-gradient(135deg,#eff6ff,#fff);border:1.5px solid rgba(37,99,235,.15)">
+          <div class="kpi-icon" style="background:linear-gradient(135deg,#2563eb,#1d4ed8)"><i class="fas fa-piggy-bank"></i></div>
+          <div class="kpi-label">Receita Total (Geral)</div>
+          <div class="kpi-value" id="kpi-total-geral" style="color:#2563eb">R$ 0</div>
+          <div class="kpi-sub">associados + doadores</div>
+        </div>
+      </div>
+
+      <!-- ── SEPARADOR: GRÁFICOS ── -->
+      <div style="display:flex;align-items:center;gap:.8rem;margin-bottom:1rem">
+        <div style="width:4px;height:22px;background:var(--navy-light);border-radius:4px"></div>
+        <span style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gray-500)"><i class="fas fa-chart-bar" style="color:var(--navy-light)"></i> Gráficos</span>
+        <div style="flex:1;height:1px;background:var(--gray-200)"></div>
+      </div>
+
+      <!-- Gráficos -->
       <div class="charts-grid">
-        <div class="chart-card wide"><div class="chart-title">Projeção de Receita Mensal</div><div class="chart-sub">Valores esperados nos próximos 6 meses</div><div class="chart-wrap"><canvas id="chart-projecao"></canvas></div></div>
-        <div class="chart-card"><div class="chart-title">Distribuição por Dia de Pagamento</div><div class="chart-sub">Quantidade de associados por vencimento</div><div class="chart-wrap"><canvas id="chart-dias"></canvas></div></div>
-        <div class="chart-card"><div class="chart-title">Status dos Associados</div><div class="chart-sub">Ativos · Inativos · Suspensos</div><div class="chart-wrap"><canvas id="chart-status"></canvas></div></div>
+        <div class="chart-card wide">
+          <div class="chart-title">Projeção de Receita Mensal</div>
+          <div class="chart-sub">Associados + Doadores — próximos 6 meses</div>
+          <div class="chart-wrap"><canvas id="chart-projecao"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Distribuição por Dia de Pagamento</div>
+          <div class="chart-sub">Quantidade de associados por vencimento</div>
+          <div class="chart-wrap"><canvas id="chart-dias"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Associados vs Doadores</div>
+          <div class="chart-sub">Composição da base de contribuintes</div>
+          <div class="chart-wrap"><canvas id="chart-tipo"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Status dos Associados</div>
+          <div class="chart-sub">Ativos · Inativos · Suspensos</div>
+          <div class="chart-wrap"><canvas id="chart-status"></canvas></div>
+        </div>
+        <div class="chart-card wide">
+          <div class="chart-title">Contribuição por Faixa de Valor</div>
+          <div class="chart-sub">Distribuição de associados e doadores por valor mensal</div>
+          <div class="chart-wrap"><canvas id="chart-faixas"></canvas></div>
+        </div>
       </div>
+
+      <!-- Pendências Associados -->
+      <div class="table-wrap" style="margin-bottom:1.2rem">
+        <div class="table-header">
+          <div class="table-title"><i class="fas fa-calendar-xmark" style="color:var(--warn)"></i> Pendências do Mês — Associados</div>
+        </div>
+        <div class="table-scroll">
+          <table><thead><tr><th>Associado</th><th>Telefone</th><th>Valor</th><th>Vencimento</th><th>Ação</th></tr></thead>
+          <tbody id="pend-body"></tbody></table>
+        </div>
+      </div>
+
+      <!-- Pendências Doadores -->
       <div class="table-wrap">
-        <div class="table-header"><div class="table-title"><i class="fas fa-calendar-xmark" style="color:var(--warn)"></i> Pendências do Mês Atual</div></div>
-        <div class="table-scroll"><table><thead><tr><th>Associado</th><th>Telefone</th><th>Valor</th><th>Vencimento</th><th>Ação</th></tr></thead><tbody id="pend-body"></tbody></table></div>
+        <div class="table-header">
+          <div class="table-title"><i class="fas fa-heart" style="color:#dc2626"></i> Pendências do Mês — Doadores</div>
+        </div>
+        <div class="table-scroll">
+          <table><thead><tr><th>Doador</th><th>Telefone</th><th>Valor</th><th>Vencimento</th><th>Ação</th></tr></thead>
+          <tbody id="pend-body-doadores"></tbody></table>
+        </div>
       </div>
+
     </div>
 
       <!-- ABA FINANCEIRO MP -->
@@ -3256,21 +3350,38 @@ ${pags.length>0?`<h2>🗓️ Histórico de Pagamentos</h2><table><thead><tr><th>
 //  KPIs
 // ═══════════════════════════════════════════
 function updateKPIs(){
+  // ── ASSOCIADOS ──
   const ativos = associados.filter(a=>a.status==='ativo');
   g('kpi-total').textContent = associados.length;
   g('kpi-ativos').textContent = `${ativos.length} ativos`;
-  const receitaMensal = ativos.reduce((s,a)=>s+(a.valor_contribuicao||30),0);
-  g('kpi-receita').textContent = `R$ ${receitaMensal.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}`;
+  const receitaAssoc = ativos.reduce((s,a)=>s+(a.valor_contribuicao||30),0);
+  g('kpi-receita').textContent = `R$ ${receitaAssoc.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}`;
   const mesAtual = getMesAtual();
   const pendMes = Object.values(pagamentos).flat().filter(p=>p.status==='pendente'&&p.mes_referencia===mesAtual).reduce((s,p)=>s+p.valor,0);
   g('kpi-pend').textContent = `R$ ${pendMes.toFixed(0)}`;
   const assocPend = ativos.filter(a=>(pagamentos[a.id]||[]).some(p=>p.status==='pendente'&&p.mes_referencia===mesAtual));
   g('kpi-npend').textContent = `${assocPend.length} associados`;
-  const ticket = ativos.length>0 ? receitaMensal/ativos.length : 0;
+  const ticket = ativos.length>0 ? receitaAssoc/ativos.length : 0;
   g('kpi-ticket').textContent = `R$ ${ticket.toFixed(0)}`;
+
+  // ── DOADORES ──
+  const doadoresAtivos = doadores.filter(d=>d.status==='ativo');
+  const elDTotal = g('kpi-d-total'); if(elDTotal) elDTotal.textContent = doadores.length;
+  const elDAtivos = g('kpi-d-ativos'); if(elDAtivos) elDAtivos.textContent = `${doadoresAtivos.length} ativos`;
+  const receitaDoadores = doadoresAtivos.reduce((s,d)=>s+(d.valor_contribuicao||30),0);
+  const elDReceita = g('kpi-d-receita'); if(elDReceita) elDReceita.textContent = `R$ ${receitaDoadores.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}`;
+  const pendDoadores = Object.values(pagamentosDoadores).flat().filter(p=>p.status==='pendente'&&p.mes_referencia===mesAtual).reduce((s,p)=>s+p.valor,0);
+  const elDPend = g('kpi-d-pend'); if(elDPend) elDPend.textContent = `R$ ${pendDoadores.toFixed(0)}`;
+  const doadoresPend = doadoresAtivos.filter(d=>(pagamentosDoadores[d.id]||[]).some(p=>p.status==='pendente'&&p.mes_referencia===mesAtual));
+  const elDNPend = g('kpi-d-npend'); if(elDNPend) elDNPend.textContent = `${doadoresPend.length} doadores`;
+
+  // ── TOTAL GERAL ──
+  const totalGeral = receitaAssoc + receitaDoadores;
+  const elGeral = g('kpi-total-geral'); if(elGeral) elGeral.textContent = `R$ ${totalGeral.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}`;
 }
 
 function renderPendencias(){
+  // Pendências de Associados
   const tbody = g('pend-body');
   const mesAtual = getMesAtual();
   const list = associados.filter(a=>a.status==='ativo').map(a=>({a, p:(pagamentos[a.id]||[]).find(x=>x.mes_referencia===mesAtual)})).filter(({p})=>!p||p.status==='pendente');
@@ -3280,6 +3391,16 @@ function renderPendencias(){
     const isOverdue = hoje.getDate() > (a.dia_pagamento||10);
     return `<tr><td class="td-name">${a.nome}</td><td>${a.telefone||'—'}</td><td style="font-weight:700">R$ ${(a.valor_contribuicao||30).toFixed(2)}</td><td><span style="color:${isOverdue?'var(--error)':'var(--warn)'}">⏰ ${venc}</span></td><td><button class="btn-sm btn-sm-warn" onclick="openCobranca('${a.id}')"><i class="fas fa-paper-plane"></i> Enviar cobrança</button></td></tr>`;
   }).join('')||'<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--gray-400)">✅ Nenhuma pendência no mês atual</td></tr>';
+
+  // Pendências de Doadores
+  const tbodyD = g('pend-body-doadores');
+  if(!tbodyD) return;
+  const listD = doadores.filter(d=>d.status==='ativo').map(d=>({d, p:(pagamentosDoadores[d.id]||[]).find(x=>x.mes_referencia===mesAtual)})).filter(({p})=>!p||p.status==='pendente');
+  tbodyD.innerHTML = listD.slice(0,15).map(({d})=>{
+    const venc = `${String(d.dia_pagamento||10).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
+    const isOverdue = hoje.getDate() > (d.dia_pagamento||10);
+    return `<tr><td class="td-name">${d.nome}<br><span style="font-size:.75rem;color:var(--gray-400)">❤️ Doador</span></td><td>${d.telefone||'—'}</td><td style="font-weight:700">R$ ${(d.valor_contribuicao||30).toFixed(2)}</td><td><span style="color:${isOverdue?'var(--error)':'var(--warn)'}">⏰ ${venc}</span></td><td><button class="btn-sm btn-sm-warn" onclick="openCobrancaDoador('${d.id}')"><i class="fas fa-paper-plane"></i> Cobrar</button></td></tr>`;
+  }).join('')||'<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--gray-400)">✅ Nenhuma pendência de doadores no mês atual</td></tr>';
 }
 
 // ═══════════════════════════════════════════
@@ -3288,20 +3409,95 @@ function renderPendencias(){
 let charts = {};
 function renderCharts(){
   const ativos = associados.filter(a=>a.status==='ativo');
-  const receitaMensal = ativos.reduce((s,a)=>s+(a.valor_contribuicao||30),0);
+  const doadoresAtivos = doadores.filter(d=>d.status==='ativo');
+  const receitaAssoc   = ativos.reduce((s,a)=>s+(a.valor_contribuicao||30),0);
+  const receitaDoadores = doadoresAtivos.reduce((s,d)=>s+(d.valor_contribuicao||30),0);
+  const receitaTotal   = receitaAssoc + receitaDoadores;
   const hoje = new Date();
   const mesesLabels = Array.from({length:6},(_,i)=>{ const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1); return d.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}); });
-  const proj = mesesLabels.map((_,i)=> receitaMensal * (1 + i*0.025));
+
+  // ── Projeção (associados + doadores) ──
+  const projAssoc   = mesesLabels.map((_,i)=> receitaAssoc    * (1 + i*0.025));
+  const projDoadores = mesesLabels.map((_,i)=> receitaDoadores * (1 + i*0.015));
   if(charts.projecao) charts.projecao.destroy();
-  charts.projecao = new Chart(g('chart-projecao').getContext('2d'),{ type:'bar', data:{labels:mesesLabels,datasets:[{label:'Receita Projetada (R$)',data:proj,backgroundColor:'rgba(13,143,143,.15)',borderColor:'rgba(13,143,143,.9)',borderWidth:2,borderRadius:6},{type:'line',label:'Tendência',data:proj,borderColor:'#e8c96a',borderWidth:2,pointBackgroundColor:'#e8c96a',tension:.4,fill:false}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:11},boxWidth:12}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>'R$'+v.toFixed(0),font:{family:'DM Sans',size:10}},grid:{color:'rgba(0,0,0,.05)'}},x:{ticks:{font:{family:'DM Sans',size:11}},grid:{display:false}}}} });
+  charts.projecao = new Chart(g('chart-projecao').getContext('2d'),{
+    type:'bar',
+    data:{
+      labels:mesesLabels,
+      datasets:[
+        {label:'Associados (R$)',data:projAssoc,backgroundColor:'rgba(13,143,143,.7)',borderColor:'rgba(13,143,143,1)',borderWidth:2,borderRadius:5},
+        {label:'Doadores (R$)',data:projDoadores,backgroundColor:'rgba(220,38,38,.55)',borderColor:'rgba(220,38,38,.9)',borderWidth:2,borderRadius:5},
+        {type:'line',label:'Tendência Total',data:mesesLabels.map((_,i)=>receitaTotal*(1+i*0.022)),borderColor:'#e8c96a',borderWidth:2.5,pointBackgroundColor:'#e8c96a',tension:.4,fill:false}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:11},boxWidth:12}}},scales:{x:{stacked:true,ticks:{font:{family:'DM Sans',size:11}},grid:{display:false}},y:{stacked:true,beginAtZero:true,ticks:{callback:v=>'R$'+v.toFixed(0),font:{family:'DM Sans',size:10}},grid:{color:'rgba(0,0,0,.05)'}}}}
+  });
+
+  // ── Distribuição por dia (só associados) ──
   const diasCount = {};
   associados.forEach(a=>{ const d=`Dia ${a.dia_pagamento||10}`; diasCount[d]=(diasCount[d]||0)+1; });
   if(charts.dias) charts.dias.destroy();
-  charts.dias = new Chart(g('chart-dias').getContext('2d'),{ type:'doughnut', data:{labels:Object.keys(diasCount),datasets:[{data:Object.values(diasCount),backgroundColor:['rgba(13,143,143,.8)','rgba(11,31,49,.8)','rgba(232,201,106,.8)','rgba(30,74,107,.8)','rgba(94,163,163,.8)'],borderWidth:2,borderColor:'#fff'}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:10},boxWidth:10}}}} });
+  charts.dias = new Chart(g('chart-dias').getContext('2d'),{
+    type:'doughnut',
+    data:{labels:Object.keys(diasCount),datasets:[{data:Object.values(diasCount),backgroundColor:['rgba(13,143,143,.8)','rgba(11,31,49,.8)','rgba(232,201,106,.8)','rgba(30,74,107,.8)','rgba(94,163,163,.8)','rgba(220,38,38,.6)','rgba(37,99,235,.6)'],borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:10},boxWidth:10}}}}
+  });
+
+  // ── Associados vs Doadores ──
+  const elTipo = g('chart-tipo');
+  if(elTipo){
+    if(charts.tipo) charts.tipo.destroy();
+    charts.tipo = new Chart(elTipo.getContext('2d'),{
+      type:'doughnut',
+      data:{
+        labels:['Associados','Doadores'],
+        datasets:[{
+          data:[associados.length, doadores.length],
+          backgroundColor:['rgba(13,143,143,.8)','rgba(220,38,38,.75)'],
+          borderWidth:3,borderColor:'#fff'
+        }]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{position:'bottom',labels:{font:{family:'DM Sans',size:11},boxWidth:12}},
+          tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.parsed} (R$ ${ctx.label==='Associados'?receitaAssoc.toFixed(0):receitaDoadores.toFixed(0)})`}}
+        }
+      }
+    });
+  }
+
+  // ── Status Associados ──
   const sc = {ativo:0,inativo:0,suspenso:0};
   associados.forEach(a=>{ sc[a.status||'ativo']++; });
   if(charts.status) charts.status.destroy();
-  charts.status = new Chart(g('chart-status').getContext('2d'),{ type:'pie', data:{labels:['Ativos','Inativos','Suspensos'],datasets:[{data:[sc.ativo,sc.inativo,sc.suspenso],backgroundColor:['rgba(5,150,105,.8)','rgba(148,163,184,.8)','rgba(220,38,38,.8)'],borderWidth:2,borderColor:'#fff'}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:10},boxWidth:10}}}} });
+  charts.status = new Chart(g('chart-status').getContext('2d'),{
+    type:'pie',
+    data:{labels:['Ativos','Inativos','Suspensos'],datasets:[{data:[sc.ativo,sc.inativo,sc.suspenso],backgroundColor:['rgba(5,150,105,.8)','rgba(148,163,184,.8)','rgba(220,38,38,.8)'],borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:10},boxWidth:10}}}}
+  });
+
+  // ── Faixas de Valor (associados + doadores) ──
+  const elFaixas = g('chart-faixas');
+  if(elFaixas){
+    const faixas = {'Até R$30':0,'R$31–R$50':0,'R$51–R$100':0,'R$101–R$200':0,'Acima de R$200':0};
+    const faixasD = {'Até R$30':0,'R$31–R$50':0,'R$51–R$100':0,'R$101–R$200':0,'Acima de R$200':0};
+    const classif = v => v<=30?'Até R$30':v<=50?'R$31–R$50':v<=100?'R$51–R$100':v<=200?'R$101–R$200':'Acima de R$200';
+    associados.forEach(a=>{ faixas[classif(a.valor_contribuicao||30)]++; });
+    doadores.forEach(d=>{ faixasD[classif(d.valor_contribuicao||30)]++; });
+    if(charts.faixas) charts.faixas.destroy();
+    charts.faixas = new Chart(elFaixas.getContext('2d'),{
+      type:'bar',
+      data:{
+        labels:Object.keys(faixas),
+        datasets:[
+          {label:'Associados',data:Object.values(faixas),backgroundColor:'rgba(13,143,143,.7)',borderRadius:6},
+          {label:'Doadores',data:Object.values(faixasD),backgroundColor:'rgba(220,38,38,.6)',borderRadius:6}
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:11},boxWidth:12}}},scales:{x:{ticks:{font:{family:'DM Sans',size:10}},grid:{display:false}},y:{beginAtZero:true,ticks:{stepSize:1,font:{family:'DM Sans',size:10}},grid:{color:'rgba(0,0,0,.05)'}}}}
+    });
+  }
 }
 
 function showAdminTab(id){
@@ -3324,7 +3520,7 @@ function showAdminTab(id){
   const activeBnav = abnavMap[id];
   if(activeBnav) g(activeBnav)?.classList.add('active');
 
-  if(id==='tab-dashboard')  { setTimeout(()=>{ renderCharts(); updateKPIs(); renderPendencias(); },100); }
+  if(id==='tab-dashboard')  { setTimeout(async()=>{ await loadDoadores(); renderCharts(); updateKPIs(); renderPendencias(); },100); }
   if(id==='tab-financeiro') { setTimeout(()=> loadMPFinanceiro(), 100); }
   if(id==='tab-doadores')   { loadDoadores(); }
 }
