@@ -4119,150 +4119,26 @@ async function pagarViaMPDoador(mesRef, valor){
 }
 
 // ═══════════════════════════════════════════
-//  PAGAMENTO AUTOMÁTICO — MERCADO PAGO
-//  Tenta criar plano de assinatura; se CORS bloquear,
-//  usa Checkout Pro com recorrência via preference.
+//  PAGAMENTO AUTOMÁTICO — ASSINATURA MP
+//  Vai direto para a assinatura recorrente.
+//  Fallback automático para Checkout Pro se a
+//  API de planos estiver indisponível.
 // ═══════════════════════════════════════════
 async function pagarAssinaturaMP(mesRef, valor){
-  // Identifica quem está logado (associado ou doador)
   const isDoador = !!document.querySelector('#view-doador.active');
-  const ficha  = isDoador ? fichaDoador  : fichaAssociado;
+  const ficha   = isDoador ? fichaDoador  : fichaAssociado;
   const usuario = isDoador ? doadorLogado : associadoLogado;
   if(!ficha || !usuario){ toast('Dados não encontrados. Faça login novamente.','err'); return; }
 
   const nome  = ficha.nome  || usuario.nome  || 'Contribuinte';
-  const email = ficha.email || usuario.email || '';
+  const email = ficha.email || usuario.email || 'contribuinte@ongporamor.com.br';
   const [ano, mes] = mesRef.split('-');
   const mesNome = new Date(+ano,+mes-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
 
-  // Abre modal de pagamento automático
-  _abrirModalAssinatura({ ficha, usuario, nome, email, mesRef, mesNome, valor, isDoador });
-}
-
-// Modal de Pagamento Automático
-function _abrirModalAssinatura({ ficha, usuario, nome, email, mesRef, mesNome, valor, isDoador }){
-  // Remove modal anterior se existir
-  const old = g('modal-assinatura-mp');
-  if(old) old.remove();
-
-  const modal = document.createElement('div');
-  modal.id = 'modal-assinatura-mp';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(11,31,49,.85);display:flex;align-items:center;justify-content:center;z-index:9000;padding:1.5rem;backdrop-filter:blur(6px)';
-  modal.innerHTML = `
-    <div style="background:var(--white);border-radius:var(--R);max-width:480px;width:100%;overflow:hidden;box-shadow:var(--shadow);animation:pgIn .3s ease both">
-      <!-- Header -->
-      <div style="background:linear-gradient(135deg,#009ee3,#0070b4);padding:1.5rem 2rem;color:#fff;position:relative;overflow:hidden">
-        <div style="position:absolute;right:1.5rem;top:50%;transform:translateY(-50%);font-size:4rem;opacity:.1"><i class="fas fa-repeat"></i></div>
-        <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.6);margin-bottom:.3rem">Mercado Pago</div>
-        <div style="font-family:'DM Serif Display',serif;font-size:1.4rem;margin-bottom:.1rem">Pagamento Automático</div>
-        <div style="font-size:.82rem;color:rgba(255,255,255,.65)">Contribuição recorrente mensal</div>
-      </div>
-      <!-- Body -->
-      <div style="padding:1.8rem 2rem">
-        <!-- Info do plano -->
-        <div style="background:#f0f9ff;border:1.5px solid rgba(0,158,227,.2);border-radius:var(--r);padding:1rem 1.2rem;margin-bottom:1.4rem">
-          <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#0070b4;margin-bottom:.6rem"><i class="fas fa-info-circle"></i> Detalhes da Assinatura</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem .8rem;font-size:.84rem">
-            <div><span style="color:var(--gray-500);font-size:.75rem">Valor</span><div style="font-weight:700;color:var(--navy);font-size:1.05rem">R$ ${valor.toFixed(2).replace('.',',')}<span style="font-weight:400;font-size:.75rem;color:var(--gray-500)">/mês</span></div></div>
-            <div><span style="color:var(--gray-500);font-size:.75rem">Frequência</span><div style="font-weight:600;color:var(--navy)">Mensal automática</div></div>
-            <div><span style="color:var(--gray-500);font-size:.75rem">Início</span><div style="font-weight:600;color:var(--navy)">${mesNome}</div></div>
-            <div><span style="color:var(--gray-500);font-size:.75rem">Contribuinte</span><div style="font-weight:600;color:var(--navy);font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nome.split(' ')[0]}</div></div>
-          </div>
-        </div>
-
-        <!-- Opção 1: Checkout Pro (funciona imediatamente) -->
-        <div style="margin-bottom:.8rem">
-          <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gray-500);margin-bottom:.7rem">Escolha como pagar</div>
-
-          <button id="btn-assin-checkout" onclick="_assinarViaCheckout()" style="width:100%;background:linear-gradient(135deg,#009ee3,#0070b4);border:none;color:#fff;padding:1rem 1.5rem;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:.8rem;margin-bottom:.6rem;transition:all .2s;box-shadow:0 6px 16px rgba(0,158,227,.35)">
-            <div style="width:38px;height:38px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas fa-credit-card" style="font-size:1.1rem"></i></div>
-            <div style="text-align:left">
-              <div>Pagar com Mercado Pago</div>
-              <div style="font-size:.75rem;font-weight:400;opacity:.8">Cartão, PIX ou saldo MP — confirmação imediata</div>
-            </div>
-            <i class="fas fa-arrow-right" style="margin-left:auto;opacity:.7"></i>
-          </button>
-
-          <button id="btn-assin-plano" onclick="_assinarViaPlano()" style="width:100%;background:var(--white);border:1.5px solid rgba(0,158,227,.4);color:#0070b4;padding:1rem 1.5rem;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:.8rem;transition:all .2s">
-            <div style="width:38px;height:38px;background:rgba(0,158,227,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas fa-repeat" style="font-size:1.1rem"></i></div>
-            <div style="text-align:left">
-              <div>Assinatura Recorrente</div>
-              <div style="font-size:.75rem;font-weight:400;color:var(--gray-500)">Débito automático todo mês — sem precisar pagar manualmente</div>
-            </div>
-            <i class="fas fa-arrow-right" style="margin-left:auto;opacity:.4"></i>
-          </button>
-        </div>
-
-        <div id="assin-status-msg" style="margin-top:.8rem;font-size:.82rem;color:var(--gray-600);text-align:center;min-height:1.2rem"></div>
-      </div>
-      <!-- Footer -->
-      <div style="padding:1rem 2rem 1.5rem;text-align:center">
-        <button onclick="g('modal-assinatura-mp').remove()" style="background:transparent;border:none;color:var(--gray-400);font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem"><i class="fas fa-times"></i> Fechar</button>
-      </div>
-    </div>`;
-
-  // Fecha ao clicar fora
-  modal.addEventListener('click', e => { if(e.target === modal) modal.remove(); });
-  document.body.appendChild(modal);
-
-  // Injeta contexto atual nas funções internas
-  window._mpAssinCtx = { ficha, usuario, nome, email, mesRef, mesNome, valor, isDoador };
-}
-
-// Opção 1: Checkout Pro normal (mais rápido, já funciona)
-async function _assinarViaCheckout(){
-  const { ficha, usuario, nome, email, mesRef, mesNome, valor, isDoador } = window._mpAssinCtx || {};
-  if(!ficha) return;
-  const statusEl = g('assin-status-msg');
-  const btn = g('btn-assin-checkout');
-  if(btn){ btn.disabled=true; btn.style.opacity='.7'; }
-  if(statusEl) statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando link de pagamento...';
+  toast('⏳ Criando assinatura automática...');
 
   try {
-    const extRef = `${isDoador?'doador':'assoc'}-${ficha.id}-${mesRef}`;
-    const payload = {
-      items:[{
-        title:`Contribuição Mensal ONG Por Amor — ${mesNome}`,
-        description:`Pagamento automático · ${nome}`,
-        quantity:1, currency_id:'BRL', unit_price:valor
-      }],
-      payer:{ name:nome, email:email || 'contribuinte@ongporamor.com.br' },
-      back_urls:{ success:window.location.href, failure:window.location.href, pending:window.location.href },
-      auto_return:'approved',
-      statement_descriptor:'ONG Por Amor',
-      external_reference: extRef,
-      payment_methods:{ installments:1 } // pagamento à vista
-    };
-    const resp = await fetch('https://api.mercadopago.com/checkout/preferences',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+MP_ACCESS_TOKEN},
-      body:JSON.stringify(payload)
-    });
-    const data = await resp.json();
-    if(data.init_point){
-      if(statusEl) statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:var(--success)"></i> Link gerado! Abrindo...';
-      setTimeout(()=>{ window.open(data.init_point,'_blank'); }, 400);
-      setTimeout(()=>{ const m=g('modal-assinatura-mp'); if(m) m.remove(); toast('Checkout aberto! Confirme o pagamento na página do Mercado Pago. ✅'); }, 1200);
-    } else {
-      throw new Error(data.message || JSON.stringify(data).slice(0,120));
-    }
-  } catch(e){
-    if(statusEl) statusEl.innerHTML = `<i class="fas fa-exclamation-circle" style="color:var(--error)"></i> Erro: ${e.message}`;
-    if(btn){ btn.disabled=false; btn.style.opacity='1'; }
-  }
-}
-
-// Opção 2: Assinatura recorrente via API de Planos do MP
-async function _assinarViaPlano(){
-  const { ficha, usuario, nome, email, mesRef, mesNome, valor, isDoador } = window._mpAssinCtx || {};
-  if(!ficha) return;
-  const statusEl = g('assin-status-msg');
-  const btn = g('btn-assin-plano');
-  if(btn){ btn.disabled=true; btn.style.opacity='.7'; }
-  if(statusEl) statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando plano de assinatura...';
-
-  try {
-    // Passo 1: Cria plano de assinatura (preapproval_plan)
+    // Cria plano de assinatura recorrente
     const planPayload = {
       reason: `Contribuição Mensal ONG Por Amor — ${nome.split(' ')[0]}`,
       auto_recurring: {
@@ -4272,22 +4148,24 @@ async function _assinarViaPlano(){
         currency_id: 'BRL'
       },
       back_url: window.location.href,
-      payment_methods_allowed: { payment_types:[{id:'credit_card'},{id:'debit_card'},{id:'account_money'}] }
+      payment_methods_allowed: {
+        payment_types: [{id:'credit_card'},{id:'debit_card'},{id:'account_money'}]
+      }
     };
 
     const planResp = await fetch('https://api.mercadopago.com/preapproval_plan', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+MP_ACCESS_TOKEN},
-      body:JSON.stringify(planPayload)
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':'Bearer '+MP_ACCESS_TOKEN},
+      body: JSON.stringify(planPayload)
     });
     const planData = await planResp.json();
 
     if(planData.id){
-      // Passo 2: Cria assinatura com o plano
+      // Cria a assinatura vinculada ao plano
       const subPayload = {
         preapproval_plan_id: planData.id,
         reason: `Contribuição Mensal ONG Por Amor — ${nome}`,
-        payer_email: email || 'contribuinte@ongporamor.com.br',
+        payer_email: email,
         auto_recurring: {
           frequency: 1,
           frequency_type: 'months',
@@ -4300,29 +4178,52 @@ async function _assinarViaPlano(){
         status: 'pending',
         external_reference: `${isDoador?'doador':'assoc'}-${ficha.id}-assinatura`
       };
+
       const subResp = await fetch('https://api.mercadopago.com/preapproval', {
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+MP_ACCESS_TOKEN},
-        body:JSON.stringify(subPayload)
+        method: 'POST',
+        headers: {'Content-Type':'application/json','Authorization':'Bearer '+MP_ACCESS_TOKEN},
+        body: JSON.stringify(subPayload)
       });
       const subData = await subResp.json();
+      const link = subData.init_point || subData.sandbox_init_point;
 
-      if(subData.init_point || subData.sandbox_init_point){
-        const link = subData.init_point || subData.sandbox_init_point;
-        if(statusEl) statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:var(--success)"></i> Plano criado! Abrindo página de assinatura...';
-        setTimeout(()=>{ window.open(link,'_blank'); }, 400);
-        setTimeout(()=>{ const m=g('modal-assinatura-mp'); if(m) m.remove(); toast('Página de assinatura aberta! Complete o processo no Mercado Pago. 🔄'); }, 1200);
-      } else {
-        throw new Error(subData.message || 'Não foi possível obter o link de assinatura');
+      if(link){
+        toast('✅ Assinatura criada! Abrindo página de confirmação...');
+        setTimeout(()=> window.open(link,'_blank'), 600);
+        return;
       }
-    } else {
-      throw new Error(planData.message || 'Não foi possível criar o plano de assinatura');
+      throw new Error(subData.message || 'Link de assinatura não retornado');
     }
+    throw new Error(planData.message || 'Plano não criado');
+
   } catch(e){
-    // Fallback: se a API de planos falhar (CORS ou permissão), usa Checkout Pro
-    if(statusEl) statusEl.innerHTML = `<i class="fas fa-exclamation-triangle" style="color:var(--warn)"></i> API de planos indisponível. Usando Checkout Pro...`;
-    if(btn){ btn.disabled=false; btn.style.opacity='1'; }
-    setTimeout(()=> _assinarViaCheckout(), 1500);
+    // Fallback silencioso: abre Checkout Pro com mesmo valor
+    console.warn('Assinatura MP:', e.message, '— usando Checkout Pro como fallback');
+    try {
+      const extRef = `${isDoador?'doador':'assoc'}-${ficha.id}-${mesRef}`;
+      const payload = {
+        items:[{title:`Contribuição Mensal ONG Por Amor — ${mesNome}`,quantity:1,currency_id:'BRL',unit_price:valor}],
+        payer:{name:nome, email},
+        back_urls:{success:window.location.href,failure:window.location.href,pending:window.location.href},
+        auto_return:'approved',
+        statement_descriptor:'ONG Por Amor',
+        external_reference: extRef
+      };
+      const resp = await fetch('https://api.mercadopago.com/checkout/preferences',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+MP_ACCESS_TOKEN},
+        body:JSON.stringify(payload)
+      });
+      const data = await resp.json();
+      if(data.init_point){
+        toast('✅ Abrindo pagamento via Mercado Pago...');
+        setTimeout(()=> window.open(data.init_point,'_blank'), 600);
+      } else {
+        throw new Error(data.message||'Erro ao gerar link');
+      }
+    } catch(e2){
+      toast('Erro ao conectar com Mercado Pago: '+e2.message,'err');
+    }
   }
 }
 
