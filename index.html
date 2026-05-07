@@ -3789,6 +3789,8 @@ function toast(msg, type='ok'){
 //  MERCADO PAGO
 // ═══════════════════════════════════════════
 const MP_ACCESS_TOKEN = 'APP_USR-5360690031869796-042714-536618cfd302efbf360cbc197c933719-3320288779';
+// ⬇ Substitua pela URL do seu Cloudflare Worker após criar
+const MP_PROXY_URL = 'https://ong-mp-proxy.ongporamoradmin.workers.dev';
 
 async function criarPagamentoMP(){
   const nome = g('inp-nome')?.value.trim() || 'Associado';
@@ -4571,126 +4573,43 @@ async function pagarAssinaturaMP(mesRef, valor){
   if(!ficha || !usuario){ toast('Dados não encontrados. Faça login novamente.','err'); return; }
 
   const nome  = ficha.nome  || usuario.nome  || 'Contribuinte';
-  const email = ficha.email || usuario.email || 'contribuinte@ongporamor.com.br';
+  const email = ficha.email || usuario.email || '';
 
-  toast('⏳ Gerando link de assinatura...');
+  // Verifica se o Worker foi configurado
+  if(!MP_PROXY_URL || MP_PROXY_URL.includes('SEU_USUARIO')){
+    toast('⚠️ Configure a URL do Worker no arquivo HTML.','err');
+    return;
+  }
 
-  // ── Tenta Assinatura direta (preapproval sem plano) ──
-  // Esta é a forma mais simples: cria uma preapproval com init_point
-  // que abre a tela de débito automático do Mercado Pago.
+  toast('⏳ Gerando assinatura automática...');
+
   try {
-    const startDate = new Date();
-    startDate.setHours(startDate.getHours() + 1); // começa daqui 1h
-    const endDate = new Date(startDate);
-    endDate.setFullYear(endDate.getFullYear() + 10);
-
-    const payload = {
-      reason: `Contribuição Mensal ONG Por Amor — ${nome.split(' ')[0]}`,
-      payer_email: email,
-      auto_recurring: {
-        frequency: 1,
-        frequency_type: 'months',
-        transaction_amount: valor,
-        currency_id: 'BRL',
-        start_date: startDate.toISOString(),
-        end_date: endDate.toISOString()
-      },
-      back_url: window.location.href,
-      status: 'pending',
-      external_reference: `${isDoador?'doador':'assoc'}-${ficha.id}-assin-${mesRef}`
-    };
-
-    const resp = await fetch('https://api.mercadopago.com/preapproval', {
+    const resp = await fetch(`${MP_PROXY_URL}/criar-assinatura`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + MP_ACCESS_TOKEN
-      },
-      body: JSON.stringify(payload)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nome,
+        email,
+        valor,
+        external_reference: `${isDoador?'doador':'assoc'}-${ficha.id}-assin-${mesRef}`,
+        back_url: window.location.href
+      })
     });
 
     const data = await resp.json();
     const link = data.init_point || data.sandbox_init_point;
 
     if(link){
-      toast('✅ Link de assinatura gerado! Abrindo...');
+      toast('✅ Assinatura criada! Abrindo checkout...');
       setTimeout(()=> window.open(link, '_blank'), 400);
-      return;
+    } else {
+      throw new Error(data.message || data.error || 'Erro ao criar assinatura');
     }
 
-    // Se a API retornar erro, mostra modal de instruções alternativas
-    console.warn('preapproval falhou:', data.message || JSON.stringify(data));
-    _mostrarModalAssinManual(nome, email, valor, isDoador, ficha);
-
   } catch(e){
-    console.warn('Assinatura MP erro:', e.message);
-    _mostrarModalAssinManual(nome, email, valor, isDoador, ficha);
+    toast('Erro ao criar assinatura: ' + e.message, 'err');
+    console.error('pagarAssinaturaMP:', e);
   }
-}
-
-// Modal de instruções quando a API de assinatura não está disponível via browser
-// (CORS / permissão de aplicação não aprovada no MP)
-function _mostrarModalAssinManual(nome, email, valor, isDoador, ficha){
-  const old = g('modal-assin-manual');
-  if(old) old.remove();
-
-  const modal = document.createElement('div');
-  modal.id = 'modal-assin-manual';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(11,31,49,.88);display:flex;align-items:center;justify-content:center;z-index:9000;padding:1.5rem;backdrop-filter:blur(6px)';
-  modal.innerHTML = `
-    <div style="background:#fff;border-radius:20px;max-width:460px;width:100%;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.35);animation:pgIn .3s ease both">
-      <div style="background:linear-gradient(135deg,#009ee3,#0070b4);padding:1.5rem 2rem;color:#fff;text-align:center;position:relative">
-        <div style="font-size:2.5rem;margin-bottom:.4rem">🔄</div>
-        <div style="font-family:'DM Serif Display',serif;font-size:1.3rem;margin-bottom:.2rem">Débito Automático</div>
-        <div style="font-size:.8rem;color:rgba(255,255,255,.7)">Mercado Pago — Assinatura Recorrente</div>
-      </div>
-      <div style="padding:1.8rem 2rem">
-        <div style="background:#f0f9ff;border:1.5px solid rgba(0,158,227,.2);border-radius:12px;padding:1rem 1.2rem;margin-bottom:1.2rem">
-          <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#0070b4;margin-bottom:.5rem">Detalhes da assinatura</div>
-          <div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:.3rem">
-            <span style="color:#475569">Contribuinte</span><strong style="color:#0b1f31">${nome.split(' ')[0]}</strong>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:.3rem">
-            <span style="color:#475569">Valor mensal</span><strong style="color:#0b1f31">R$ ${valor.toFixed(2).replace('.',',')}</strong>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:.85rem">
-            <span style="color:#475569">Frequência</span><strong style="color:#0b1f31">Mensal automática</strong>
-          </div>
-        </div>
-
-        <div style="font-size:.82rem;color:#475569;line-height:1.7;margin-bottom:1.2rem">
-          Para configurar o débito automático, acesse o link abaixo e faça login com a conta <strong style="color:#0b1f31">${email}</strong> no Mercado Pago:
-        </div>
-
-        <button onclick="_abrirMPAssinaturas()" style="width:100%;background:linear-gradient(135deg,#009ee3,#0070b4);border:none;color:#fff;padding:1rem;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.6rem;box-shadow:0 6px 16px rgba(0,158,227,.35);margin-bottom:.6rem;transition:all .2s">
-          <i class="fas fa-external-link-alt"></i> Abrir Assinaturas no Mercado Pago
-        </button>
-        <button onclick="_abrirMercadoPagoApp()" style="width:100%;background:#fff;border:1.5px solid rgba(0,158,227,.4);color:#0070b4;padding:.9rem;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.6rem;transition:all .2s">
-          <i class="fas fa-mobile-alt"></i> Abrir App Mercado Pago
-        </button>
-
-        <div style="margin-top:1rem;padding:.8rem;background:#f8fafc;border-radius:8px;font-size:.75rem;color:#64748b;line-height:1.6">
-          <strong style="color:#334155">Como fazer:</strong> No app ou site do MP → Menu → Assinaturas → Nova assinatura → Informe R$ ${valor.toFixed(2).replace('.',',')} mensal para <em>ONG Por Amor</em>
-        </div>
-      </div>
-      <div style="padding:.8rem 2rem 1.5rem;text-align:center">
-        <button onclick="g('modal-assin-manual').remove()" style="background:transparent;border:none;color:#94a3b8;font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer">
-          <i class="fas fa-times"></i> Fechar
-        </button>
-      </div>
-    </div>`;
-
-  modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
-  document.body.appendChild(modal);
-}
-
-function _abrirMPAssinaturas(){
-  window.open('https://www.mercadopago.com.br/subscriptions', '_blank');
-}
-function _abrirMercadoPagoApp(){
-  // Tenta abrir o app; se não tiver, abre o site
-  window.location.href = 'mercadopago://';
-  setTimeout(()=> window.open('https://www.mercadopago.com.br', '_blank'), 800);
 }
 
 function showDoadorTab(id){
