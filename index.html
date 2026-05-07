@@ -274,6 +274,67 @@ canvas#sig-canvas{display:block;touch-action:none;width:100%;height:180px}
 .toast i{color:var(--teal-light)}
 .toast.err i{color:#f87171}
 
+/* ── EYE TOGGLE (senha visível) ── */
+.pw-wrap{display:flex;align-items:center;gap:.5rem}
+.pw-wrap .fi{flex:1}
+.btn-eye{background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:1rem;line-height:1;padding:.3rem .4rem;transition:color .15s;flex-shrink:0}
+.btn-eye:hover{color:var(--navy-light)}
+
+/* ── SELEÇÃO TIPO (Associado / Doador) ── */
+.tipo-select-overlay{
+  position:fixed;inset:0;background:rgba(11,31,49,.92);
+  display:none;align-items:center;justify-content:center;
+  z-index:500;padding:1.5rem;backdrop-filter:blur(6px);
+}
+.tipo-select-overlay.active{display:flex}
+.tipo-card{
+  background:var(--white);border-radius:var(--R);
+  padding:0;max-width:520px;width:100%;overflow:hidden;
+  box-shadow:var(--shadow);animation:pgIn .3s ease both;
+}
+.tipo-card-top{
+  background:linear-gradient(135deg,var(--navy),var(--navy-mid),var(--navy-light));
+  padding:2rem 2.5rem;text-align:center;position:relative;overflow:hidden;
+}
+.tipo-card-top::before{content:'';position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(13,143,143,.25),transparent 70%);top:-100px;right:-80px}
+.tipo-card-top-title{font-family:'DM Serif Display',serif;font-size:1.6rem;color:#fff;margin-bottom:.3rem}
+.tipo-card-top-sub{font-size:.82rem;color:rgba(255,255,255,.5)}
+.tipo-options{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;padding:2rem 2rem 1.5rem}
+.tipo-opt{
+  border:2px solid var(--gray-200);border-radius:var(--R);padding:1.6rem 1.2rem;
+  text-align:center;cursor:pointer;transition:var(--tr);background:var(--white);
+}
+.tipo-opt:hover{border-color:var(--teal);transform:translateY(-2px);box-shadow:0 8px 24px rgba(13,143,143,.15)}
+.tipo-opt.selected{border-color:var(--teal);background:rgba(13,143,143,.06);box-shadow:0 0 0 4px rgba(13,143,143,.12)}
+.tipo-opt-icon{font-size:2.5rem;margin-bottom:.8rem;display:block}
+.tipo-opt-title{font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--navy);margin-bottom:.4rem}
+.tipo-opt-desc{font-size:.78rem;color:var(--gray-600);line-height:1.5}
+.tipo-footer{padding:0 2rem 2rem;display:flex;gap:.8rem;justify-content:center}
+
+/* ── FICHA DOADOR ── */
+.donor-form-overlay{
+  position:fixed;inset:0;background:rgba(11,31,49,.92);
+  display:none;align-items:center;justify-content:center;
+  z-index:500;padding:1.5rem;backdrop-filter:blur(6px);overflow-y:auto;
+}
+.donor-form-overlay.active{display:flex}
+.donor-form-card{
+  background:var(--white);border-radius:var(--R);
+  max-width:500px;width:100%;overflow:hidden;
+  box-shadow:var(--shadow);animation:pgIn .3s ease both;
+}
+.donor-form-hdr{
+  background:linear-gradient(135deg,var(--navy),var(--navy-mid));
+  padding:1.5rem 2rem;color:#fff;
+}
+.donor-form-hdr-title{font-family:'DM Serif Display',serif;font-size:1.4rem;margin-bottom:.2rem}
+.donor-form-hdr-sub{font-size:.82rem;color:rgba(255,255,255,.5)}
+.donor-form-body{padding:2rem}
+
+/* ── ÁREA DO DOADOR ── */
+#view-doador{display:none;min-height:100vh}
+#view-doador.active{display:block}
+
 /* ── SIG REQUIRED BANNER ── */
 .sig-required-banner{
   display:none;background:var(--error-pale);border:1.5px solid rgba(220,38,38,.25);
@@ -875,10 +936,16 @@ tr:hover td{background:var(--gray-50)}
           <div class="rc-wrap">
             <div class="rc"><input type="radio" name="pag" id="r-pix" value="PIX" checked><label class="rc-lbl" for="r-pix"><i class="fas fa-bolt"></i> PIX</label></div>
             <div class="rc"><input type="radio" name="pag" id="r-mp" value="Mercado Pago"><label class="rc-lbl" for="r-mp"><i class="fas fa-credit-card"></i> Mercado Pago</label></div>
+            <div class="rc"><input type="radio" name="pag" id="r-mp-assin" value="Assinatura Mercado Pago"><label class="rc-lbl" for="r-mp-assin"><i class="fas fa-repeat"></i> Assinatura MP</label></div>
             <div class="rc"><input type="radio" name="pag" id="r-tef" value="Transferência bancária"><label class="rc-lbl" for="r-tef"><i class="fas fa-university"></i> Transferência</label></div>
             <div class="rc"><input type="radio" name="pag" id="r-bol" value="Boleto"><label class="rc-lbl" for="r-bol"><i class="fas fa-barcode"></i> Boleto</label></div>
             <div class="rc"><input type="radio" name="pag" id="r-deb" value="Débito automático"><label class="rc-lbl" for="r-deb"><i class="fas fa-calendar-check"></i> Débito Automático</label></div>
             <div class="rc"><input type="radio" name="pag" id="r-out" value="Outro"><label class="rc-lbl" for="r-out"><i class="fas fa-ellipsis-h"></i> Outro</label></div>
+          </div>
+          <!-- Info: Assinatura MP -->
+          <div id="mp-assin-info" style="display:none;margin-top:1.2rem;padding:1rem 1.3rem;background:rgba(0,158,226,.06);border:1.5px solid rgba(0,158,226,.3);border-radius:var(--r)">
+            <div style="font-size:.7rem;font-weight:700;color:#009ee3;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem"><i class="fas fa-repeat"></i> Assinatura Mensal — Mercado Pago</div>
+            <div style="font-size:.84rem;color:var(--gray-700);line-height:1.6">Com a <strong>Assinatura Mercado Pago</strong>, sua contribuição mensal é cobrada automaticamente todo mês, sem precisar pagar manualmente. O débito é feito no cartão de crédito ou conta MP.</div>
           </div>
           <div id="pix-info" style="margin-top:1.2rem;padding:1rem 1.3rem;background:rgba(13,143,143,.06);border:1.5px solid rgba(13,143,143,.25);border-radius:var(--r)">
             <div style="font-size:.7rem;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem"><i class="fas fa-bolt"></i> Chave PIX da ONG</div>
@@ -1008,7 +1075,10 @@ tr:hover td{background:var(--gray-50)}
         </div>
         <div class="login-field field">
           <label class="fl"><i class="fas fa-lock"></i> Senha</label>
-          <input class="fi" id="assoc-senha-login" type="password" placeholder="••••••••" autocomplete="current-password">
+          <div class="pw-wrap">
+            <input class="fi" id="assoc-senha-login" type="password" placeholder="••••••••" autocomplete="current-password">
+            <button class="btn-eye" type="button" onclick="togglePw('assoc-senha-login',this)" tabindex="-1"><i class="fas fa-eye"></i></button>
+          </div>
         </div>
         <button class="btn-login" id="btn-assoc-login" onclick="doAssocLogin()"><i class="fas fa-arrow-right-to-bracket"></i> Entrar</button>
         <div class="login-divider">ou</div>
@@ -1037,11 +1107,17 @@ tr:hover td{background:var(--gray-50)}
         </div>
         <div class="login-field field">
           <label class="fl"><i class="fas fa-lock"></i> Senha</label>
-          <input class="fi" id="cad-senha" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+          <div class="pw-wrap">
+            <input class="fi" id="cad-senha" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+            <button class="btn-eye" type="button" onclick="togglePw('cad-senha',this)" tabindex="-1"><i class="fas fa-eye"></i></button>
+          </div>
         </div>
         <div class="login-field field">
           <label class="fl"><i class="fas fa-lock"></i> Repetir Senha</label>
-          <input class="fi" id="cad-senha2" type="password" placeholder="Repita a senha" autocomplete="new-password">
+          <div class="pw-wrap">
+            <input class="fi" id="cad-senha2" type="password" placeholder="Repita a senha" autocomplete="new-password">
+            <button class="btn-eye" type="button" onclick="togglePw('cad-senha2',this)" tabindex="-1"><i class="fas fa-eye"></i></button>
+          </div>
         </div>
         <button class="btn-login" style="background:linear-gradient(135deg,var(--teal),var(--navy-light))" id="btn-cadastrar" onclick="doCadastro()"><i class="fas fa-user-plus"></i> Criar Conta</button>
         <div class="login-hint">Ao criar sua conta, você poderá preencher sua ficha de associação e acompanhar seus pagamentos.</div>
@@ -1056,7 +1132,12 @@ tr:hover td{background:var(--gray-50)}
         </div>
         <div class="login-err" id="login-err"><i class="fas fa-exclamation-circle"></i> Login ou senha incorretos.</div>
         <div class="login-field field"><label class="fl"><i class="fas fa-user"></i> Login</label><input class="fi" id="adm-login" type="text" placeholder="ongadmin" autocomplete="off"></div>
-        <div class="login-field field"><label class="fl"><i class="fas fa-lock"></i> Senha</label><input class="fi" id="adm-senha" type="password" placeholder="••••••••" autocomplete="off"></div>
+        <div class="login-field field"><label class="fl"><i class="fas fa-lock"></i> Senha</label>
+          <div class="pw-wrap">
+            <input class="fi" id="adm-senha" type="password" placeholder="••••••••" autocomplete="off">
+            <button class="btn-eye" type="button" onclick="togglePw('adm-senha',this)" tabindex="-1"><i class="fas fa-eye"></i></button>
+          </div>
+        </div>
         <button class="btn-login" onclick="doLogin()"><i class="fas fa-arrow-right-to-bracket"></i> Entrar como Admin</button>
         <div class="login-hint"><i class="fas fa-lock" style="opacity:.4"></i> Área exclusiva para administradores da ONG</div>
       </div>
@@ -1066,7 +1147,159 @@ tr:hover td{background:var(--gray-50)}
   </div>
 </div>
 
-<!-- ═══════════════ ÁREA DO ASSOCIADO ═══════════════ -->
+<!-- ═══ SELEÇÃO: ASSOCIADO OU DOADOR ═══ -->
+<div class="tipo-select-overlay" id="tipo-select-overlay">
+  <div class="tipo-card">
+    <div class="tipo-card-top">
+      <div class="tipo-card-top-title">Como você quer participar?</div>
+      <div class="tipo-card-top-sub">Escolha a forma de colaborar com a ONG Por Amor</div>
+    </div>
+    <div class="tipo-options">
+      <div class="tipo-opt" id="tipo-opt-assoc" onclick="selecionarTipo('associado')">
+        <span class="tipo-opt-icon">🤝</span>
+        <div class="tipo-opt-title">Associado</div>
+        <div class="tipo-opt-desc">Faça parte da ONG com ficha completa, voto em assembleias e acesso ao portal do associado.</div>
+      </div>
+      <div class="tipo-opt" id="tipo-opt-doador" onclick="selecionarTipo('doador')">
+        <span class="tipo-opt-icon">❤️</span>
+        <div class="tipo-opt-title">Doador</div>
+        <div class="tipo-opt-desc">Contribua mensalmente de forma simplificada, sem burocracia, ajudando nossas causas.</div>
+      </div>
+    </div>
+    <div class="tipo-footer">
+      <button class="btn-back" onclick="fecharTipoSelect()"><i class="fas fa-arrow-left"></i> Voltar</button>
+      <button class="btn-next" id="btn-tipo-continuar" onclick="continuarTipo()" style="margin-left:0"><i class="fas fa-arrow-right"></i> Continuar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FICHA SIMPLES DO DOADOR ═══ -->
+<div class="donor-form-overlay" id="donor-form-overlay">
+  <div class="donor-form-card">
+    <div class="donor-form-hdr">
+      <div class="donor-form-hdr-title">❤️ Ficha do Doador</div>
+      <div class="donor-form-hdr-sub">Preencha seus dados para começar a contribuir</div>
+    </div>
+    <div class="donor-form-body">
+      <div class="login-err" id="donor-form-err"><i class="fas fa-exclamation-circle"></i> <span id="donor-form-err-msg">Erro.</span></div>
+      <div class="fg g1" style="gap:1rem">
+        <div class="field"><label class="fl"><i class="fas fa-user"></i> Nome Completo <span class="req">*</span></label><input class="fi" id="df-nome" type="text" placeholder="Seu nome completo" autocomplete="name"></div>
+        <div class="field"><label class="fl"><i class="fas fa-envelope"></i> E-mail <span class="req">*</span></label><input class="fi" id="df-email" type="email" placeholder="seu@email.com" autocomplete="email"></div>
+        <div class="field"><label class="fl"><i class="fas fa-phone"></i> Telefone <span class="req">*</span></label><input class="fi" id="df-tel" type="text" placeholder="(83) 99999-9999" maxlength="15"></div>
+        <div class="field"><label class="fl"><i class="fas fa-calendar-day"></i> Melhor dia para pagamento <span class="req">*</span></label>
+          <select class="fi" id="df-dia">
+            <option value="">Selecione o dia...</option>
+            <option value="1">Dia 1</option><option value="5">Dia 5</option><option value="10">Dia 10</option>
+            <option value="15">Dia 15</option><option value="20">Dia 20</option><option value="25">Dia 25</option><option value="28">Dia 28</option>
+          </select>
+        </div>
+        <div class="field"><label class="fl"><i class="fas fa-wallet"></i> Tipo de Pagamento <span class="req">*</span></label>
+          <select class="fi" id="df-pgto">
+            <option value="">Selecione...</option>
+            <option value="PIX">PIX</option>
+            <option value="Assinatura Mercado Pago">Assinatura Mercado Pago</option>
+            <option value="Transferência bancária">Transferência Bancária</option>
+            <option value="Boleto">Boleto</option>
+            <option value="Débito automático">Débito Automático</option>
+          </select>
+        </div>
+        <div class="field"><label class="fl"><i class="fas fa-coins"></i> Valor da Contribuição Mensal <span class="req">*</span></label>
+          <div class="ai-wrap" style="background:var(--white);border:1.5px solid var(--gray-200)"><span class="ai-cur">R$</span><input class="ai-input" id="df-valor" type="text" value="30,00" style="font-size:1.2rem"></div>
+          <span style="font-size:.75rem;color:var(--gray-400);margin-top:.3rem">Mínimo: <strong style="color:var(--teal)">R$ 10,00</strong></span>
+        </div>
+      </div>
+      <div style="display:flex;gap:.8rem;margin-top:1.5rem">
+        <button class="btn-back" onclick="fecharDonorForm()"><i class="fas fa-arrow-left"></i> Voltar</button>
+        <button class="btn-next" style="margin-left:0;flex:1" id="btn-donor-submit" onclick="submitDonorForm()"><i class="fas fa-heart"></i> Confirmar Cadastro</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ ÁREA DO DOADOR ═══════════════ -->
+<div id="view-doador" class="view">
+  <div class="assoc-topbar">
+    <div class="assoc-brand">❤️ Por Amor</div>
+    <div class="assoc-tabs">
+      <button class="assoc-tab active" id="dtab-inicio" onclick="showDoadorTab('tab-doador-inicio')"><i class="fas fa-home"></i> Início</button>
+      <button class="assoc-tab" id="dtab-pagamentos" onclick="showDoadorTab('tab-doador-pagamentos')"><i class="fas fa-wallet"></i> Pagamentos</button>
+    </div>
+    <span class="atab-spacer"></span>
+    <span id="rt-sync-dot-doador" style="display:inline-flex;align-items:center;gap:.4rem;font-size:.72rem;color:rgba(255,255,255,.4);margin-right:.5rem"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--teal-light);box-shadow:0 0 5px var(--teal-light);animation:pulse-sync 2s ease-in-out infinite"></span> Tempo real</span>
+    <button class="btn-logout" onclick="doDoadorLogout()"><i class="fas fa-sign-out-alt"></i> Sair</button>
+  </div>
+  <div class="assoc-content">
+
+    <!-- ABA: INÍCIO DOADOR -->
+    <div class="assoc-panel active" id="tab-doador-inicio">
+      <div class="assoc-section">
+        <div class="assoc-welcome">
+          <div class="assoc-avatar"><span id="doador-avatar-inicial">D</span></div>
+          <div>
+            <div id="doador-nome-bem-vindo" style="font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--navy)">Olá, Doador!</div>
+            <div id="doador-sub-bem-vindo" style="font-size:.85rem;color:var(--gray-600)">Doador · ONG Por Amor</div>
+          </div>
+          <span class="badge badge-blue" id="doador-badge-nome"></span>
+        </div>
+      </div>
+      <div id="doador-cards-resumo">
+        <div class="assoc-cards">
+          <div class="assoc-card">
+            <div class="assoc-card-icon teal"><i class="fas fa-heart"></i></div>
+            <div class="assoc-card-label">Tipo</div>
+            <div class="assoc-card-value" style="font-size:1.1rem">❤️ Doador</div>
+          </div>
+          <div class="assoc-card">
+            <div class="assoc-card-icon gold"><i class="fas fa-coins"></i></div>
+            <div class="assoc-card-label">Contribuição</div>
+            <div class="assoc-card-value" id="doador-valor">R$ —</div>
+            <div class="assoc-card-sub" id="doador-venc-sub">Venc. dia —</div>
+          </div>
+          <div class="assoc-card" id="doador-card-pendente" style="display:none">
+            <div class="assoc-card-icon" style="background:var(--warn-pale)"><i class="fas fa-clock" style="color:var(--warn)"></i></div>
+            <div class="assoc-card-label">Pendente</div>
+            <div class="assoc-card-value" id="doador-pend-val">R$ —</div>
+            <div class="assoc-card-sub"><button class="btn-mp-pagar" style="font-size:.72rem;padding:.35rem .8rem" onclick="showDoadorTab('tab-doador-pagamentos')">Ver pagamentos</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA: PAGAMENTOS DOADOR -->
+    <div class="assoc-panel" id="tab-doador-pagamentos">
+      <div class="assoc-section">
+        <div class="assoc-section-hdr" style="flex-wrap:wrap;gap:.8rem">
+          <div class="assoc-section-title"><i class="fas fa-wallet" style="color:var(--gold)"></i> Minhas Contribuições</div>
+          <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+            <span id="doador-pay-resumo" style="font-size:.82rem;color:var(--gray-600)"></span>
+            <!-- Adiantamento de meses -->
+            <button onclick="mostrarAdiantamento()" style="background:linear-gradient(135deg,var(--teal),var(--navy-light));border:none;color:#fff;padding:.4rem 1.1rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;transition:var(--tr)"><i class="fas fa-forward"></i> Adiantar Pagamentos</button>
+            <button onclick="sincronizarPagamentosDoador()" style="background:var(--gray-100);border:1px solid var(--gray-200);color:var(--gray-700);padding:.4rem 1.1rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;transition:var(--tr)"><i class="fas fa-rotate-right"></i> Atualizar</button>
+          </div>
+        </div>
+        <div class="assoc-section-body">
+          <div class="pay-list" id="doador-pay-list">
+            <div style="text-align:center;padding:2rem;color:var(--gray-400)"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /assoc-content -->
+
+  <!-- BOTTOM NAV DOADOR (só mobile) -->
+  <nav class="bottom-nav" id="bottom-nav-doador">
+    <button class="bnav-item active" id="dbnav-inicio" onclick="showDoadorTab('tab-doador-inicio')">
+      <i class="fas fa-home"></i><span>Início</span>
+    </button>
+    <button class="bnav-item" id="dbnav-pagamentos" onclick="showDoadorTab('tab-doador-pagamentos')">
+      <i class="fas fa-wallet"></i><span>Pagamentos</span>
+    </button>
+    <button class="bnav-item" onclick="doDoadorLogout()">
+      <i class="fas fa-sign-out-alt"></i><span>Sair</span>
+    </button>
+  </nav>
+</div>
 <div id="view-associado" class="view">
   <div class="assoc-topbar">
     <div class="assoc-brand">
@@ -1171,6 +1404,7 @@ tr:hover td{background:var(--gray-50)}
           <div class="assoc-section-title"><i class="fas fa-wallet" style="color:var(--gold)"></i> Minhas Contribuições</div>
           <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
             <span id="assoc-pay-resumo" style="font-size:.82rem;color:var(--gray-600)"></span>
+            <button onclick="mostrarAdiantamento()" style="background:linear-gradient(135deg,var(--teal),var(--navy-light));border:none;color:#fff;padding:.4rem 1.1rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;transition:var(--tr)"><i class="fas fa-forward"></i> Adiantar Pagamentos</button>
             <button id="btn-sync-pags" onclick="sincronizarPagamentosAssociado()" style="background:var(--teal);border:none;color:#fff;padding:.4rem 1.1rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;transition:var(--tr)"><i class="fas fa-rotate-right"></i> Atualizar</button>
           </div>
         </div>
@@ -1215,6 +1449,7 @@ tr:hover td{background:var(--gray-50)}
     <span class="admin-badge">Admin</span>
     <div class="admin-tabs">
       <button class="atab active" onclick="showAdminTab('tab-associados')"><i class="fas fa-users"></i> Associados</button>
+      <button class="atab" onclick="showAdminTab('tab-doadores')"><i class="fas fa-heart"></i> Doadores</button>
       <button class="atab" onclick="showAdminTab('tab-dashboard')"><i class="fas fa-chart-line"></i> Dashboard</button>
       <button class="atab" onclick="showAdminTab('tab-financeiro')"><i class="fas fa-money-bill-wave"></i> Financeiro MP</button>
     </div>
@@ -1247,6 +1482,28 @@ tr:hover td{background:var(--gray-50)}
               <th>Pagamentos</th><th>Ações</th>
             </tr></thead>
             <tbody id="table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-view" id="tab-doadores">
+      <div class="filters-bar">
+        <div class="filter-group"><label class="filter-label"><i class="fas fa-search"></i> Buscar</label><input class="filter-input" id="fd-busca" type="text" placeholder="Nome, e-mail ou telefone..." oninput="renderDoadores()"></div>
+        <div class="filter-group"><label class="filter-label"><i class="fas fa-money-bill-wave"></i> Pagamento</label><select class="filter-input" id="fd-pgstatus" onchange="renderDoadores()"><option value="">Todos</option><option value="pendente">Com pendentes</option><option value="em_dia">Em dia</option></select></div>
+        <button class="btn-filter-clear" onclick="clearDoadorFilters()"><i class="fas fa-times"></i> Limpar</button>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header">
+          <div class="table-title"><i class="fas fa-heart" style="color:var(--error)"></i> Doadores <span class="badge badge-blue" id="count-badge-doadores">0</span></div>
+        </div>
+        <div class="table-scroll">
+          <table id="doadores-table">
+            <thead><tr>
+              <th>Nome</th><th>Telefone</th><th>E-mail</th><th>Dia Pgto</th>
+              <th>Valor</th><th>Forma</th><th>Pagamentos</th><th>Ações</th>
+            </tr></thead>
+            <tbody id="doadores-body"></tbody>
           </table>
         </div>
       </div>
@@ -1338,6 +1595,10 @@ tr:hover td{background:var(--gray-50)}
       <i class="fas fa-users"></i>
       <span>Associados</span>
     </button>
+    <button class="bnav-item" id="abnav-doadores" onclick="showAdminTab('tab-doadores')">
+      <i class="fas fa-heart"></i>
+      <span>Doadores</span>
+    </button>
     <button class="bnav-item" id="abnav-dashboard" onclick="showAdminTab('tab-dashboard')">
       <i class="fas fa-chart-line"></i>
       <span>Dashboard</span>
@@ -1418,6 +1679,26 @@ tr:hover td{background:var(--gray-50)}
       <div style="display:flex;gap:.8rem;justify-content:center">
         <button class="btn-back" onclick="closeDelete()"><i class="fas fa-times"></i> Cancelar</button>
         <button style="background:var(--error);border:none;color:#fff;padding:.7rem 1.6rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;transition:var(--tr);display:flex;align-items:center;gap:.5rem;box-shadow:0 6px 16px rgba(220,38,38,.3)" onclick="doDelete()"><i class="fas fa-trash"></i> Excluir definitivamente</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ADIANTAMENTO -->
+<div class="modal-overlay" id="modal-adiantamento">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-hdr"><div class="modal-title"><i class="fas fa-forward" style="color:var(--teal)"></i> Adiantar Pagamentos</div><button class="modal-close" onclick="fecharAdiantamento()"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body">
+      <div style="font-size:.88rem;color:var(--gray-600);line-height:1.7;margin-bottom:1.2rem">
+        <i class="fas fa-info-circle" style="color:var(--teal)"></i> Selecione quantos meses futuros deseja adiantar. Os pagamentos serão processados via Mercado Pago.
+      </div>
+      <div id="adiantamento-meses-lista" style="display:grid;gap:.7rem;margin-bottom:1.5rem"></div>
+      <div style="background:rgba(13,143,143,.06);border:1.5px solid rgba(13,143,143,.2);border-radius:var(--r);padding:1rem;margin-bottom:1.2rem">
+        <div style="font-size:.78rem;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.4rem">Total a pagar</div>
+        <div id="adiantamento-total" style="font-family:'DM Serif Display',serif;font-size:1.8rem;color:var(--navy)">R$ 0,00</div>
+      </div>
+      <div id="adiantamento-mp-btn" style="text-align:center;display:none">
+        <button onclick="pagarAdiantamentoMP()" style="background:linear-gradient(135deg,#009ee3,#0070b4);border:none;color:#fff;padding:.85rem 2rem;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:.7rem;box-shadow:0 6px 18px rgba(0,158,226,.35)"><i class="fas fa-credit-card"></i> Pagar via Mercado Pago</button>
       </div>
     </div>
   </div>
@@ -1590,6 +1871,7 @@ document.querySelectorAll('input[name="pag"]').forEach(r=>{
   r.addEventListener('change',function(){
     g('pix-info').style.display=this.value==='PIX'?'block':'none';
     g('mp-info').style.display=this.value==='Mercado Pago'?'block':'none';
+    const mpAssinEl=g('mp-assin-info');if(mpAssinEl)mpAssinEl.style.display=this.value==='Assinatura Mercado Pago'?'block':'none';
   });
 });
 
@@ -1779,6 +2061,7 @@ function resetForm(){
   document.querySelectorAll('.fi').forEach(i=>{ if(i.tagName==='INPUT') i.value=''; });
   g('inp-valor').value='30,00'; g('t-lgpd').checked=true; g('t-img').checked=false; g('t-com').checked=true;
   g('r-pix').checked=true; g('pix-info').style.display='block';
+  const mpAssinEl=g('mp-assin-info');if(mpAssinEl)mpAssinEl.style.display='none';
   clearCanvas(); hasSigned=false;
   const banner = g('sig-required-banner');
   if(banner) banner.classList.remove('show');
@@ -1826,17 +2109,18 @@ async function doCadastro(){
       nome, email, senha_hash: senhaHash, criado_em: new Date().toISOString()
     }]).select().single();
     if(error) throw error;
-    okMsg.textContent = 'Conta criada! Abrindo sua ficha de associação...';
+    okMsg.textContent = 'Conta criada! Escolha como deseja participar...';
     okEl.classList.add('show');
-    // Loga automaticamente e abre o formulário
+    // Loga automaticamente e abre seleção de tipo
     setTimeout(async () => {
       okEl.classList.remove('show');
       associadoLogado = data;
       localStorage.setItem('assoc_sessao', JSON.stringify(data));
       await carregarDadosAssociado(); // fichaAssociado será null (conta nova)
       g('cad-nome').value=''; g('cad-email').value=''; g('cad-senha').value=''; g('cad-senha2').value='';
-      toast('Conta criada! Preencha sua ficha de associação. ❤️');
-      _redirecionarAposLogin(true); // sem ficha → abre formulário direto
+      showView('view-admin-login');
+      // Abre seleção de tipo
+      abrirTipoSelect();
     }, 1200);
   } catch(e) {
     msgEl.textContent = 'Erro ao criar conta: ' + (e.message||'tente novamente.');
@@ -1900,6 +2184,9 @@ async function doAssocLogin(){
     const senhaHash = btoa(unescape(encodeURIComponent(senha)));
     const {data, error} = await sb.from('usuarios_associados').select('*').eq('email', email).eq('senha_hash', senhaHash).single();
     if(error || !data){ msgEl.textContent='E-mail ou senha incorretos.'; errEl.classList.add('show'); return; }
+    // Verifica se é doador puro (tem ficha de doador mas não de associado)
+    const isDoador = await checkDoadorLogin(email, senha);
+    if(isDoador){ return; } // já redirecionado pela função
     associadoLogado = data;
     localStorage.setItem('assoc_sessao', JSON.stringify(data));
     await carregarDadosAssociado();
@@ -2255,7 +2542,10 @@ function renderPagamentosAssociado(){
     const mpBtn = (!isPago)
       ? `<button class="btn-mp-pagar" onclick="pagarViaMPAssociado('${p.mes_referencia}',${p.valor})"
            style="font-size:.75rem;padding:.45rem .9rem;border-radius:var(--r);margin-top:.5rem;display:inline-flex;align-items:center;gap:.4rem">
-           <i class="fas fa-credit-card"></i> Pagar com MP</button>`
+           <i class="fas fa-credit-card"></i> Pagar com MP</button>
+         <button onclick="pagarAssinaturaMP('${p.mes_referencia}',${p.valor})"
+           style="background:linear-gradient(135deg,#009ee3,#0070b4);border:none;color:#fff;font-size:.75rem;padding:.45rem .9rem;border-radius:var(--r);margin-top:.5rem;margin-left:.4rem;display:inline-flex;align-items:center;gap:.4rem;cursor:pointer">
+           <i class="fas fa-repeat"></i> Assinatura MP</button>`
       : '';
 
     return `<div class="pay-item ${cls}">
@@ -2527,8 +2817,21 @@ async function checkAdminMode(){
     showView('view-admin');
     showPopup('Login realizado com sucesso! 🎉', 'Bem-vindo, Administrador ONG Por Amor.', 'success');
     await loadAssociados();
+    await loadDoadores();
     renderCharts();
     return;
+  }
+
+  // Restaura sessão de doador
+  const doadorSessaoRaw = localStorage.getItem('doador_sessao');
+  if(doadorSessaoRaw){
+    try {
+      const sessao = JSON.parse(doadorSessaoRaw);
+      doadorLogado = sessao;
+      await carregarDadosDoador();
+      showView('view-doador');
+      return;
+    } catch(e){ localStorage.removeItem('doador_sessao'); }
   }
 
   // Restaura sessão de associado do localStorage (persiste entre recargas/fechamentos)
@@ -2930,6 +3233,7 @@ function showAdminTab(id){
   // Bottom nav admin (mobile)
   const abnavMap = {
     'tab-associados': 'abnav-associados',
+    'tab-doadores':   'abnav-doadores',
     'tab-dashboard':  'abnav-dashboard',
     'tab-financeiro': 'abnav-financeiro'
   };
@@ -2939,6 +3243,7 @@ function showAdminTab(id){
 
   if(id==='tab-dashboard')  { setTimeout(()=>{ renderCharts(); updateKPIs(); renderPendencias(); },100); }
   if(id==='tab-financeiro') { setTimeout(()=> loadMPFinanceiro(), 100); }
+  if(id==='tab-doadores')   { loadDoadores(); }
 }
 
 // ═══════════════════════════════════════════
@@ -3389,6 +3694,569 @@ async function forceSincronizacaoTotal(){
   btn.innerHTML = '<i class="fas fa-bolt"></i> Forçar Sincronização Completa';
 }
 
+// ═══════════════════════════════════════════
+//  TOGGLE SENHA VISÍVEL
+// ═══════════════════════════════════════════
+function togglePw(inputId, btn){
+  const inp = g(inputId);
+  if(!inp) return;
+  if(inp.type === 'password'){
+    inp.type = 'text';
+    btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+  } else {
+    inp.type = 'password';
+    btn.innerHTML = '<i class="fas fa-eye"></i>';
+  }
+}
+
+// ═══════════════════════════════════════════
+//  SELEÇÃO TIPO: ASSOCIADO / DOADOR
+// ═══════════════════════════════════════════
+let tipoSelecionado = null;
+
+function abrirTipoSelect(){
+  tipoSelecionado = null;
+  document.querySelectorAll('.tipo-opt').forEach(o=>o.classList.remove('selected'));
+  g('tipo-select-overlay').classList.add('active');
+}
+
+function fecharTipoSelect(){
+  g('tipo-select-overlay').classList.remove('active');
+}
+
+function selecionarTipo(tipo){
+  tipoSelecionado = tipo;
+  document.querySelectorAll('.tipo-opt').forEach(o=>o.classList.remove('selected'));
+  g('tipo-opt-' + tipo).classList.add('selected');
+}
+
+function continuarTipo(){
+  if(!tipoSelecionado){ toast('Escolha uma opção: Associado ou Doador','err'); return; }
+  fecharTipoSelect();
+  if(tipoSelecionado === 'associado'){
+    // Fluxo normal: abre formulário completo
+    showView('view-form');
+    goPage(1);
+    if(associadoLogado){
+      const emailEl = g('inp-email');
+      const nomeEl  = g('inp-nome');
+      if(emailEl && associadoLogado.email) emailEl.value = associadoLogado.email;
+      if(nomeEl  && associadoLogado.nome)  nomeEl.value  = associadoLogado.nome;
+      const btnVoltar = g('btn-voltar-assoc');
+      if(btnVoltar) btnVoltar.style.display = 'inline-flex';
+    }
+    window.scrollTo({top:0,behavior:'smooth'});
+    setTimeout(()=>toast('👋 Preencha sua ficha para completar o cadastro!'), 600);
+  } else {
+    // Fluxo doador: abre ficha simples
+    abrirDonorForm();
+  }
+}
+
+// ═══════════════════════════════════════════
+//  FICHA DO DOADOR
+// ═══════════════════════════════════════════
+function abrirDonorForm(){
+  const errEl = g('donor-form-err');
+  if(errEl) errEl.classList.remove('show');
+  // Pré-preenche se logado
+  if(associadoLogado){
+    const ne = g('df-nome'); if(ne && associadoLogado.nome) ne.value = associadoLogado.nome;
+    const ee = g('df-email'); if(ee && associadoLogado.email) ee.value = associadoLogado.email;
+  }
+  // Máscara tel
+  const dfTel = g('df-tel');
+  if(dfTel && !dfTel._masked){
+    dfTel._masked = true;
+    dfTel.addEventListener('input', function(){ this.value = maskTel(this.value); });
+  }
+  g('donor-form-overlay').classList.add('active');
+}
+
+function fecharDonorForm(){
+  g('donor-form-overlay').classList.remove('active');
+}
+
+function maskTel(v){ v=v.replace(/\D/g,'').slice(0,11); if(v.length>10) return v.replace(/(\d{2})(\d{5})(\d{0,4})/,'($1) $2-$3'); if(v.length>6) return v.replace(/(\d{2})(\d{4})(\d{0,4})/,'($1) $2-$3'); if(v.length>2) return v.replace(/(\d{2})(\d{0,5})/,'($1) $2'); return v; }
+
+async function submitDonorForm(){
+  const errEl = g('donor-form-err'); const errMsg = g('donor-form-err-msg');
+  if(errEl) errEl.classList.remove('show');
+  const nome  = (g('df-nome')?.value||'').trim();
+  const email = (g('df-email')?.value||'').trim().toLowerCase();
+  const tel   = (g('df-tel')?.value||'').trim();
+  const dia   = g('df-dia')?.value;
+  const pgto  = g('df-pgto')?.value;
+  const valor = parseFloat((g('df-valor')?.value||'30').replace(',','.'));
+
+  if(!nome || nome.length < 3){ errMsg.textContent='Nome obrigatório (mín. 3 letras).'; errEl.classList.add('show'); return; }
+  if(!email || !email.includes('@')){ errMsg.textContent='E-mail inválido.'; errEl.classList.add('show'); return; }
+  if(!tel || tel.replace(/\D/g,'').length < 10){ errMsg.textContent='Telefone inválido.'; errEl.classList.add('show'); return; }
+  if(!dia){ errMsg.textContent='Selecione o dia de pagamento.'; errEl.classList.add('show'); return; }
+  if(!pgto){ errMsg.textContent='Selecione o tipo de pagamento.'; errEl.classList.add('show'); return; }
+  if(isNaN(valor) || valor < 10){ errMsg.textContent='Valor mínimo: R$ 10,00.'; errEl.classList.add('show'); return; }
+
+  const btn = g('btn-donor-submit');
+  btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Salvando...';
+
+  try {
+    // Usa a conta já logada (associadoLogado vem do cadastro de conta)
+    let userId = associadoLogado?.id || null;
+
+    // Se não tiver conta logada, verifica se já existe pelo email
+    if(!userId){
+      const {data: existeUser} = await sb.from('usuarios_associados').select('id').eq('email', email).maybeSingle();
+      if(existeUser) userId = existeUser.id;
+    }
+
+    // Verifica se já existe como doador
+    const {data: existeDoador} = await sb.from('doadores').select('id').eq('email', email).maybeSingle();
+    if(existeDoador){ errMsg.textContent='Este e-mail já está cadastrado como doador. Faça login.'; errEl.classList.add('show'); btn.disabled=false; btn.innerHTML='<i class="fas fa-heart"></i> Confirmar Cadastro'; return; }
+
+    // Cria doador
+    const {data: novoDoador, error: errDoador} = await sb.from('doadores').insert([{
+      nome, email, telefone: tel,
+      dia_pagamento: parseInt(dia), forma_pagamento: pgto,
+      valor_contribuicao: valor, status: 'ativo',
+      usuario_id: userId, created_at: new Date().toISOString()
+    }]).select().single();
+    if(errDoador) throw errDoador;
+
+    // Cria pagamento pendente do mês atual
+    const mesAtual = getMesAtual();
+    await sb.from('pagamentos_doadores').insert([{
+      doador_id: novoDoador.id, email,
+      mes_referencia: mesAtual, valor,
+      status: 'pendente',
+      data_vencimento: `${mesAtual}-${String(parseInt(dia)).padStart(2,'0')}`
+    }]);
+
+    fecharDonorForm();
+    toast('Cadastro como Doador realizado! ❤️');
+
+    // Redireciona para área do doador
+    doadorLogado = {...(associadoLogado||{}), ...novoDoador};
+    fichaDoador = novoDoador;
+    if(associadoLogado) localStorage.removeItem('assoc_sessao'); // era conta sem tipo definido
+    localStorage.setItem('doador_sessao', JSON.stringify(doadorLogado));
+    associadoLogado = null;
+    pagamentosDoador = await _buscarPagamentosDoador();
+    renderAreaDoador();
+    showView('view-doador');
+
+  } catch(e){
+    errMsg.textContent = 'Erro: ' + (e.message||'tente novamente.');
+    errEl.classList.add('show');
+  } finally {
+    btn.disabled=false; btn.innerHTML='<i class="fas fa-heart"></i> Confirmar Cadastro';
+  }
+}
+
+// ═══════════════════════════════════════════
+//  ÁREA DO DOADOR
+// ═══════════════════════════════════════════
+let doadorLogado = null;
+let fichaDoador = null;
+let pagamentosDoador = [];
+
+async function _buscarPagamentosDoador(){
+  if(!fichaDoador) return [];
+  try {
+    const {data} = await sb.from('pagamentos_doadores').select('*').eq('doador_id', fichaDoador.id).order('mes_referencia',{ascending:false});
+    return data||[];
+  } catch(e){ return []; }
+}
+
+async function carregarDadosDoador(){
+  if(!doadorLogado) return;
+  fichaDoador = null;
+  try {
+    const {data} = await sb.from('doadores').select('*').eq('email', doadorLogado.email).maybeSingle();
+    if(data) fichaDoador = data;
+  } catch(e){}
+  if(fichaDoador){
+    await _garantirPagamentosDoadorPendentes();
+    pagamentosDoador = await _buscarPagamentosDoador();
+  } else { pagamentosDoador = []; }
+  renderAreaDoador();
+}
+
+async function _garantirPagamentosDoadorPendentes(){
+  if(!fichaDoador) return;
+  try {
+    const hoje = new Date();
+    const mesAtual = getMesAtual();
+    let inicio;
+    if(fichaDoador.created_at){
+      const dc = new Date(fichaDoador.created_at);
+      inicio = new Date(dc.getFullYear(), dc.getMonth(), 1);
+    } else {
+      inicio = new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1);
+    }
+    const fim = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const meses = [];
+    const cur = new Date(inicio);
+    while(cur <= fim){ meses.push(`${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}`); cur.setMonth(cur.getMonth()+1); }
+    const {data: pagsExist} = await sb.from('pagamentos_doadores').select('mes_referencia').eq('doador_id', fichaDoador.id);
+    const mesesComRegistro = new Set((pagsExist||[]).map(p=>p.mes_referencia));
+    const novos = meses.filter(m=>!mesesComRegistro.has(m)).map(m=>({
+      doador_id: fichaDoador.id, email: fichaDoador.email,
+      mes_referencia: m, valor: fichaDoador.valor_contribuicao||30,
+      status: 'pendente',
+      data_vencimento: `${m}-${String(fichaDoador.dia_pagamento||10).padStart(2,'0')}`
+    }));
+    if(novos.length>0) await sb.from('pagamentos_doadores').insert(novos);
+  } catch(e){ console.warn('_garantirPagamentosDoadorPendentes:', e.message); }
+}
+
+async function sincronizarPagamentosDoador(){
+  if(!fichaDoador) return;
+  pagamentosDoador = await _buscarPagamentosDoador();
+  renderPagamentosDoador();
+}
+
+function renderAreaDoador(){
+  if(!doadorLogado) return;
+  const nome = fichaDoador?.nome || doadorLogado.nome || '';
+  const primeiroNome = nome.split(' ')[0];
+  const inicial = primeiroNome.charAt(0).toUpperCase();
+  const avEl = g('doador-avatar-inicial'); if(avEl) avEl.textContent = inicial;
+  const nvEl = g('doador-nome-bem-vindo'); if(nvEl) nvEl.textContent = 'Olá, ' + primeiroNome + '! ❤️';
+  const bdgEl = g('doador-badge-nome'); if(bdgEl) bdgEl.textContent = primeiroNome;
+  const subEl = g('doador-sub-bem-vindo'); if(subEl) subEl.textContent = 'Doador · ONG Por Amor';
+
+  if(fichaDoador){
+    const f = fichaDoador;
+    const valEl = g('doador-valor'); if(valEl) valEl.textContent = 'R$ '+(f.valor_contribuicao||30).toFixed(2).replace('.',',');
+    const vencEl = g('doador-venc-sub'); if(vencEl) vencEl.textContent = 'Venc. todo dia '+(f.dia_pagamento||10);
+    const mesAtual = getMesAtual();
+    const pendMes = pagamentosDoador.find(p=>p.mes_referencia===mesAtual&&p.status==='pendente');
+    const cardPend = g('doador-card-pendente'); if(cardPend) cardPend.style.display=pendMes?'block':'none';
+    if(pendMes){ const pv=g('doador-pend-val'); if(pv) pv.textContent='R$'+pendMes.valor.toFixed(2).replace('.',','); }
+  }
+  renderPagamentosDoador();
+}
+
+function renderPagamentosDoador(){
+  const el = g('doador-pay-list');
+  if(!el) return;
+  if(!fichaDoador || pagamentosDoador.length === 0){
+    el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gray-400)"><i class="fas fa-inbox"></i> Nenhum registro de pagamento</div>';
+    return;
+  }
+  const mesAtual = getMesAtual();
+  const hoje = new Date();
+  const diaPag = fichaDoador?.dia_pagamento || 10;
+  // resumo
+  const pagos = pagamentosDoador.filter(p=>p.status==='pago').length;
+  const total = pagamentosDoador.length;
+  const resEl = g('doador-pay-resumo');
+  if(resEl) resEl.textContent = `${pagos} pago(s) de ${total}`;
+
+  function renderItem(p){
+    const isPago = p.status==='pago';
+    const isAtraso = !isPago && p.mes_referencia < mesAtual;
+    const isMesAtual = p.mes_referencia === mesAtual;
+    let isPendenteDentroPrazo = false;
+    if(!isPago && isMesAtual){
+      const venc = new Date(p.mes_referencia+'-'+String(diaPag).padStart(2,'0')+'T23:59:59');
+      isPendenteDentroPrazo = hoje <= venc;
+    }
+    const cls = isPago?'pago':isAtraso?'vencido':'pendente';
+    const icon = isPago?'fa-check-circle':isAtraso?'fa-exclamation-circle':'fa-clock';
+    const [ano,mes] = p.mes_referencia.split('-');
+    const mesNomeFmt = new Date(+ano,+mes-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    const mesLabel = mesNomeFmt.charAt(0).toUpperCase()+mesNomeFmt.slice(1);
+    let badge;
+    if(isPago) badge='<span class="pay-item-badge pay-badge-pago">✓ Pago</span>';
+    else if(isAtraso) badge='<span class="pay-item-badge pay-badge-venc">⚠ Atrasado</span>';
+    else if(isPendenteDentroPrazo) badge='<span class="pay-item-badge pay-badge-pend">📅 Vence dia '+diaPag+'</span>';
+    else badge='<span class="pay-item-badge pay-badge-pend">Pendente</span>';
+    const dtPag = p.data_pagamento?' · Pago em '+new Date(p.data_pagamento+'T12:00:00').toLocaleDateString('pt-BR'):'';
+    const mpBtn = !isPago
+      ? `<button class="btn-mp-pagar" onclick="pagarViaMPDoador('${p.mes_referencia}',${p.valor})" style="font-size:.75rem;padding:.45rem .9rem;border-radius:var(--r);margin-top:.5rem;display:inline-flex;align-items:center;gap:.4rem"><i class="fas fa-credit-card"></i> Pagar com MP</button>` : '';
+    const mpAssinBtn = !isPago
+      ? `<button onclick="pagarAssinaturaMP('${p.mes_referencia}',${p.valor})" style="background:linear-gradient(135deg,#009ee3,#0070b4);border:none;color:#fff;font-size:.75rem;padding:.45rem .9rem;border-radius:var(--r);margin-top:.5rem;margin-left:.4rem;display:inline-flex;align-items:center;gap:.4rem;cursor:pointer"><i class="fas fa-repeat"></i> Assinatura MP</button>` : '';
+    return `<div class="pay-item ${cls}">
+      <div class="pay-item-icon"><i class="fas ${icon}"></i></div>
+      <div style="flex:1">
+        <div class="pay-item-mes">${mesLabel} ${badge}</div>
+        <div class="pay-item-info">Vencimento: dia ${diaPag}${dtPag}</div>
+        <div>${mpBtn}${mpAssinBtn}</div>
+      </div>
+      <div class="pay-item-val" style="font-weight:700;font-size:1rem;color:${isPago?'var(--success)':isAtraso?'var(--error)':'var(--warn)'}">
+        R$ ${(p.valor||0).toFixed(2).replace('.',',')}
+      </div>
+    </div>`;
+  }
+
+  const atrasados = pagamentosDoador.filter(p=>p.status!=='pago'&&p.mes_referencia<mesAtual);
+  const pendentes = pagamentosDoador.filter(p=>p.status!=='pago'&&p.mes_referencia>=mesAtual);
+  const pagosArr = pagamentosDoador.filter(p=>p.status==='pago');
+  function sep(label,cor='var(--gray-400)'){ return `<div style="padding:.5rem 0 .3rem;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:${cor};display:flex;align-items:center;gap:.5rem;margin-top:.5rem"><span style="flex:1;height:1px;background:currentColor;opacity:.2"></span>${label}<span style="flex:1;height:1px;background:currentColor;opacity:.2"></span></div>`; }
+  let html='';
+  if(atrasados.length>0){ html+=sep('⚠ Atrasados','var(--error)'); html+=atrasados.map(renderItem).join(''); }
+  if(pendentes.length>0){ html+=sep('📅 Pendentes / Próximos','var(--warn)'); html+=pendentes.map(renderItem).join(''); }
+  if(pagosArr.length>0){ html+=sep('✓ Pagos','var(--success)'); html+=pagosArr.map(renderItem).join(''); }
+  el.innerHTML = html;
+}
+
+async function pagarViaMPDoador(mesRef, valor){
+  if(!fichaDoador || !doadorLogado) return;
+  toast('Gerando link de pagamento...');
+  try {
+    const [ano,mes] = mesRef.split('-');
+    const mesNome = new Date(+ano,+mes-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    const extRef = `doador-${fichaDoador.id}-${mesRef}`;
+    const payload = {
+      items:[{title:`Doação ONG Por Amor — ${mesNome}`,quantity:1,currency_id:'BRL',unit_price:valor}],
+      payer:{name:fichaDoador.nome||doadorLogado.nome, email:fichaDoador.email||doadorLogado.email},
+      back_urls:{success:window.location.href,failure:window.location.href,pending:window.location.href},
+      auto_return:'approved', statement_descriptor:'ONG Por Amor', external_reference: extRef
+    };
+    const resp = await fetch('https://api.mercadopago.com/checkout/preferences',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+MP_ACCESS_TOKEN},body:JSON.stringify(payload)});
+    const data = await resp.json();
+    if(data.init_point){
+      window.open(data.init_point,'_blank');
+      toast('Checkout aberto! Aguardando confirmação... ⏳');
+    } else throw new Error(data.message||'Erro ao gerar link');
+  } catch(e){ toast('Erro Mercado Pago: '+e.message,'err'); }
+}
+
+async function pagarAssinaturaMP(mesRef, valor){
+  toast('A Assinatura MP é configurada pela administração da ONG. Entre em contato: (83) 98231-5427', 'err');
+  // Nota: MP Subscriptions requer aprovação da API e configuração específica do vendedor
+}
+
+function showDoadorTab(id){
+  document.querySelectorAll('#view-doador .assoc-panel').forEach(p=>p.classList.remove('active'));
+  g(id)?.classList.add('active');
+  document.querySelectorAll('#view-doador .assoc-tab').forEach(t=>t.classList.remove('active'));
+  const tabMap = {'tab-doador-inicio':'dtab-inicio','tab-doador-pagamentos':'dtab-pagamentos'};
+  const activeTab = tabMap[id]; if(activeTab) g(activeTab)?.classList.add('active');
+  document.querySelectorAll('#bottom-nav-doador .bnav-item').forEach(b=>b.classList.remove('active'));
+  const bnavMap = {'tab-doador-inicio':'dbnav-inicio','tab-doador-pagamentos':'dbnav-pagamentos'};
+  const activeBnav = bnavMap[id]; if(activeBnav) g(activeBnav)?.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function doDoadorLogout(){
+  doadorLogado=null; fichaDoador=null; pagamentosDoador=[];
+  localStorage.removeItem('doador_sessao');
+  showView('view-admin-login');
+  switchLoginTab('tab-login');
+}
+
+// Login de doador (usado no fluxo de login normal - identifica tipo)
+async function checkDoadorLogin(email, senha){
+  const senhaHash = btoa(unescape(encodeURIComponent(senha)));
+  // Verifica se é doador
+  const {data: usuario} = await sb.from('usuarios_associados').select('*').eq('email', email).eq('senha_hash', senhaHash).single();
+  if(!usuario) return false;
+  const {data: doador} = await sb.from('doadores').select('*').eq('email', email).maybeSingle();
+  if(doador){
+    doadorLogado = {...usuario, ...doador};
+    fichaDoador = doador;
+    localStorage.setItem('doador_sessao', JSON.stringify(doadorLogado));
+    await _garantirPagamentosDoadorPendentes();
+    pagamentosDoador = await _buscarPagamentosDoador();
+    renderAreaDoador();
+    showView('view-doador');
+    toast('Bem-vindo(a), ' + (doador.nome||'Doador').split(' ')[0] + '! ❤️');
+    return true;
+  }
+  return false;
+}
+
+// ═══════════════════════════════════════════
+//  ADMIN: DOADORES
+// ═══════════════════════════════════════════
+let doadores = [];
+let pagamentosDoadores = {};
+
+async function loadDoadores(){
+  try {
+    const {data} = await sb.from('doadores').select('*').order('created_at',{ascending:false});
+    doadores = data||[];
+    const ids = doadores.map(d=>d.id);
+    if(ids.length > 0){
+      const {data: pags} = await sb.from('pagamentos_doadores').select('*').in('doador_id', ids).order('mes_referencia',{ascending:false});
+      pagamentosDoadores = {};
+      (pags||[]).forEach(p=>{ if(!pagamentosDoadores[p.doador_id]) pagamentosDoadores[p.doador_id]=[]; pagamentosDoadores[p.doador_id].push(p); });
+    }
+    renderDoadores();
+  } catch(e){ console.warn('loadDoadores:', e.message); }
+}
+
+function renderDoadores(){
+  const tbody = g('doadores-body');
+  if(!tbody) return;
+  const busca = (g('fd-busca')?.value||'').toLowerCase();
+  const pgStatus = g('fd-pgstatus')?.value||'';
+  const mesAtual = getMesAtual();
+  const hoje = new Date();
+  const meses = Array.from({length:3},(_,i)=>{ const d=new Date(hoje.getFullYear(),hoje.getMonth()-2+i,1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; });
+
+  let filtered = doadores;
+  if(busca) filtered = filtered.filter(d=>(d.nome||'').toLowerCase().includes(busca)||(d.email||'').toLowerCase().includes(busca)||(d.telefone||'').includes(busca));
+  if(pgStatus==='pendente') filtered = filtered.filter(d=>(pagamentosDoadores[d.id]||[]).some(p=>p.mes_referencia===mesAtual&&p.status==='pendente'));
+  if(pgStatus==='em_dia') filtered = filtered.filter(d=>(pagamentosDoadores[d.id]||[]).some(p=>p.mes_referencia===mesAtual&&p.status==='pago'));
+
+  const countEl = g('count-badge-doadores'); if(countEl) countEl.textContent = filtered.length;
+
+  tbody.innerHTML = filtered.map(d=>{
+    const pags = pagamentosDoadores[d.id]||[];
+    const payChips = meses.map(m=>{
+      const p = pags.find(x=>x.mes_referencia===m);
+      const mesLabel = m.slice(5)+'/'+m.slice(2,4);
+      if(!p||p.status==='pendente'){
+        const isOverdue = m<mesAtual;
+        return `<span class="pay-chip ${isOverdue?'overdue':'pending'}" onclick="togglePayDoador('${d.id}','${m}')" title="Confirmar pagamento de ${mesLabel}">${mesLabel} ○</span>`;
+      }
+      return `<span class="pay-chip paid" onclick="togglePayDoador('${d.id}','${m}')" title="Pago - clique para reverter">${mesLabel} ✓</span>`;
+    }).join('');
+    return `<tr>
+      <td><span class="td-name">${d.nome}</span></td>
+      <td>${d.telefone||'—'}</td>
+      <td style="font-size:.8rem">${d.email||'—'}</td>
+      <td><strong>Dia ${d.dia_pagamento||10}</strong></td>
+      <td style="font-weight:700;color:var(--navy)">R$ ${(d.valor_contribuicao||30).toFixed(2).replace('.',',')}</td>
+      <td>${d.forma_pagamento||'PIX'}</td>
+      <td><div class="pay-month-row">${payChips}</div></td>
+      <td><div class="actions-cell">
+        <button class="btn-sm btn-sm-warn" onclick="openCobrancaDoador('${d.id}')"><i class="fas fa-paper-plane"></i> Cobrar</button>
+        <button class="btn-sm btn-sm-red" onclick="confirmDeleteDoador('${d.id}')"><i class="fas fa-trash"></i></button>
+      </div></td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--gray-400)"><i class="fas fa-search"></i> Nenhum doador encontrado</td></tr>';
+}
+
+function clearDoadorFilters(){ g('fd-busca').value=''; g('fd-pgstatus').value=''; renderDoadores(); }
+
+async function togglePayDoador(did, mes){
+  const pags = pagamentosDoadores[did]||[];
+  const p = pags.find(x=>x.mes_referencia===mes);
+  const newStatus = (!p||p.status==='pendente')?'pago':'pendente';
+  if(p){
+    await sb.from('pagamentos_doadores').update({status:newStatus,data_pagamento:newStatus==='pago'?new Date().toISOString().slice(0,10):null,confirmado_por:'ongadmin'}).eq('id',p.id);
+    p.status=newStatus;
+  } else {
+    const d = doadores.find(x=>x.id===did);
+    const novoPag = {doador_id:did,mes_referencia:mes,valor:d?.valor_contribuicao||30,status:newStatus,data_vencimento:`${mes}-${String(d?.dia_pagamento||10).padStart(2,'0')}`,confirmado_por:newStatus==='pago'?'ongadmin':null,data_pagamento:newStatus==='pago'?new Date().toISOString().slice(0,10):null,email:d?.email||null};
+    const {data} = await sb.from('pagamentos_doadores').insert([novoPag]).select();
+    if(data?.[0]){ if(!pagamentosDoadores[did]) pagamentosDoadores[did]=[]; pagamentosDoadores[did].push(data[0]); }
+  }
+  toast(newStatus==='pago'?'✓ Pagamento confirmado!':'Pagamento marcado como pendente');
+  renderDoadores();
+}
+
+async function openCobrancaDoador(did){
+  const d = doadores.find(x=>x.id===did);
+  if(!d) return;
+  const mesAtual = getMesAtual();
+  const [ano,mes] = mesAtual.split('-');
+  const mesNome = new Date(+ano,+mes-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const valor = d.valor_contribuicao||30;
+  const msg = `Olá, ${d.nome.split(' ')[0]}! 😊\n\nPassamos para lembrar da sua doação mensal à *ONG Por Amor*.\n\n💰 *Valor:* R$ ${valor.toFixed(2).replace('.',',')}\n📅 *Vencimento:* Todo dia ${d.dia_pagamento||10}\n\nPIX: (83) 98231-5427 (ONG Por Amor)\n\nObrigado pela sua contribuição! ❤️\n— ONG Por Amor`;
+  const waNum = (d.telefone||'').replace(/\D/g,'');
+  window.open(`https://wa.me/55${waNum}?text=${encodeURIComponent(msg)}`,'_blank');
+}
+
+let deleteDoadorId = null;
+function confirmDeleteDoador(did){ deleteDoadorId=did; const d=doadores.find(x=>x.id===did); if(confirm(`Excluir doador ${d?.nome}? Esta ação não pode ser desfeita.`)){ doDeleteDoador(); } }
+async function doDeleteDoador(){
+  if(!deleteDoadorId) return;
+  await sb.from('pagamentos_doadores').delete().eq('doador_id',deleteDoadorId);
+  await sb.from('doadores').delete().eq('id',deleteDoadorId);
+  doadores=doadores.filter(x=>x.id!==deleteDoadorId); delete pagamentosDoadores[deleteDoadorId];
+  deleteDoadorId=null; toast('Doador removido.'); renderDoadores();
+}
+
+// ═══════════════════════════════════════════
+//  ADIANTAMENTO DE PAGAMENTOS
+// ═══════════════════════════════════════════
+let adiantamentoSelecionados = new Set();
+let adiantamentoContext = null; // 'associado' ou 'doador'
+
+function mostrarAdiantamento(){
+  const ctx = document.querySelector('#view-doador.active') ? 'doador' : 'associado';
+  adiantamentoContext = ctx;
+  const ficha = ctx==='doador' ? fichaDoador : fichaAssociado;
+  const pags = ctx==='doador' ? pagamentosDoador : pagamentosAssociado;
+  if(!ficha){ toast('Ficha não encontrada','err'); return; }
+
+  adiantamentoSelecionados.clear();
+  const mesAtual = getMesAtual();
+  const hoje = new Date();
+  // Gera próximos 6 meses futuros (excluindo já pagos)
+  const mesesFuturos = [];
+  for(let i=1; i<=6; i++){
+    const d = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
+    const m = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const pExist = pags.find(p=>p.mes_referencia===m);
+    if(!pExist || pExist.status!=='pago') mesesFuturos.push(m);
+  }
+
+  const valor = ficha.valor_contribuicao||30;
+  const lista = g('adiantamento-meses-lista');
+  lista.innerHTML = mesesFuturos.map(m=>{
+    const [ano,mes] = m.split('-');
+    const mesNome = new Date(+ano,+mes-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    const mFmt = mesNome.charAt(0).toUpperCase()+mesNome.slice(1);
+    return `<label style="display:flex;align-items:center;gap:.8rem;padding:.75rem 1rem;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:var(--r);cursor:pointer;transition:var(--tr)" id="adiant-lbl-${m}">
+      <input type="checkbox" id="adiant-${m}" value="${m}" onchange="toggleAdiantamento('${m}','${valor}')" style="width:16px;height:16px;accent-color:var(--teal)">
+      <span style="flex:1;font-weight:600;color:var(--navy)">${mFmt}</span>
+      <span style="font-weight:700;color:var(--teal)">R$ ${valor.toFixed(2).replace('.',',')}</span>
+    </label>`;
+  }).join('');
+
+  g('adiantamento-total').textContent = 'R$ 0,00';
+  g('adiantamento-mp-btn').style.display = 'none';
+  g('modal-adiantamento').classList.add('open');
+}
+
+function toggleAdiantamento(mes, valor){
+  const cb = g('adiant-'+mes);
+  const lbl = g('adiant-lbl-'+mes);
+  if(cb?.checked){ adiantamentoSelecionados.add(mes); if(lbl) lbl.style.borderColor='var(--teal)'; }
+  else { adiantamentoSelecionados.delete(mes); if(lbl) lbl.style.borderColor='var(--gray-200)'; }
+  const total = adiantamentoSelecionados.size * parseFloat(valor);
+  g('adiantamento-total').textContent = 'R$ '+total.toFixed(2).replace('.',',');
+  g('adiantamento-mp-btn').style.display = adiantamentoSelecionados.size>0?'block':'none';
+}
+
+function fecharAdiantamento(){ g('modal-adiantamento').classList.remove('open'); }
+
+async function pagarAdiantamentoMP(){
+  const ctx = adiantamentoContext;
+  const ficha = ctx==='doador' ? fichaDoador : fichaAssociado;
+  const usuario = ctx==='doador' ? doadorLogado : associadoLogado;
+  if(!ficha || adiantamentoSelecionados.size===0) return;
+  const meses = [...adiantamentoSelecionados].sort();
+  const valor = ficha.valor_contribuicao||30;
+  const total = meses.length * valor;
+  const titulo = meses.length===1
+    ? `Contribuição ONG Por Amor — ${new Date(meses[0]+'-15').toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}`
+    : `Contribuição ONG Por Amor — ${meses.length} meses adiantados`;
+  const extRef = `${ctx}-${ficha.id}-adiant-${meses.join('_')}`;
+  toast('Gerando link de pagamento...');
+  try {
+    const payload = {
+      items:[{title:titulo,quantity:1,currency_id:'BRL',unit_price:total}],
+      payer:{name:ficha.nome||usuario?.nome, email:ficha.email||usuario?.email},
+      back_urls:{success:window.location.href,failure:window.location.href,pending:window.location.href},
+      auto_return:'approved', statement_descriptor:'ONG Por Amor', external_reference: extRef
+    };
+    const resp = await fetch('https://api.mercadopago.com/checkout/preferences',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+MP_ACCESS_TOKEN},body:JSON.stringify(payload)});
+    const data = await resp.json();
+    if(data.init_point){
+      window.open(data.init_point,'_blank');
+      fecharAdiantamento();
+      toast('Checkout aberto! Aguardando confirmação dos '+meses.length+' meses... ⏳');
+    } else throw new Error(data.message||'Erro ao gerar link');
+  } catch(e){ toast('Erro Mercado Pago: '+e.message,'err'); }
+}
+
 // Inicialização: verifica modo admin na URL e restaura sessão
 checkAdminMode();
 
@@ -3401,6 +4269,9 @@ if(_assocSenhaLogin) _assocSenhaLogin.addEventListener('keydown', e=>{ if(e.key=
 
 const _cad2 = g('cad-senha2');
 if(_cad2) _cad2.addEventListener('keydown', e=>{ if(e.key==='Enter') doCadastro(); });
+
+const _mAdiant = g('modal-adiantamento');
+if(_mAdiant) _mAdiant.addEventListener('click', function(e){ if(e.target===this) fecharAdiantamento(); });
 
 const _mCobranca = g('modal-cobranca');
 if(_mCobranca) _mCobranca.addEventListener('click', function(e){ if(e.target===this) closeModal(); });
@@ -3424,6 +4295,7 @@ function iniciarPolling(){
     if(!_pollingAtivo) return;
     const viewAdmin  = document.querySelector('#view-admin.active');
     const viewAssoc  = document.querySelector('#view-associado.active');
+    const viewDoador = document.querySelector('#view-doador.active');
     if(viewAdmin){
       // Admin: recarrega dados silenciosamente e atualiza UI
       try{
@@ -3469,6 +4341,16 @@ function iniciarPolling(){
         const syncDotA = g('rt-sync-dot-assoc');
         if(syncDotA){ syncDotA.style.background='var(--success)'; setTimeout(()=>{ if(syncDotA) syncDotA.style.background='var(--teal-light)'; },800); }
       }catch(e){ console.warn('Polling assoc:', e.message); }
+    }
+    if(viewDoador && doadorLogado && fichaDoador){
+      try{
+        const novosPags = await _buscarPagamentosDoador();
+        if(JSON.stringify(novosPags)!==JSON.stringify(pagamentosDoador)){
+          pagamentosDoador=novosPags; renderPagamentosDoador(); renderAreaDoador();
+        }
+        const syncDotD=g('rt-sync-dot-doador');
+        if(syncDotD){syncDotD.style.background='var(--success)';setTimeout(()=>{if(syncDotD)syncDotD.style.background='var(--teal-light)';},800);}
+      }catch(e){ console.warn('Polling doador:', e.message); }
     }
   }, 5000);
 }
