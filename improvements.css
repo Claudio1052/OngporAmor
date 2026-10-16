@@ -136,3 +136,29 @@ button:disabled{opacity:.65;cursor:wait}
 .native-email-dialog [data-cancel]{background:#edf2f5;color:#0b1f31}
 .native-email-dialog button:disabled{opacity:.6;cursor:default}
 .native-email-dialog button:focus-visible{outline:3px solid #dc9b30;outline-offset:3px}
+.toast{visibility:hidden;opacity:0;pointer-events:none}
+.toast.show{visibility:visible;opacity:1}
+.reminder-prompt{max-width:440px}
+.reminder-prompt h2{font-size:24px;line-height:1.25;margin:16px 0 12px;color:#0b1f31}
+.reminder-prompt p{font-size:15px;line-height:1.6;color:#475569;margin-bottom:14px}
+.reminder-prompt [role=status]{font-size:13px}
+.reminder-prompt-icon{display:grid;place-items:center;width:56px;height:56px;border-radius:18px;background:#e4f4ef;color:#087f83;font-size:24px}
+.reminder-prompt .modal-actions{display:grid;gap:10px}
+.reminder-prompt button{min-height:48px;padding:12px 18px;border:0;border-radius:12px;font:600 15px 'DM Sans',sans-serif;cursor:pointer}
+.reminder-prompt [data-activate]{background:#087f83;color:white}
+.reminder-prompt [data-later]{background:#edf2f5;color:#334155}
+#main-table,#doadores-table{min-width:1160px}
+#main-table td,#doadores-table td{vertical-align:top}
+#main-table td:nth-child(3),#doadores-table td:nth-child(2){min-width:140px;white-space:nowrap}
+.person-months{min-width:344px;width:344px}
+.person-months .pay-month-row{display:grid;grid-template-columns:repeat(6,minmax(44px,1fr));gap:6px;min-width:312px}
+.person-months .pay-chip{justify-content:center;white-space:nowrap;padding:6px 4px;min-height:44px}
+.person-actions{min-width:200px;width:200px}
+.person-actions .actions-cell{display:grid;grid-template-columns:repeat(2,minmax(80px,1fr));gap:6px}
+.person-actions .btn-sm{justify-content:center;padding:8px 6px}
+@media(max-width:768px){
+  .bottom-nav{height:calc(60px + env(safe-area-inset-bottom,0px));align-items:stretch}
+  .bottom-nav .bnav-item{min-height:48px;padding:8px 4px;gap:0}
+  .bottom-nav .bnav-item span{display:none}
+  .bottom-nav .bnav-item i{font-size:22px;line-height:1.1}
+}

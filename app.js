@@ -4,6 +4,7 @@ const AmorApp=(()=>{
   let currentUser=null, admin=false, timer=null, refreshing=false, requestedPayments=false;
   let lastReconcile=0,reconciling=null;
   let startup=Promise.resolve(),emailAccessActive=false,emailAccessVersion=0,closeEmailAccess=null;
+  let reminderPromptOffered=false;
   const pending=new Set();
   const tableState={associado:{page:0,key:''},doador:{page:0,key:''}};
   async function checked(query){const r=await query;if(r.error)throw r.error;return r.data;}
@@ -20,7 +21,7 @@ const AmorApp=(()=>{
     if(donor?.length){doadorLogado=safeSession(currentUser);associadoLogado=null;await carregarDadosDoador();showView('view-doador');}
     else{associadoLogado=safeSession(currentUser);doadorLogado=null;await carregarDadosAssociado();if(fichaAssociado)_redirecionarAposLogin(false);else{showView('view-admin-login');abrirTipoSelect();}}
     if(requestedPayments)openPayments();
-    await syncNative();iniciarPolling();refresh().catch(fail);
+    await syncNative();maybeOfferReminders();iniciarPolling();refresh().catch(fail);
   }
   async function openAdmin(){
     admin=await isAdmin();if(!admin)throw Error('Acesso restrito');
@@ -47,6 +48,7 @@ const AmorApp=(()=>{
     await openAdmin();
   });}
   async function logout(){
+    reminderPromptOffered=false;g('reminder-prompt')?.remove();
     pararPolling();lastReconcile=0;currentUser=null;admin=false;associadoLogado=null;doadorLogado=null;fichaAssociado=null;fichaDoador=null;pagamentosAssociado=[];pagamentosDoador=[];
     if(window.AmorAndroid)AmorAndroid.clear();
     for(const key of ['assoc_sessao','doador_sessao','assoc_ultima_aba'])localStorage.removeItem(key);
@@ -113,13 +115,13 @@ const AmorApp=(()=>{
       if(assoc)td('#'+String(p.numero_associado||'—').padStart(3,'0'));
       const name=td(p.nome);name.className='td-name';if(assoc){const sub=document.createElement('small');sub.textContent=p.cpf||'';sub.style.display='block';name.append(sub);}
       td(p.telefone||'—');if(!assoc)td(p.email||'—');td('Dia '+(p.dia_pagamento||10));td(money(p.valor_contribuicao));td(p.forma_pagamento||'PIX');if(assoc)td(p.status||'ativo');
-      const paymentsCell=td(''),chips=document.createElement('div');chips.className='pay-month-row';paymentsCell.append(chips);
+      const paymentsCell=td(''),chips=document.createElement('div');paymentsCell.className='person-months';chips.className='pay-month-row';paymentsCell.append(chips);
       for(const m of getMesesDoAno()){
         const payment=rows.find(x=>x.mes_referencia===m);
         if(!payment){const blank=document.createElement('span');blank.textContent=m.slice(5)+' —';blank.className='pay-chip';blank.title='Sem contribuição registrada nesta competência';chips.append(blank);continue;}
         const s=D.status(payment,p.dia_pagamento),b=document.createElement('button');b.type='button';b.className='pay-chip '+(s==='pago'?'paid':s==='atrasado'?'overdue':'pending');b.textContent=m.slice(5)+(s==='pago'?' ✓':s==='cancelado'?' ×':' ○');b.title=`${m}: ${s}. Abrir confirmação de alteração`;b.disabled=s==='cancelado';b.onclick=()=>toggle(kind,p.id,m);chips.append(b);
       }
-      const actions=td(''),wrap=document.createElement('div');wrap.className='actions-cell';actions.append(wrap);
+      const actions=td(''),wrap=document.createElement('div');actions.className='person-actions';wrap.className='actions-cell';actions.append(wrap);
       function action(label,fn,style){const b=document.createElement('button');b.type='button';b.className='btn-sm '+style;b.textContent=label;b.onclick=fn;wrap.append(b);}
       action('Lembrar',()=>cobrar(kind,p.id),'btn-sm-warn');
       if(assoc){action('Editar',()=>openEdit(p.id),'btn-sm-teal');action('Ficha',async()=>{try{const full=await checked(sb.from('associados').select('*').eq('id',p.id).single());Object.assign(p,full);printAssociado(p.id);}catch(e){fail(e);}},'btn-sm-navy');}
@@ -172,13 +174,13 @@ const AmorApp=(()=>{
     const payload={nome:g('inp-nome').value.trim(),email:currentUser.email,cpf:g('inp-cpf').value.replace(/\D/g,''),data_nascimento:parseDate(g('inp-nasc').value),rg:g('inp-rg').value,estado_civil:g('inp-ecivil').value,profissao:g('inp-prof').value,cep:g('inp-cep').value,logradouro:g('inp-log').value,numero:g('inp-num').value,complemento:g('inp-comp').value,bairro:g('inp-bairro').value,cidade:city[0].trim(),uf:city[1]?.trim()||'',telefone:g('inp-tel').value,valor_contribuicao:Number(g('inp-valor').value.replace(',','.')),dia_pagamento:Number(g('inp-dia').value),forma_pagamento:document.querySelector('input[name="pag"]:checked')?.value||'PIX',autoriza_lgpd:true,autoriza_imagem:g('t-img').checked,autoriza_comunicacoes:g('t-com').checked,assinatura_tipo:'desenho',assinatura_data:sigCanvas.toDataURL(),status:'ativo'};
     if(!D.validCPF(payload.cpf)||!Number.isFinite(payload.valor_contribuicao)||payload.valor_contribuicao<30)return toast('Confira o CPF e o valor da contribuição.','err');
     await checked(sb.from('associados').insert(payload).select('id').single());
-    await carregarDadosAssociado();showView('view-associado');toast('Ficha salva! Sua contribuição já está disponível.');
+    await carregarDadosAssociado();showView('view-associado');maybeOfferReminders();toast('Ficha salva! Sua contribuição já está disponível.');
   });}
   async function submitDonorForm(){return busy('btn-donor-submit',async()=>{
     currentUser=await user();const valor=Number(g('df-valor').value.replace(',','.')),day=Number(g('df-dia').value);
     if(g('df-nome').value.trim().length<3||g('df-tel').value.replace(/\D/g,'').length<10||!Number.isFinite(valor)||valor<10||day<1||day>28)throw Error('Dados inválidos');
     await checked(sb.from('doadores').insert({nome:g('df-nome').value.trim(),email:currentUser.email,telefone:g('df-tel').value,dia_pagamento:day,forma_pagamento:g('df-pgto').value||'PIX',valor_contribuicao:valor,status:'ativo'}).select('id').single());
-    fecharDonorForm();doadorLogado=safeSession(currentUser);associadoLogado=null;await carregarDadosDoador();showView('view-doador');toast('Cadastro salvo. Obrigado por fazer parte!');
+    fecharDonorForm();doadorLogado=safeSession(currentUser);associadoLogado=null;await carregarDadosDoador();showView('view-doador');maybeOfferReminders();toast('Cadastro salvo. Obrigado por fazer parte!');
   });}
   async function gateway(path,body){
     if(!navigator.onLine)throw Error('Sem conexão');
@@ -255,6 +257,27 @@ const AmorApp=(()=>{
   function showRecovery(){if(g('recovery-password'))return;const panel=document.createElement('section');panel.className='reminder-control';panel.innerHTML='<h2>Definir nova senha</h2><label for="recovery-password">Nova senha (mínimo 10 caracteres)</label><input id="recovery-password" type="password" autocomplete="new-password" minlength="10" class="fi"><button type="button">Salvar nova senha</button>';panel.querySelector('button').onclick=()=>busy('recover-password',async()=>{const password=panel.querySelector('input').value;if(password.length<10)return toast('Use pelo menos 10 caracteres.','err');await checked(sb.auth.updateUser({password}));panel.remove();toast('Senha atualizada.');await route();});document.body.prepend(panel);}
   async function recover(){return busy('recover-access',async()=>{const email=g('assoc-email-login').value.trim().toLowerCase();if(!email||!g('assoc-email-login').checkValidity())return toast('Preencha o e-mail acima.','err');await checked(sb.auth.resetPasswordForEmail(email,{redirectTo:'https://www.ongporamor.top/?type=recovery'}));toast('Se a conta existir, você receberá as instruções por e-mail.');});}
   function openPayments(){requestedPayments=true;if(fichaAssociado){showAssocTab('tab-assoc-pagamentos');requestedPayments=false;}else if(fichaDoador){showDoadorTab('tab-doador-pagamentos');requestedPayments=false;}}
+  function reminderState(){try{return window.AmorAndroid?.getNotificationState?JSON.parse(AmorAndroid.getNotificationState()):{enabled:false,system_allowed:true};}catch{return {enabled:false,system_allowed:false};}}
+  function activateReminders(){AmorAndroid.enableNotifications();syncNative().catch(()=>{});}
+  function notificationStateChanged(){
+    const state=reminderState();
+    for(const card of document.querySelectorAll('[data-reminder-control]')){
+      const status=card.querySelector('[role=status]');status.textContent=state.enabled?'Lembretes ativados neste celular.':'Ative para receber os lembretes neste celular.';
+      card.querySelector('[data-enable]').hidden=state.enabled;card.querySelector('[data-disable]').hidden=!state.enabled;
+    }
+    const prompt=g('reminder-prompt');if(prompt){if(state.enabled)prompt.remove();else prompt.querySelector('[role=status]').textContent='Se a permissão não aparecer, toque em Ativar para abrir os ajustes de notificações do celular.';}
+  }
+  function maybeOfferReminders(){
+    if(!window.AmorAndroid||admin||emailAccessActive||reminderPromptOffered||!((fichaAssociado&&g('view-associado').classList.contains('active'))||(fichaDoador&&g('view-doador').classList.contains('active'))))return;
+    notificationStateChanged();if(reminderState().enabled)return;
+    reminderPromptOffered=true;
+    const overlay=document.createElement('div');overlay.id='reminder-prompt';overlay.className='modal-overlay open';
+    overlay.innerHTML='<section class="modal reminder-prompt" role="dialog" aria-modal="true" aria-labelledby="reminder-prompt-title"><div class="modal-body"><div class="reminder-prompt-icon" aria-hidden="true"><i class="fas fa-bell"></i></div><h2 id="reminder-prompt-title">Quer receber lembretes?</h2><p>Avisamos quando sua contribuição estiver próxima do vencimento ou em atraso. Um aviso por dia, mesmo sem internet, usando a última atualização do aplicativo.</p><p role="status" aria-live="polite">Você pode ativar ou desativar quando quiser.</p><div class="modal-actions"><button type="button" data-activate>Ativar notificações</button><button type="button" data-later>Agora não</button></div></div></section>';
+    overlay.querySelector('[data-activate]').onclick=activateReminders;
+    overlay.querySelector('[data-later]').onclick=()=>overlay.remove();
+    overlay.addEventListener('keydown',event=>{if(event.key==='Escape')overlay.remove();});
+    document.body.append(overlay);overlay.querySelector('[data-activate]').focus?.();
+  }
   async function restoreNative(native){if(emailAccessActive||!native?.refresh_token)return;const {session}=await checked(sb.auth.getSession());if(!emailAccessActive&&(!session||native.expires_at>session.expires_at))await checked(sb.auth.setSession({access_token:native.access_token,refresh_token:native.refresh_token}));}
   async function openEmailAccess(payload){
     if(!window.AmorAndroid||!payload||!['email','recovery'].includes(payload.type)||!/^[A-Za-z0-9_-]{20,512}$/.test(payload.token_hash||''))return false;
@@ -280,7 +303,7 @@ const AmorApp=(()=>{
         if(!data?.session?.access_token||!data.session.refresh_token)throw Error('Missing session');
         // Replace the previous identity before restoring/syncing any native session.
         if(AmorAndroid.acceptEmailSession&&!AmorAndroid.acceptEmailSession(JSON.stringify({access_token:data.session.access_token,refresh_token:data.session.refresh_token,expires_at:data.session.expires_at}),requestId))throw Error('Session not saved');
-        await route();if(type==='recovery')showRecovery();finish();toast('Acesso confirmado no aplicativo.');
+        await route();if(type==='recovery')showRecovery();finish();if(type!=='recovery')maybeOfferReminders();
       }catch(error){
         message.textContent=navigator.onLine?'Não foi possível concluir o acesso. O link pode estar expirado ou já ter sido usado. Feche esta janela e solicite um novo e-mail.':'A conexão caiu. Feche esta janela e solicite um novo e-mail quando estiver conectado.';
         submitting=false;cancel.disabled=false;
@@ -288,7 +311,7 @@ const AmorApp=(()=>{
     };
     document.body.append(overlay);next.focus?.();return true;
   }
-  function back(){if(closeEmailAccess){g('native-email-access')?.querySelector('[data-cancel]')?.click();return true;}const modal=document.querySelector('.modal-overlay.open');if(modal){modal.classList.remove('open');return true;}if(fichaAssociado&&g('view-associado').classList.contains('active')){if(!g('tab-assoc-inicio').classList.contains('active')){showAssocTab('tab-assoc-inicio');return true;}}if(fichaDoador&&g('view-doador').classList.contains('active')){if(!g('tab-doador-inicio').classList.contains('active')){showDoadorTab('tab-doador-inicio');return true;}}return false;}
+  function back(){if(closeEmailAccess){g('native-email-access')?.querySelector('[data-cancel]')?.click();return true;}if(g('reminder-prompt')){g('reminder-prompt').remove();return true;}const modal=document.querySelector('.modal-overlay.open');if(modal){modal.classList.remove('open');return true;}if(fichaAssociado&&g('view-associado').classList.contains('active')){if(!g('tab-assoc-inicio').classList.contains('active')){showAssocTab('tab-assoc-inicio');return true;}}if(fichaDoador&&g('view-doador').classList.contains('active')){if(!g('tab-doador-inicio').classList.contains('active')){showDoadorTab('tab-doador-inicio');return true;}}return false;}
   function init(){
     const banner=document.createElement('div');banner.className='app-network';banner.setAttribute('role','status');banner.id='network-status';document.body.prepend(banner);
     function network(){banner.hidden=navigator.onLine;banner.textContent='Você está sem internet. Os lembretes continuam no Android. Pagamentos e atualizações precisam de conexão.';}
@@ -300,6 +323,7 @@ const AmorApp=(()=>{
     for(const id of ['inp-valor','df-valor','edit-valor']){const input=g(id);if(input)input.inputMode='decimal';}
     for(const wrapper of document.querySelectorAll('.table-scroll')){wrapper.tabIndex=0;wrapper.setAttribute('role','region');wrapper.setAttribute('aria-label','Tabela com rolagem horizontal');}
     for(const button of document.querySelectorAll('.modal-close'))button.setAttribute('aria-label','Fechar janela');
+    for(const button of document.querySelectorAll('.bnav-item')){const label=button.querySelector('span')?.textContent.trim();if(label){button.setAttribute('aria-label',label);button.title=label;}button.querySelector('i')?.setAttribute('aria-hidden','true');}
     const toastEl=g('toast');if(toastEl){toastEl.setAttribute('role','status');toastEl.setAttribute('aria-live','polite');}
     g('adm-login').type='email';g('adm-login').placeholder='E-mail da gestão';g('adm-login').autocomplete='username';g('adm-senha').autocomplete='current-password';
     g('cad-senha').placeholder='Mínimo 10 caracteres';
@@ -310,10 +334,11 @@ const AmorApp=(()=>{
     const activate=document.createElement('p');activate.className='login-hint';activate.textContent='Já contribuía antes? Ative seu acesso em Criar Conta com o mesmo e-mail. Confirme o e-mail para reencontrar seu histórico.';g('tab-login').append(activate);
     for(const id of ['view-associado','view-doador']){
       const card=document.createElement('section');card.className='reminder-control';card.innerHTML='<strong>Lembretes de contribuição</strong><p>Um aviso por dia perto das 9h (Brasília), a partir de três dias antes do vencimento. Após o pagamento confirmado e sincronizado, os avisos param. Sem internet, vale a última atualização disponível.</p>';
-      if(window.AmorAndroid){const b=document.createElement('button');b.textContent='Ativar lembretes neste celular';b.onclick=()=>{AmorAndroid.enableNotifications();syncNative().catch(fail);};card.append(b);const off=document.createElement('button');off.textContent='Desativar';off.onclick=()=>{AmorAndroid.disableNotifications();toast('Lembretes desativados neste celular.');};card.append(off);}
+      if(window.AmorAndroid){card.dataset.reminderControl='true';const status=document.createElement('p');status.setAttribute('role','status');card.append(status);const b=document.createElement('button');b.dataset.enable='true';b.textContent='Ativar notificações';b.onclick=activateReminders;card.append(b);const off=document.createElement('button');off.dataset.disable='true';off.textContent='Desativar';off.onclick=()=>{AmorAndroid.disableNotifications();notificationStateChanged();};card.append(off);}
       else card.insertAdjacentHTML('beforeend','<p>Os avisos com o aplicativo fechado estão disponíveis no APK Android.</p>');
       g(id).append(card);
     }
+    if(window.AmorAndroid)notificationStateChanged();
     document.addEventListener('visibilitychange',()=>{if(document.hidden){pararPolling();if(window.AmorAndroid)sb.auth.stopAutoRefresh();}else{(async()=>{if(window.AmorAndroid){await restoreNative(JSON.parse(AmorAndroid.getSession()||'null'));sb.auth.startAutoRefresh();}await refresh();iniciarPolling();})().catch(fail);}});
     sb.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY')showRecovery();if(event==='SIGNED_OUT'){currentUser=null;pararPolling();if(window.AmorAndroid)AmorAndroid.clear();}if(event==='TOKEN_REFRESHED')setTimeout(()=>syncNative().catch(()=>{}),0);});
     startup=(async()=>{
@@ -334,11 +359,12 @@ const AmorApp=(()=>{
     pagarAssinaturaMP:()=>toast('Use o pagamento por contribuição. A cobrança automática será disponibilizada após a validação da integração.'),
     criarPagamentoMP:()=>toast('Abra seu extrato para escolher a contribuição.'),checkDoadorLogin:async()=>false,
     sincronizarPagamentosAssociado:sincronizar,sincronizarPagamentosDoador:sincronizar,forceSincronizacaoTotal:sincronizar,
-    sincronizarPagamentosMP:async()=>{},sincronizarMPBackground:async()=>{},refresh,syncNative,openPayments,restoreNative,openEmailAccess,back,init};
+    sincronizarPagamentosMP:async()=>{},sincronizarMPBackground:async()=>{},refresh,syncNative,openPayments,restoreNative,openEmailAccess,maybeOfferReminders,notificationStateChanged,back,init};
   return api;
 })();
 window.AmorApp=AmorApp;
 window.amorOpenPayments=AmorApp.openPayments;
 window.amorRestoreNativeSession=AmorApp.restoreNative;
 window.amorOpenEmailAccess=AmorApp.openEmailAccess;
+window.amorNotificationStateChanged=AmorApp.notificationStateChanged;
 AmorApp.init();
