@@ -48,6 +48,7 @@ const AmorApp=(()=>{
     await openAdmin();
   });}
   async function logout(){
+    if(!confirm('Deseja sair do aplicativo?'))return;
     reminderPromptOffered=false;g('reminder-prompt')?.remove();
     pararPolling();lastReconcile=0;currentUser=null;admin=false;associadoLogado=null;doadorLogado=null;fichaAssociado=null;fichaDoador=null;pagamentosAssociado=[];pagamentosDoador=[];
     if(window.AmorAndroid)AmorAndroid.clear();
