@@ -5,7 +5,7 @@ const AmorApp=(()=>{
   const pending=new Set();
   const tableState={associado:{page:0,key:''},doador:{page:0,key:''}};
   async function checked(query){const r=await query;if(r.error)throw r.error;return r.data;}
-  function fail(e){console.error('Operação não concluída:',e.code||e.name||'erro');toast(navigator.onLine?'Não foi possível concluir. Seus dados não foram alterados. Tente novamente.':'Sem conexão. Reconecte-se para confirmar esta operação.','err');}
+  function fail(e){console.error('Operação não concluída:',e.code||e.name||'erro');toast(e.code==='PAYMENT_UNAVAILABLE'?'O pagamento online está temporariamente indisponível. Aguarde a liberação pela ONG.':navigator.onLine?'Não foi possível concluir. Seus dados não foram alterados. Tente novamente.':'Sem conexão. Reconecte-se para confirmar esta operação.','err');}
   async function busy(key,fn){if(pending.has(key))return;pending.add(key);const b=g(key);if(b)b.disabled=true;try{return await fn();}catch(e){fail(e);}finally{pending.delete(key);if(b)b.disabled=false;}}
   async function user(){const data=await checked(sb.auth.getUser());if(!data?.user)throw Error('Sem sessão');return data.user;}
   async function isAdmin(){return Boolean(await checked(sb.rpc('amor_is_admin')));}
@@ -181,7 +181,7 @@ const AmorApp=(()=>{
     if(!navigator.onLine)throw Error('Sem conexão');
     const {session}=await checked(sb.auth.getSession());if(!session)throw Error('Sem sessão');
     const r=await fetch(`${MP_PROXY_URL}${path}`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${session.access_token}`},body:JSON.stringify(body||{}),signal:AbortSignal.timeout(20000)});
-    const data=await r.json();if(!r.ok)throw Error(data.error||'Pagamento indisponível');return data;
+    const data=await r.json();if(!r.ok){const error=Error(data.error||'Pagamento indisponível');if(r.status===503)error.code='PAYMENT_UNAVAILABLE';throw error;}return data;
   }
   function external(url){
     const u=new URL(url);if(u.protocol!=='https:'||!/(^|\.)(mercadopago\.com\.br|mercadopago\.com)$/.test(u.hostname))throw Error('Link de pagamento inválido');
