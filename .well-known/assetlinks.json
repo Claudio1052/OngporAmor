@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "br.org.ongporamor",
+      "sha256_cert_fingerprints": [
+        "1A:72:DD:44:D3:4F:16:DD:59:7D:13:9B:13:AF:0F:41:B3:DD:C9:0D:B0:97:96:9B:8D:B9:C6:AC:3E:00:92:DF"
+      ]
+    }
+  }
+]

@@ -3,6 +3,7 @@ const AmorApp=(()=>{
   const D=AmorDomain, E=D.escapeHTML, money=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   let currentUser=null, admin=false, timer=null, refreshing=false, requestedPayments=false;
   let lastReconcile=0,reconciling=null;
+  let startup=Promise.resolve(),emailAccessActive=false,emailAccessVersion=0,closeEmailAccess=null;
   const pending=new Set();
   const tableState={associado:{page:0,key:''},doador:{page:0,key:''}};
   async function checked(query){const r=await query;if(r.error)throw r.error;return r.data;}
@@ -23,7 +24,7 @@ const AmorApp=(()=>{
   }
   async function openAdmin(){
     admin=await isAdmin();if(!admin)throw Error('Acesso restrito');
-    await ensure();showView('view-admin');await Promise.all([loadAssociados(),loadDoadores()]);renderCharts();iniciarPolling();
+    await ensure();showView('view-admin');await Promise.all([loadAssociados(),loadDoadores()]);renderCharts();iniciarPolling();await syncNative();
   }
   async function doAssocLogin(){return busy('btn-assoc-login',async()=>{
     g('assoc-login-err').classList.remove('show');
@@ -251,11 +252,43 @@ const AmorApp=(()=>{
   }
   function iniciarPolling(){if(timer||!currentUser||document.hidden)return;timer=setInterval(()=>refresh().catch(fail),60000);}
   function pararPolling(){if(timer)clearInterval(timer);timer=null;}
-  function showRecovery(){const panel=document.createElement('section');panel.className='reminder-control';panel.innerHTML='<h2>Definir nova senha</h2><label for="recovery-password">Nova senha (mínimo 10 caracteres)</label><input id="recovery-password" type="password" autocomplete="new-password" minlength="10" class="fi"><button type="button">Salvar nova senha</button>';panel.querySelector('button').onclick=()=>busy('recover-password',async()=>{const password=panel.querySelector('input').value;if(password.length<10)return toast('Use pelo menos 10 caracteres.','err');await checked(sb.auth.updateUser({password}));panel.remove();toast('Senha atualizada.');await route();});document.body.prepend(panel);}
+  function showRecovery(){if(g('recovery-password'))return;const panel=document.createElement('section');panel.className='reminder-control';panel.innerHTML='<h2>Definir nova senha</h2><label for="recovery-password">Nova senha (mínimo 10 caracteres)</label><input id="recovery-password" type="password" autocomplete="new-password" minlength="10" class="fi"><button type="button">Salvar nova senha</button>';panel.querySelector('button').onclick=()=>busy('recover-password',async()=>{const password=panel.querySelector('input').value;if(password.length<10)return toast('Use pelo menos 10 caracteres.','err');await checked(sb.auth.updateUser({password}));panel.remove();toast('Senha atualizada.');await route();});document.body.prepend(panel);}
   async function recover(){return busy('recover-access',async()=>{const email=g('assoc-email-login').value.trim().toLowerCase();if(!email||!g('assoc-email-login').checkValidity())return toast('Preencha o e-mail acima.','err');await checked(sb.auth.resetPasswordForEmail(email,{redirectTo:'https://www.ongporamor.top/?type=recovery'}));toast('Se a conta existir, você receberá as instruções por e-mail.');});}
   function openPayments(){requestedPayments=true;if(fichaAssociado){showAssocTab('tab-assoc-pagamentos');requestedPayments=false;}else if(fichaDoador){showDoadorTab('tab-doador-pagamentos');requestedPayments=false;}}
-  async function restoreNative(native){if(!native?.refresh_token)return;const {session}=await checked(sb.auth.getSession());if(!session||native.expires_at>session.expires_at)await checked(sb.auth.setSession({access_token:native.access_token,refresh_token:native.refresh_token}));}
-  function back(){const modal=document.querySelector('.modal-overlay.open');if(modal){modal.classList.remove('open');return true;}if(fichaAssociado&&g('view-associado').classList.contains('active')){if(!g('tab-assoc-inicio').classList.contains('active')){showAssocTab('tab-assoc-inicio');return true;}}if(fichaDoador&&g('view-doador').classList.contains('active')){if(!g('tab-doador-inicio').classList.contains('active')){showDoadorTab('tab-doador-inicio');return true;}}return false;}
+  async function restoreNative(native){if(emailAccessActive||!native?.refresh_token)return;const {session}=await checked(sb.auth.getSession());if(!emailAccessActive&&(!session||native.expires_at>session.expires_at))await checked(sb.auth.setSession({access_token:native.access_token,refresh_token:native.refresh_token}));}
+  async function openEmailAccess(payload){
+    if(!window.AmorAndroid||!payload||!['email','recovery'].includes(payload.type)||!/^[A-Za-z0-9_-]{20,512}$/.test(payload.token_hash||''))return false;
+    const version=++emailAccessVersion;closeEmailAccess?.();emailAccessActive=true;
+    let token=payload.token_hash;const type=payload.type,requestId=String(payload.request_id||'');
+    await startup;if(version!==emailAccessVersion)return false;
+    const overlay=document.createElement('div');overlay.id='native-email-access';overlay.className='modal-overlay open';
+    overlay.innerHTML='<section class="modal native-email-dialog" role="dialog" aria-modal="true" aria-labelledby="native-email-title"><div class="modal-hdr"><h2 class="modal-title" id="native-email-title">Acesso seguro</h2></div><div class="modal-body"><p role="status" aria-live="polite">Continue apenas se você solicitou este acesso por e-mail.</p><div class="modal-actions"><button type="button" data-continue>Continuar no aplicativo</button><button type="button" data-cancel>Cancelar</button></div></div></section>';
+    const next=overlay.querySelector('[data-continue]'),cancel=overlay.querySelector('[data-cancel]'),message=overlay.querySelector('[role=status]');
+    overlay.querySelector('h2').textContent=type==='recovery'?'Recuperar acesso':'Confirme seu acesso';
+    if(type==='recovery')next.textContent='Continuar para criar nova senha';
+    let submitting=false;
+    function finish(){token=null;overlay.remove();if(closeEmailAccess===finish){closeEmailAccess=null;emailAccessActive=false;}AmorAndroid.emailAccessHandled?.(requestId);}
+    closeEmailAccess=finish;cancel.onclick=()=>{if(!submitting)finish();};
+    overlay.addEventListener('keydown',event=>{if(event.key==='Escape'&&!submitting)finish();});
+    next.onclick=async()=>{
+      if(submitting||!token)return;
+      if(!navigator.onLine){message.textContent='Conecte-se à internet e toque em continuar novamente.';return;}
+      submitting=true;next.disabled=true;cancel.disabled=true;message.textContent='Validando seu acesso…';
+      const credential=token;token=null;
+      try{
+        const data=await checked(sb.auth.verifyOtp({token_hash:credential,type}));
+        if(!data?.session?.access_token||!data.session.refresh_token)throw Error('Missing session');
+        // Replace the previous identity before restoring/syncing any native session.
+        if(AmorAndroid.acceptEmailSession&&!AmorAndroid.acceptEmailSession(JSON.stringify({access_token:data.session.access_token,refresh_token:data.session.refresh_token,expires_at:data.session.expires_at}),requestId))throw Error('Session not saved');
+        await route();if(type==='recovery')showRecovery();finish();toast('Acesso confirmado no aplicativo.');
+      }catch(error){
+        message.textContent=navigator.onLine?'Não foi possível concluir o acesso. O link pode estar expirado ou já ter sido usado. Feche esta janela e solicite um novo e-mail.':'A conexão caiu. Feche esta janela e solicite um novo e-mail quando estiver conectado.';
+        submitting=false;cancel.disabled=false;
+      }
+    };
+    document.body.append(overlay);next.focus?.();return true;
+  }
+  function back(){if(closeEmailAccess){g('native-email-access')?.querySelector('[data-cancel]')?.click();return true;}const modal=document.querySelector('.modal-overlay.open');if(modal){modal.classList.remove('open');return true;}if(fichaAssociado&&g('view-associado').classList.contains('active')){if(!g('tab-assoc-inicio').classList.contains('active')){showAssocTab('tab-assoc-inicio');return true;}}if(fichaDoador&&g('view-doador').classList.contains('active')){if(!g('tab-doador-inicio').classList.contains('active')){showDoadorTab('tab-doador-inicio');return true;}}return false;}
   function init(){
     const banner=document.createElement('div');banner.className='app-network';banner.setAttribute('role','status');banner.id='network-status';document.body.prepend(banner);
     function network(){banner.hidden=navigator.onLine;banner.textContent='Você está sem internet. Os lembretes continuam no Android. Pagamentos e atualizações precisam de conexão.';}
@@ -283,7 +316,7 @@ const AmorApp=(()=>{
     }
     document.addEventListener('visibilitychange',()=>{if(document.hidden){pararPolling();if(window.AmorAndroid)sb.auth.stopAutoRefresh();}else{(async()=>{if(window.AmorAndroid){await restoreNative(JSON.parse(AmorAndroid.getSession()||'null'));sb.auth.startAutoRefresh();}await refresh();iniciarPolling();})().catch(fail);}});
     sb.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY')showRecovery();if(event==='SIGNED_OUT'){currentUser=null;pararPolling();if(window.AmorAndroid)AmorAndroid.clear();}if(event==='TOKEN_REFRESHED')setTimeout(()=>syncNative().catch(()=>{}),0);});
-    (async()=>{
+    startup=(async()=>{
       if(window.AmorAndroid){
         const native=JSON.parse(AmorAndroid.getSession()||'null');
         if(native?.refresh_token)await checked(sb.auth.setSession({access_token:native.access_token,refresh_token:native.refresh_token}));
@@ -301,10 +334,11 @@ const AmorApp=(()=>{
     pagarAssinaturaMP:()=>toast('Use o pagamento por contribuição. A cobrança automática será disponibilizada após a validação da integração.'),
     criarPagamentoMP:()=>toast('Abra seu extrato para escolher a contribuição.'),checkDoadorLogin:async()=>false,
     sincronizarPagamentosAssociado:sincronizar,sincronizarPagamentosDoador:sincronizar,forceSincronizacaoTotal:sincronizar,
-    sincronizarPagamentosMP:async()=>{},sincronizarMPBackground:async()=>{},refresh,syncNative,openPayments,restoreNative,back,init};
+    sincronizarPagamentosMP:async()=>{},sincronizarMPBackground:async()=>{},refresh,syncNative,openPayments,restoreNative,openEmailAccess,back,init};
   return api;
 })();
 window.AmorApp=AmorApp;
 window.amorOpenPayments=AmorApp.openPayments;
 window.amorRestoreNativeSession=AmorApp.restoreNative;
+window.amorOpenEmailAccess=AmorApp.openEmailAccess;
 AmorApp.init();

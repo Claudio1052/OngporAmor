@@ -131,3 +131,8 @@ button:disabled{opacity:.65;cursor:wait}
   .bnav-item{font-size:10px}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+.native-email-dialog .modal-actions button{min-height:48px;padding:12px 18px;border:0;border-radius:12px;font:inherit;cursor:pointer}
+.native-email-dialog [data-continue]{background:#087f83;color:white;font-weight:700}
+.native-email-dialog [data-cancel]{background:#edf2f5;color:#0b1f31}
+.native-email-dialog button:disabled{opacity:.6;cursor:default}
+.native-email-dialog button:focus-visible{outline:3px solid #dc9b30;outline-offset:3px}
