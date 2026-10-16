@@ -19,7 +19,7 @@ const AmorApp=(()=>{
     if(contributionSettingsReady&&version<contributionSettings.version)return contributionSettings;
     contributionSettings={minimum_associado:amount,version};contributionSettingsReady=true;
     for(const label of document.querySelectorAll('[data-minimum-associado]'))label.textContent=money(amount);
-    const input=g('inp-valor');if(input&&!input.dataset.userEdited)input.value=amount.toFixed(2).replace('.',',');
+    const input=g('inp-valor');if(input&&!input.dataset.userEdited&&!g('view-form')?.classList.contains('active'))input.value=amount.toFixed(2).replace('.',',');
     return contributionSettings;
   }
   async function loadContributionSettings(){return applyContributionSettings(await checked(sb.rpc('amor_contribution_settings')));}
