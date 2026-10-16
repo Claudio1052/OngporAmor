@@ -5,6 +5,7 @@ const AmorApp=(()=>{
   let lastReconcile=0,reconciling=null;
   let startup=Promise.resolve(),emailAccessActive=false,emailAccessVersion=0,closeEmailAccess=null;
   let reminderPromptOffered=false;
+  let contributionSettings={minimum_associado:30,version:0},contributionSettingsReady=false;
   const pending=new Set();
   const tableState={associado:{page:0,key:''},doador:{page:0,key:''}};
   async function checked(query){const r=await query;if(r.error)throw r.error;return r.data;}
@@ -12,6 +13,43 @@ const AmorApp=(()=>{
   async function busy(key,fn){if(pending.has(key))return;pending.add(key);const b=g(key);if(b)b.disabled=true;try{return await fn();}catch(e){fail(e);}finally{pending.delete(key);if(b)b.disabled=false;}}
   async function user(){const data=await checked(sb.auth.getUser());if(!data?.user)throw Error('Sem sessão');return data.user;}
   async function isAdmin(){return Boolean(await checked(sb.rpc('amor_is_admin')));}
+  function applyContributionSettings(data){
+    const amount=D.parseMoney(data?.minimum_associado),version=Number(data?.version);
+    if(amount===null||amount<0.01||amount>100000||!Number.isSafeInteger(version)||version<1)throw Error('Invalid contribution settings');
+    if(contributionSettingsReady&&version<contributionSettings.version)return contributionSettings;
+    contributionSettings={minimum_associado:amount,version};contributionSettingsReady=true;
+    for(const label of document.querySelectorAll('[data-minimum-associado]'))label.textContent=money(amount);
+    const input=g('inp-valor');if(input&&!input.dataset.userEdited)input.value=amount.toFixed(2).replace('.',',');
+    return contributionSettings;
+  }
+  async function loadContributionSettings(){return applyContributionSettings(await checked(sb.rpc('amor_contribution_settings')));}
+  async function openMinimumSettings(){
+    if(!admin)return toast('Esta configuração é exclusiva da gestão.','err');
+    if(g('minimum-settings'))return;
+    const overlay=document.createElement('div');overlay.id='minimum-settings';overlay.className='modal-overlay open';
+    overlay.innerHTML='<section class="modal minimum-settings-dialog" role="dialog" aria-modal="true" aria-labelledby="minimum-settings-title"><div class="modal-hdr"><h2 class="modal-title" id="minimum-settings-title">Contribuição mínima dos associados</h2></div><div class="modal-body"><p id="minimum-settings-scope">Vale para novas adesões e futuras alterações do valor. Não reajusta automaticamente as contribuições dos associados atuais nem os pagamentos já registrados.</p><label for="minimum-contribution-value">Novo mínimo (R$)</label><input id="minimum-contribution-value" class="fi" type="text" inputmode="decimal" autocomplete="off" maxlength="12" aria-describedby="minimum-settings-scope" disabled><p class="minimum-settings-status" role="status" aria-live="polite">Consultando o valor atual…</p><div class="modal-actions"><button type="button" data-save disabled>Salvar mínimo</button><button type="button" data-close>Cancelar</button></div></div></section>';
+    document.body.append(overlay);
+    const input=overlay.querySelector('input'),save=overlay.querySelector('[data-save]'),close=overlay.querySelector('[data-close]'),status=overlay.querySelector('[role=status]');
+    let revision=null,saving=false;
+    close.onclick=()=>{if(!saving)overlay.remove();};overlay.addEventListener('keydown',event=>{if(event.key==='Escape'&&!saving)overlay.remove();});
+    save.onclick=async()=>{
+      if(saving||revision===null)return;
+      const amount=D.parseMoney(input.value);
+      if(amount===null||amount<0.01||amount>100000){status.textContent='Informe um valor entre R$ 0,01 e R$ 100.000,00, com até duas casas decimais.';input.setAttribute('aria-invalid','true');input.focus?.();return;}
+      input.removeAttribute('aria-invalid');saving=true;save.disabled=true;close.disabled=true;status.textContent='Salvando o novo mínimo…';
+      try{
+        applyContributionSettings(await checked(sb.rpc('amor_set_minimum_contribution',{p_minimum:amount,p_expected_version:revision})));
+        overlay.remove();toast('Mínimo salvo: '+money(contributionSettings.minimum_associado)+'.');
+      }catch(error){
+        if(error.code==='40001'){
+          try{const latest=await loadContributionSettings();revision=latest.version;status.textContent='O mínimo foi alterado para '+money(latest.minimum_associado)+'. Revise o valor digitado e salve novamente.';}
+          catch{status.textContent='O mínimo mudou. Feche e abra esta janela para conferir o valor atual.';revision=null;}
+        }else status.textContent=error.code==='42501'?'Sua conta não tem permissão para alterar o mínimo.':'Não foi possível confirmar a gravação. Consulte o valor novamente antes de tentar salvar.';
+      }finally{saving=false;close.disabled=false;save.disabled=revision===null;}
+    };
+    try{const settings=await loadContributionSettings();if(!overlay.isConnected)return;revision=settings.version;input.value=settings.minimum_associado.toFixed(2).replace('.',',');input.disabled=false;save.disabled=false;status.textContent='Mínimo atual: '+money(settings.minimum_associado)+'.';input.focus?.();}
+    catch{status.textContent='Não foi possível consultar o mínimo. Feche esta janela e tente novamente.';}
+  }
   function safeSession(u){return {id:u.id,email:u.email,nome:u.user_metadata?.nome||u.email.split('@')[0]};}
   async function route(){
     currentUser=await user();admin=await isAdmin();
@@ -170,10 +208,11 @@ const AmorApp=(()=>{
   function printBlank(){printSheet('Ficha para preenchimento',[['Nome',''],['CPF',''],['Nascimento',''],['Telefone',''],['E-mail',''],['Endereço',''],['Contribuição',''],['Vencimento',''],['Assinatura','']]);}
   function printCurrent(){document.body.classList.remove('print-mode');if(window.AmorAndroid)AmorAndroid.printPage();else window.print();}
   async function submitForm(){return busy('submit-ficha',async()=>{
+    await loadContributionSettings();
     if(![1,2,3].every(validatePage)||!hasSigned||!g('t-lgpd').checked)return toast('Revise os dados obrigatórios, a autorização e a assinatura.','err');
     currentUser=await user();const city=g('inp-cidade').value.split(' / ');
-    const payload={nome:g('inp-nome').value.trim(),email:currentUser.email,cpf:g('inp-cpf').value.replace(/\D/g,''),data_nascimento:parseDate(g('inp-nasc').value),rg:g('inp-rg').value,estado_civil:g('inp-ecivil').value,profissao:g('inp-prof').value,cep:g('inp-cep').value,logradouro:g('inp-log').value,numero:g('inp-num').value,complemento:g('inp-comp').value,bairro:g('inp-bairro').value,cidade:city[0].trim(),uf:city[1]?.trim()||'',telefone:g('inp-tel').value,valor_contribuicao:Number(g('inp-valor').value.replace(',','.')),dia_pagamento:Number(g('inp-dia').value),forma_pagamento:document.querySelector('input[name="pag"]:checked')?.value||'PIX',autoriza_lgpd:true,autoriza_imagem:g('t-img').checked,autoriza_comunicacoes:g('t-com').checked,assinatura_tipo:'desenho',assinatura_data:sigCanvas.toDataURL(),status:'ativo'};
-    if(!D.validCPF(payload.cpf)||!Number.isFinite(payload.valor_contribuicao)||payload.valor_contribuicao<30)return toast('Confira o CPF e o valor da contribuição.','err');
+    const payload={nome:g('inp-nome').value.trim(),email:currentUser.email,cpf:g('inp-cpf').value.replace(/\D/g,''),data_nascimento:parseDate(g('inp-nasc').value),rg:g('inp-rg').value,estado_civil:g('inp-ecivil').value,profissao:g('inp-prof').value,cep:g('inp-cep').value,logradouro:g('inp-log').value,numero:g('inp-num').value,complemento:g('inp-comp').value,bairro:g('inp-bairro').value,cidade:city[0].trim(),uf:city[1]?.trim()||'',telefone:g('inp-tel').value,valor_contribuicao:D.parseMoney(g('inp-valor').value),dia_pagamento:Number(g('inp-dia').value),forma_pagamento:document.querySelector('input[name="pag"]:checked')?.value||'PIX',autoriza_lgpd:true,autoriza_imagem:g('t-img').checked,autoriza_comunicacoes:g('t-com').checked,assinatura_tipo:'desenho',assinatura_data:sigCanvas.toDataURL(),status:'ativo'};
+    if(!D.validCPF(payload.cpf)||payload.valor_contribuicao===null||payload.valor_contribuicao<contributionSettings.minimum_associado)return toast('Confira o CPF e o mínimo de '+money(contributionSettings.minimum_associado)+'.','err');
     await checked(sb.from('associados').insert(payload).select('id').single());
     await carregarDadosAssociado();showView('view-associado');maybeOfferReminders();toast('Ficha salva! Sua contribuição já está disponível.');
   });}
@@ -211,8 +250,10 @@ const AmorApp=(()=>{
   });}
   async function saveEdit(){return busy('save-edit',async()=>{
     if(!admin||!editingId)throw Error('Acesso restrito');
-    const value=Number(g('edit-valor').value.replace(',','.')),day=Number(g('edit-dia').value);
-    if(!Number.isFinite(value)||value<30||!D.validCPF(g('edit-cpf').value)||day<1||day>28)throw Error('Dados inválidos');
+    await loadContributionSettings();
+    const value=D.parseMoney(g('edit-valor').value),day=Number(g('edit-dia').value),original=associados.find(person=>person.id===editingId);
+    if(value===null||!D.validCPF(g('edit-cpf').value)||day<1||day>28)throw Error('Dados inválidos');
+    if(value!==D.parseMoney(original?.valor_contribuicao)&&value<contributionSettings.minimum_associado)return toast('O novo valor deve ser de pelo menos '+money(contributionSettings.minimum_associado)+'. O valor anterior pode ser mantido.','err');
     await checked(sb.from('associados').update({nome:g('edit-nome').value.trim(),cpf:g('edit-cpf').value.replace(/\D/g,''),telefone:g('edit-tel').value,email:g('edit-email').value.trim().toLowerCase(),profissao:g('edit-prof').value,valor_contribuicao:value,dia_pagamento:day,forma_pagamento:g('edit-pgto').value,status:g('edit-status').value}).eq('id',editingId).select('id').single());
     closeEdit();await loadAssociados();toast('Cadastro atualizado. O histórico financeiro foi preservado.');
   });}
@@ -250,6 +291,7 @@ const AmorApp=(()=>{
   }
   async function refresh(){
     if(refreshing||document.hidden||!navigator.onLine)return;refreshing=true;
+    loadContributionSettings().catch(()=>{});
     try{try{await reconcile();}catch{/* Still load confirmed database entries if the provider is unavailable. */}if(admin&&g('view-admin').classList.contains('active'))await Promise.all([loadAssociados(),loadDoadores()]);else if(associadoLogado)await carregarDadosAssociado();else if(doadorLogado)await carregarDadosDoador();}
     finally{refreshing=false;}
   }
@@ -312,8 +354,12 @@ const AmorApp=(()=>{
     };
     document.body.append(overlay);next.focus?.();return true;
   }
-  function back(){if(closeEmailAccess){g('native-email-access')?.querySelector('[data-cancel]')?.click();return true;}if(g('reminder-prompt')){g('reminder-prompt').remove();return true;}const modal=document.querySelector('.modal-overlay.open');if(modal){modal.classList.remove('open');return true;}if(fichaAssociado&&g('view-associado').classList.contains('active')){if(!g('tab-assoc-inicio').classList.contains('active')){showAssocTab('tab-assoc-inicio');return true;}}if(fichaDoador&&g('view-doador').classList.contains('active')){if(!g('tab-doador-inicio').classList.contains('active')){showDoadorTab('tab-doador-inicio');return true;}}return false;}
+  function back(){if(closeEmailAccess){g('native-email-access')?.querySelector('[data-cancel]')?.click();return true;}if(g('minimum-settings')){g('minimum-settings').querySelector('[data-close]')?.click();return true;}if(g('reminder-prompt')){g('reminder-prompt').remove();return true;}const modal=document.querySelector('.modal-overlay.open');if(modal){modal.classList.remove('open');return true;}if(fichaAssociado&&g('view-associado').classList.contains('active')){if(!g('tab-assoc-inicio').classList.contains('active')){showAssocTab('tab-assoc-inicio');return true;}}if(fichaDoador&&g('view-doador').classList.contains('active')){if(!g('tab-doador-inicio').classList.contains('active')){showDoadorTab('tab-doador-inicio');return true;}}return false;}
   function init(){
+    g('inp-valor').setAttribute('aria-describedby','minimum-contribution-hint');
+    g('inp-valor').addEventListener('input',()=>{g('inp-valor').dataset.userEdited='true';});
+    g('inp-valor').addEventListener('focus',()=>loadContributionSettings().catch(()=>{}));
+    loadContributionSettings().catch(()=>{if(!contributionSettingsReady)for(const label of document.querySelectorAll('[data-minimum-associado]'))label.textContent='Indisponível';});
     const banner=document.createElement('div');banner.className='app-network';banner.setAttribute('role','status');banner.id='network-status';document.body.prepend(banner);
     function network(){banner.hidden=navigator.onLine;banner.textContent='Você está sem internet. Os lembretes continuam no Android. Pagamentos e atualizações precisam de conexão.';}
     addEventListener('online',()=>{network();refresh().catch(fail);});addEventListener('offline',network);network();
@@ -360,7 +406,7 @@ const AmorApp=(()=>{
     pagarAssinaturaMP:()=>toast('Use o pagamento por contribuição. A cobrança automática será disponibilizada após a validação da integração.'),
     criarPagamentoMP:()=>toast('Abra seu extrato para escolher a contribuição.'),checkDoadorLogin:async()=>false,
     sincronizarPagamentosAssociado:sincronizar,sincronizarPagamentosDoador:sincronizar,forceSincronizacaoTotal:sincronizar,
-    sincronizarPagamentosMP:async()=>{},sincronizarMPBackground:async()=>{},refresh,syncNative,openPayments,restoreNative,openEmailAccess,maybeOfferReminders,notificationStateChanged,back,init};
+    sincronizarPagamentosMP:async()=>{},sincronizarMPBackground:async()=>{},refresh,syncNative,openPayments,restoreNative,openEmailAccess,maybeOfferReminders,notificationStateChanged,minimumContribution:()=>contributionSettings.minimum_associado,loadContributionSettings,openMinimumSettings,back,init};
   return api;
 })();
 window.AmorApp=AmorApp;

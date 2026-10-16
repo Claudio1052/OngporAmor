@@ -41,6 +41,15 @@
     const [d,m,y]=value.split('/').map(Number), dt=new Date(Date.UTC(y,m-1,d));
     return dt.getUTCFullYear()===y&&dt.getUTCMonth()===m-1&&dt.getUTCDate()===d&&`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`<=today();
   }
+  function parseMoney(value){
+    if(typeof value==='number')return Number.isFinite(value)&&value>=0&&Number.isSafeInteger(Math.round(value*100))&&Math.abs(value*100-Math.round(value*100))<0.000001?Math.round(value*100)/100:null;
+    let text=String(value??'').trim().replace(/^R\$\s*/,'').replace(/\s/g,'');
+    if(text.includes(',')){
+      if(!/^(?:\d+|\d{1,3}(?:\.\d{3})+),\d{1,2}$/.test(text))return null;
+      text=text.replace(/\./g,'').replace(',','.');
+    }else if(!/^\d+(?:\.\d{1,2})?$/.test(text))return null;
+    const number=Number(text);return Number.isFinite(number)&&Number.isSafeInteger(Math.round(number*100))?Math.round(number*100)/100:null;
+  }
   function reminder(rows,day=10,now=new Date()){
     const date=today(now), soon=new Date(`${date}T12:00:00Z`); soon.setUTCDate(soon.getUTCDate()+3);
     const end=soon.toISOString().slice(0,10);
@@ -50,5 +59,5 @@
     if(open.some(p=>dueDate(p,day)>date&&dueDate(p,day)<=end)) return 'Está próxima a data da sua contribuição. Abra o app para conferir.';
     return null;
   }
-  root.AmorDomain={today,month,dueDate,status,canonical,escapeHTML,validCPF,validDate,reminder};
+  root.AmorDomain={today,month,dueDate,status,canonical,escapeHTML,validCPF,validDate,parseMoney,reminder};
 })(typeof window==='undefined'?globalThis:window);

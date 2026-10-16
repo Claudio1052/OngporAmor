@@ -138,6 +138,18 @@ button:disabled{opacity:.65;cursor:wait}
 .native-email-dialog button:focus-visible{outline:3px solid #dc9b30;outline-offset:3px}
 .toast{visibility:hidden;opacity:0;pointer-events:none}
 .toast.show{visibility:visible;opacity:1}
+.admin-minimum-summary{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:16px 20px;margin-bottom:20px;border:1px solid #d4e7e5;border-radius:16px;background:#f2faf8;color:#244c4d}
+.admin-minimum-summary span{display:block;font-size:13px;line-height:1.5}
+.admin-minimum-summary strong{display:block;font-size:22px;line-height:1.5}
+.admin-minimum-summary .recovery-button{width:auto;margin:0;min-height:48px}
+.minimum-settings-dialog{max-width:500px}
+.minimum-settings-dialog label{display:block;margin:16px 0 8px;font-weight:700}
+.minimum-settings-dialog p{line-height:1.6;margin-bottom:12px;font-size:14px;color:#475569}
+.minimum-settings-dialog .modal-actions{margin-top:18px}
+.minimum-settings-dialog button{min-height:48px;padding:12px 18px;border:0;border-radius:12px;font:600 15px 'DM Sans',sans-serif;cursor:pointer}
+.minimum-settings-dialog [data-save]{background:#087f83;color:white}
+.minimum-settings-dialog [data-close]{background:#edf2f5;color:#334155}
+.minimum-settings-dialog .minimum-settings-status{margin-top:12px}
 .reminder-prompt{max-width:440px}
 .reminder-prompt h2{font-size:24px;line-height:1.25;margin:16px 0 12px;color:#0b1f31}
 .reminder-prompt p{font-size:15px;line-height:1.6;color:#475569;margin-bottom:14px}
