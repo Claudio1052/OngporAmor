@@ -19,10 +19,16 @@ button:disabled{opacity:.65;cursor:wait}
 .table-pagination{display:flex;gap:12px;align-items:center;justify-content:flex-end;margin-top:12px;color:#475569;font-size:14px}
 .table-pagination button{min-height:44px;padding:8px 14px;border:1px solid #cbd5e1;background:white;border-radius:8px}
 .login-hint{line-height:1.7;color:#475569}
+.fi,.filter-input{width:100%;min-width:0;max-width:100%}
+.fg>*{min-width:0}
+.pw-wrap{min-width:0}
+.pw-wrap .fi{flex:1 1 0}
+.assoc-val,.sum-v,.msg-template{overflow-wrap:anywhere;min-width:0}
+.filter-input{font-size:16px;min-height:46px}
+.login-tab{color:#d2dce5;min-height:48px}
 #print-sheet{display:none}
 @media print{body.print-mode>*:not(#print-sheet){display:none!important}body.print-mode #print-sheet{display:block!important;color:#111;padding:24px}#print-sheet table{width:100%;border-collapse:collapse}#print-sheet th,#print-sheet td{border:1px solid #aaa;padding:8px;text-align:left}#print-sheet h1{font-size:22px;margin-bottom:18px}#print-sheet img{margin-top:24px}}
 @media(max-width:700px){
-  .admin-tabs{display:flex!important;margin-left:0;width:100%;order:4;flex-shrink:0}
   .admin-topbar{height:auto;min-height:64px;padding:12px 16px;flex-wrap:wrap;gap:10px}
   .admin-content{padding:16px 12px}
   .admin-tabs button{min-height:44px;white-space:nowrap}
@@ -31,5 +37,88 @@ button:disabled{opacity:.65;cursor:wait}
   .page-wrap{padding:16px 10px}.card-body{padding:20px 16px}
   .hdr-inner{padding:24px 18px}.pay-item-val{margin-left:auto}
   .reminder-control{margin:12px}
+}
+@media(max-width:768px){
+  #view-admin-login{padding:16px 12px;min-height:100svh;overflow:visible}
+  .login-card{max-width:440px;margin:auto}
+  .login-card-top{padding:24px 16px 0}
+  .login-body{padding:24px 20px}
+  .login-tabs .login-tab{font-size:13px;padding:12px 6px;white-space:nowrap}
+  .login-tab i{margin-right:3px}
+  .login-hint{font-size:13px}
+  .login-sub{line-height:1.5}
+  .login-panel>button,.btn-back,.btn-next,.btn-submit-final,.btn-login{min-height:48px}
+  .ai-input{min-height:46px;min-width:0;max-width:100%}
+  .tsw{display:flex;align-items:center;min-height:44px}
+  .rc-lbl{min-height:44px}
+  .admin-tabs{display:none!important}
+  .admin-topbar{height:auto;min-height:56px;padding:10px 16px;gap:8px}
+  .admin-brand,.assoc-brand{min-width:0}
+  #rt-sync-dot,#rt-sync-dot-assoc,#rt-sync-dot-doador{color:#cbd5e1!important}
+  .bottom-nav{height:calc(64px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px)}
+  .bnav-item{flex:1 1 0;min-width:0;font-size:11px;letter-spacing:0;text-transform:none;color:#cbd5e1;padding:6px 2px}
+  .bnav-item span{max-width:100%;overflow-wrap:anywhere}
+  .bnav-item:last-child{color:#cbd5e1}
+  #view-associado,#view-doador,#view-admin{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))}
+  .assoc-content,.admin-content{padding-bottom:16px!important;min-width:0}
+  .assoc-content>*,.admin-content>*{min-width:0}
+  .assoc-badge{max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .assoc-welcome-name{overflow-wrap:anywhere}
+  .assoc-section-title{line-height:1.5;min-width:0}
+  .reminder-control{margin:12px;overflow-wrap:anywhere}
+  .reminder-control button{margin:4px 4px 0 0}
+  .reminder-control input{display:block;margin:8px 0}
+  .pay-item>div{min-width:0;flex-basis:160px!important;line-height:1.5}
+  .pay-item>strong{white-space:nowrap}
+  .pay-item .btn-mp-pagar{min-height:48px}
+  .filter-group{min-width:0;flex:1 1 180px;max-width:100%}
+  .filters-bar{align-items:stretch}
+  .filters-bar>button{min-height:44px}
+  .table-wrap,.table-scroll{min-width:0;max-width:100%}
+  .table-scroll{overscroll-behavior-x:contain}
+  .table-scroll::before{content:'Deslize para ver todas as colunas →';display:block;position:sticky;left:0;padding:10px 12px;background:#edf6f6;color:#24545a;font-size:12px;line-height:1.5}
+  .table-scroll table{min-width:700px}
+  .td-name{min-width:170px}
+  .table-pagination{flex-wrap:wrap;justify-content:center;gap:8px;padding:0 8px 12px}
+  .btn-sm,.pay-chip,.btn-filter-clear,.btn-copy,.btn-sig-clear,.btn-cep{min-height:44px}
+  .assoc-section-hdr button,.modal-actions button,.modal-actions a{min-height:44px}
+  .assoc-panel button,#tab-financeiro button{min-height:44px}
+  .tipo-select-overlay,.donor-form-overlay,.modal-overlay,.popup-overlay{padding:12px;overflow-y:auto;overscroll-behavior:contain;align-items:flex-start}
+  .tipo-card,.donor-form-card,.modal,.popup-box{flex-shrink:0;margin-block:auto;min-width:0;max-width:100%}
+  .modal{margin-inline:0;max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px)}
+  .modal-hdr{position:sticky;top:0;z-index:1;background:white;gap:12px}
+  .modal-title{min-width:0;line-height:1.4}
+  .modal-close{width:44px;height:44px;flex-shrink:0}
+  .modal-form-actions{display:flex;flex-wrap:wrap;gap:12px}
+  .modal-form-actions>button{flex:1 1 100%;margin-left:0}
+  #adiantamento-mp-btn button{width:100%;padding:12px;min-height:48px;justify-content:center}
+  .tipo-card-top,.donor-form-hdr{padding:24px 20px}
+  .tipo-card-top-sub,.donor-form-hdr-sub{color:#d2dce5;line-height:1.5}
+  .tipo-options{gap:12px;padding:20px}
+  .tipo-opt{padding:16px 12px;min-width:0}
+  .tipo-footer,.donor-form-actions{flex-wrap:wrap;gap:12px}
+  .tipo-footer{padding:0 20px 20px}
+  .tipo-footer>button,.donor-form-actions>button{flex:1 1 100%;min-height:48px;margin-left:0}
+  .donor-form-body{padding:20px}
+  .donor-welcome{padding:24px 20px!important}
+  .donor-welcome>div:last-child>div{min-width:0}
+  .donor-thanks{padding:20px!important;flex-wrap:wrap}
+  .chip{max-width:100%;overflow-wrap:anywhere}
+  .sn-item{min-width:0;flex:1 1 45%;padding:12px;min-height:56px}
+  .sn-lbl{color:#d2dce5}
+  .sum-row{flex-wrap:wrap;gap:4px}
+  .sum-k{min-width:0;flex-basis:100%}
+  .sum-v{text-align:left}
+  .toast{bottom:calc(82px + env(safe-area-inset-bottom,0px));border-radius:14px;line-height:1.5}
+  #tab-financeiro .table-header>div{max-width:100%;min-width:0;flex-wrap:wrap}
+  .mp-period-filters{display:flex;flex-wrap:wrap;max-width:100%}
+  .mp-period-filters button{flex:1 1 40%;min-height:44px}
+}
+@media(max-width:360px){
+  .login-body{padding:20px 16px}
+  .login-card-top{padding:20px 12px 0}
+  .login-tabs .login-tab{font-size:12px;padding-inline:3px}
+  .tipo-options{grid-template-columns:1fr}
+  .bnav-item{font-size:10px}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}

@@ -261,6 +261,11 @@ const AmorApp=(()=>{
     addEventListener('online',()=>{network();refresh().catch(fail);});addEventListener('offline',network);network();
     for(const input of document.querySelectorAll('input,select,textarea')){const label=input.closest('.field')?.querySelector('label');if(label&&input.id)label.setAttribute('for',input.id);}
     for(const b of document.querySelectorAll('.btn-eye')){b.tabIndex=0;b.setAttribute('aria-label','Mostrar ou ocultar senha');}
+    for(const id of ['inp-cpf','inp-cep','inp-nasc','edit-cpf']){const input=g(id);if(input)input.inputMode='numeric';}
+    for(const id of ['inp-tel','df-tel','edit-tel']){const input=g(id);if(input){input.type='tel';input.inputMode='tel';}}
+    for(const id of ['inp-valor','df-valor','edit-valor']){const input=g(id);if(input)input.inputMode='decimal';}
+    for(const wrapper of document.querySelectorAll('.table-scroll')){wrapper.tabIndex=0;wrapper.setAttribute('role','region');wrapper.setAttribute('aria-label','Tabela com rolagem horizontal');}
+    for(const button of document.querySelectorAll('.modal-close'))button.setAttribute('aria-label','Fechar janela');
     const toastEl=g('toast');if(toastEl){toastEl.setAttribute('role','status');toastEl.setAttribute('aria-live','polite');}
     g('adm-login').type='email';g('adm-login').placeholder='E-mail da gestão';g('adm-login').autocomplete='username';g('adm-senha').autocomplete='current-password';
     g('cad-senha').placeholder='Mínimo 10 caracteres';

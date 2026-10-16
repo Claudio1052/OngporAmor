@@ -1192,7 +1192,7 @@ tr:hover td{background:var(--gray-50)}
           <span style="font-size:.75rem;color:var(--gray-400);margin-top:.3rem">Mínimo: <strong style="color:var(--teal)">R$ 10,00</strong></span>
         </div>
       </div>
-      <div style="display:flex;gap:.8rem;margin-top:1.5rem">
+      <div class="donor-form-actions" style="display:flex;gap:.8rem;margin-top:1.5rem">
         <button class="btn-back" onclick="fecharDonorForm()"><i class="fas fa-arrow-left"></i> Voltar</button>
         <button class="btn-next" style="margin-left:0;flex:1" id="btn-donor-submit" onclick="submitDonorForm()"><i class="fas fa-heart"></i> Confirmar Cadastro</button>
       </div>
@@ -1227,7 +1227,7 @@ tr:hover td{background:var(--gray-50)}
     <div class="assoc-panel active" id="tab-doador-inicio">
 
       <!-- HERO BOAS-VINDAS -->
-      <div style="background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,var(--navy-light) 100%);border-radius:var(--R);padding:2rem 2.5rem;margin-bottom:1.5rem;position:relative;overflow:hidden;box-shadow:var(--shadow)">
+      <div class="donor-welcome" style="background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,var(--navy-light) 100%);border-radius:var(--R);padding:2rem 2.5rem;margin-bottom:1.5rem;position:relative;overflow:hidden;box-shadow:var(--shadow)">
         <div style="position:absolute;inset:0;pointer-events:none">
           <div style="position:absolute;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(220,38,38,.18),transparent 70%);top:-120px;right:-60px"></div>
           <div style="position:absolute;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(232,201,106,.12),transparent 70%);bottom:-60px;left:30%"></div>
@@ -1319,7 +1319,7 @@ tr:hover td{background:var(--gray-50)}
       </div>
 
       <!-- MENSAGEM AGRADECIMENTO -->
-      <div style="margin-top:1.5rem;background:linear-gradient(135deg,rgba(220,38,38,.05),rgba(13,143,143,.05));border:1.5px solid rgba(220,38,38,.12);border-radius:var(--R);padding:1.5rem 2rem;display:flex;align-items:center;gap:1.2rem">
+      <div class="donor-thanks" style="margin-top:1.5rem;background:linear-gradient(135deg,rgba(220,38,38,.05),rgba(13,143,143,.05));border:1.5px solid rgba(220,38,38,.12);border-radius:var(--R);padding:1.5rem 2rem;display:flex;align-items:center;gap:1.2rem">
         <div style="font-size:2.2rem;flex-shrink:0">🙏</div>
         <div>
           <div style="font-family:'DM Serif Display',serif;font-size:1.1rem;color:var(--navy);margin-bottom:.3rem">Obrigado pela sua generosidade!</div>
@@ -1723,7 +1723,7 @@ tr:hover td{background:var(--gray-50)}
           <div class="table-title"><i class="fas fa-credit-card" style="color:#009ee3"></i> Transações Mercado Pago</div>
           <div style="display:flex;gap:.8rem;align-items:center;flex-wrap:wrap">
             <!-- Filtros de período -->
-            <div style="display:flex;gap:.4rem;background:var(--gray-100);border-radius:var(--r);padding:.3rem">
+            <div class="mp-period-filters" style="display:flex;gap:.4rem;background:var(--gray-100);border-radius:var(--r);padding:.3rem">
               <button id="mp-fil-dia" onclick="setMPFiltro('dia')" style="background:var(--teal);color:#fff;border:none;padding:.35rem .9rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;transition:var(--tr)"><i class="fas fa-calendar-day"></i> Hoje</button>
               <button id="mp-fil-semana" onclick="setMPFiltro('semana')" style="background:transparent;color:var(--gray-600);border:none;padding:.35rem .9rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;transition:var(--tr)"><i class="fas fa-calendar-week"></i> Semana</button>
               <button id="mp-fil-mes" onclick="setMPFiltro('mes')" style="background:transparent;color:var(--gray-600);border:none;padding:.35rem .9rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;transition:var(--tr)"><i class="fas fa-calendar-alt"></i> Mês</button>
@@ -1822,7 +1822,7 @@ tr:hover td{background:var(--gray-50)}
           </select>
         </div>
       </div>
-      <div style="display:flex;gap:.8rem;justify-content:flex-end;margin-top:1.5rem;padding-top:1.2rem;border-top:1px solid var(--gray-200)">
+      <div class="modal-form-actions" style="display:flex;gap:.8rem;justify-content:flex-end;margin-top:1.5rem;padding-top:1.2rem;border-top:1px solid var(--gray-200)">
         <button class="btn-back" onclick="closeEdit()"><i class="fas fa-times"></i> Cancelar</button>
         <button class="btn-next" style="margin-left:0" onclick="saveEdit()"><i class="fas fa-save"></i> Salvar alterações</button>
       </div>
@@ -2389,7 +2389,7 @@ function renderCadastroContent(f){
           <span class="badge ${statusCls}" style="font-size:.72rem">${AmorDomain.escapeHTML(f.status||'ativo')} · #${String(f.numero_associado||'—').padStart(3,'0')}</span>
         </div>
         <div class="assoc-section-body">
-          ${row('Nome completo','<strong>'+f.nome+'</strong>')}
+          ${row('Nome completo',f.nome)}
           ${row('CPF',f.cpf?f.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4'):'—')}
           ${row('Data de Nascimento',f.data_nascimento?new Date(f.data_nascimento+'T12:00').toLocaleDateString('pt-BR'):'—')}
           ${row('Estado Civil',f.estado_civil)}
@@ -2410,8 +2410,8 @@ function renderCadastroContent(f){
       <div class="assoc-section">
         <div class="assoc-section-hdr"><div class="assoc-section-title"><i class="fas fa-hand-holding-heart" style="color:var(--gold)"></i> Contribuição</div></div>
         <div class="assoc-section-body">
-          ${row('Valor Mensal','<strong style="font-size:1.05rem;color:var(--navy)">R$ '+(f.valor_contribuicao||30).toFixed(2).replace('.',',')+'</strong>')}
-          ${row('Vencimento','Todo dia <strong>'+(f.dia_pagamento||10)+'</strong> do mês')}
+          ${row('Valor Mensal','R$ '+(f.valor_contribuicao||30).toFixed(2).replace('.',','))}
+          ${row('Vencimento','Todo dia '+(f.dia_pagamento||10)+' do mês')}
           ${row('Forma de Pagamento',f.forma_pagamento||'PIX')}
         </div>
       </div>
