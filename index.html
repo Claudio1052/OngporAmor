@@ -4,32 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ONG Por Amor · Sistema Integrado</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
-<!--
-  ╔══════════════════════════════════════════════════════════════╗
-  ║  CONFIGURAÇÃO DE CREDENCIAIS                                 ║
-  ║  Inclua config.js ANTES deste arquivo no seu servidor.       ║
-  ║  NUNCA suba config.js para o GitHub!                         ║
-  ║  Adicione config.js ao .gitignore                            ║
-  ╚══════════════════════════════════════════════════════════════╝
-  Exemplo de config.js:
-    window.__APP_CONFIG__ = {
-      SUPA_URL:    'https://xxx.supabase.co',
-      SUPA_KEY:    'eyJ...',
-      ADMIN_LOGIN: 'ongadmin',
-      ADMIN_SENHA: 'suaSenhaAqui'
-    };
--->
+<link rel="stylesheet" href="vendor/fontawesome.css">
+<script src="vendor/chart-4.4.1.js"></script>
+
 <script>
 window.__APP_CONFIG__ = {
   SUPA_URL:    'https://unidzfxifxjruonbjspe.supabase.co',
-  SUPA_KEY:    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVuaWR6ZnhpZnhqcnVvbmJqc3BlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NTc0MTEsImV4cCI6MjA4ODQzMzQxMX0.0R_FvMXHDvt34bpa5Fi9pkJcu_zGy8Av86wVaXp2F3o',
-  ADMIN_LOGIN: 'ongadmin',
-  ADMIN_SENHA: 'ongamor_2026!'
+  SUPA_KEY:    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVuaWR6ZnhpZnhqcnVvbmJqc3BlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NTc0MTEsImV4cCI6MjA4ODQzMzQxMX0.0R_FvMXHDvt34bpa5Fi9pkJcu_zGy8Av86wVaXp2F3o'
 };
 </script>
 
@@ -851,6 +833,8 @@ tr:hover td{background:var(--gray-50)}
 }
 
 </style>
+<link rel="stylesheet" href="improvements.css">
+<script src="domain.js"></script>
 </head>
 <body>
 <div id="app">
@@ -1027,7 +1011,7 @@ tr:hover td{background:var(--gray-50)}
             <div class="sig-block"><div class="sig-lbl"><i class="fas fa-pen" style="color:var(--teal)"></i> Assinatura do Associado</div><div class="sig-line" style="min-height:60px;display:flex;align-items:center"><img id="sv-sig-img" style="max-height:54px;max-width:100%;display:none;"></div><div class="sig-hint" id="sv-sig-hint">Registrado digitalmente</div></div>
             <div class="sig-block"><div class="sig-lbl"><i class="fas fa-stamp" style="color:var(--teal)"></i> Responsável ONG</div><div class="sig-line" style="padding-top:2rem"></div><div class="sig-hint">Uso interno</div></div>
           </div>
-          <div class="nav-btns"><button class="btn-back" onclick="goPage(4)"><i class="fas fa-arrow-left"></i> Voltar</button><button class="btn-submit-final" onclick="associadoLogado ? submitFormAndReturn() : submitForm()"><i class="fas fa-paper-plane"></i> Enviar Ficha de Associação</button></div>
+          <div class="nav-btns"><button class="btn-back" onclick="goPage(4)"><i class="fas fa-arrow-left"></i> Voltar</button><button id="submit-ficha" class="btn-submit-final" onclick="associadoLogado ? submitFormAndReturn() : submitForm()"><i class="fas fa-paper-plane"></i> Enviar Ficha de Associação</button></div>
         </div>
 
         <div class="success-screen" id="suc-screen">
@@ -1138,7 +1122,7 @@ tr:hover td{background:var(--gray-50)}
             <button class="btn-eye" type="button" onclick="togglePw('adm-senha',this)" tabindex="-1"><i class="fas fa-eye"></i></button>
           </div>
         </div>
-        <button class="btn-login" onclick="doLogin()"><i class="fas fa-arrow-right-to-bracket"></i> Entrar como Admin</button>
+        <button id="admin-sign-in" class="btn-login" onclick="doLogin()"><i class="fas fa-arrow-right-to-bracket"></i> Entrar como Admin</button>
         <div class="login-hint"><i class="fas fa-lock" style="opacity:.4"></i> Área exclusiva para administradores da ONG</div>
       </div>
 
@@ -1605,7 +1589,7 @@ tr:hover td{background:var(--gray-50)}
       <!-- KPIs Associados -->
       <div class="kpi-grid" style="margin-bottom:1.5rem">
         <div class="kpi teal"><div class="kpi-icon"><i class="fas fa-users"></i></div><div class="kpi-label">Total Associados</div><div class="kpi-value" id="kpi-total">0</div><div class="kpi-sub"><span class="kpi-up"><i class="fas fa-arrow-up"></i></span> <span id="kpi-ativos">0 ativos</span></div></div>
-        <div class="kpi green"><div class="kpi-icon"><i class="fas fa-dollar-sign"></i></div><div class="kpi-label">Receita Mensal</div><div class="kpi-value" id="kpi-receita">R$ 0</div><div class="kpi-sub"><span id="kpi-rcpt">projeção confirmada</span></div></div>
+        <div class="kpi green"><div class="kpi-icon"><i class="fas fa-dollar-sign"></i></div><div class="kpi-label">Previsão mensal</div><div class="kpi-value" id="kpi-receita">R$ 0</div><div class="kpi-sub"><span id="kpi-rcpt">projeção confirmada</span></div></div>
         <div class="kpi warn"><div class="kpi-icon"><i class="fas fa-clock"></i></div><div class="kpi-label">Pendentes</div><div class="kpi-value" id="kpi-pend">R$ 0</div><div class="kpi-sub"><span id="kpi-npend">0 associados</span></div></div>
         <div class="kpi navy"><div class="kpi-icon"><i class="fas fa-chart-trending-up"></i></div><div class="kpi-label">Ticket Médio</div><div class="kpi-value" id="kpi-ticket">R$ 0</div><div class="kpi-sub"><span id="kpi-proj">por associado/mês</span></div></div>
       </div>
@@ -1627,7 +1611,7 @@ tr:hover td{background:var(--gray-50)}
         </div>
         <div class="kpi" style="background:linear-gradient(135deg,#f0fdf4,#fff);border:1.5px solid rgba(5,150,105,.15)">
           <div class="kpi-icon" style="background:linear-gradient(135deg,#059669,#047857)"><i class="fas fa-hand-holding-heart"></i></div>
-          <div class="kpi-label">Receita Doadores</div>
+          <div class="kpi-label">Previsão de doadores</div>
           <div class="kpi-value" id="kpi-d-receita" style="color:#059669">R$ 0</div>
           <div class="kpi-sub">contribuições mensais</div>
         </div>
@@ -1639,7 +1623,7 @@ tr:hover td{background:var(--gray-50)}
         </div>
         <div class="kpi" style="background:linear-gradient(135deg,#eff6ff,#fff);border:1.5px solid rgba(37,99,235,.15)">
           <div class="kpi-icon" style="background:linear-gradient(135deg,#2563eb,#1d4ed8)"><i class="fas fa-piggy-bank"></i></div>
-          <div class="kpi-label">Receita Total (Geral)</div>
+          <div class="kpi-label">Previsão total</div>
           <div class="kpi-value" id="kpi-total-geral" style="color:#2563eb">R$ 0</div>
           <div class="kpi-sub">associados + doadores</div>
         </div>
@@ -1849,14 +1833,14 @@ tr:hover td{background:var(--gray-50)}
 <!-- MODAL EXCLUIR -->
 <div class="modal-overlay" id="modal-delete">
   <div class="modal" style="max-width:440px">
-    <div class="modal-hdr"><div class="modal-title"><i class="fas fa-trash" style="color:var(--error)"></i> Excluir Associado</div><button class="modal-close" onclick="closeDelete()"><i class="fas fa-times"></i></button></div>
+    <div class="modal-hdr"><div class="modal-title"><i class="fas fa-trash" style="color:var(--error)"></i> Desativar associado</div><button class="modal-close" onclick="closeDelete()"><i class="fas fa-times"></i></button></div>
     <div class="modal-body" style="text-align:center;padding:2rem">
       <div style="font-size:3rem;margin-bottom:1rem">⚠️</div>
-      <div style="font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:.5rem">Confirmar exclusão?</div>
-      <div style="font-size:.9rem;color:var(--gray-600);margin-bottom:1.5rem;line-height:1.6">Você está prestes a excluir <strong id="delete-name"></strong> e todos os seus registros de pagamento. Esta ação <strong>não pode ser desfeita</strong>.</div>
+      <div style="font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:.5rem">Desativar cadastro?</div>
+      <div style="font-size:.9rem;color:var(--gray-600);margin-bottom:1.5rem;line-height:1.6">Você vai desativar <strong id="delete-name"></strong>. O cadastro e todos os pagamentos continuarão disponíveis para consulta.</div>
       <div style="display:flex;gap:.8rem;justify-content:center">
         <button class="btn-back" onclick="closeDelete()"><i class="fas fa-times"></i> Cancelar</button>
-        <button style="background:var(--error);border:none;color:#fff;padding:.7rem 1.6rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;transition:var(--tr);display:flex;align-items:center;gap:.5rem;box-shadow:0 6px 16px rgba(220,38,38,.3)" onclick="doDelete()"><i class="fas fa-trash"></i> Excluir definitivamente</button>
+        <button style="background:var(--error);border:none;color:#fff;padding:.7rem 1.6rem;border-radius:100px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;transition:var(--tr);display:flex;align-items:center;gap:.5rem;box-shadow:0 6px 16px rgba(220,38,38,.3)" onclick="doDelete()"><i class="fas fa-trash"></i> Desativar cadastro</button>
       </div>
     </div>
   </div>
@@ -1894,7 +1878,7 @@ tr:hover td{background:var(--gray-50)}
 
 <div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toast-msg"></span></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="vendor/supabase-2.118.0.js"></script>
 
 <script>
 // ═══════════════════════════════════════════
@@ -1902,7 +1886,7 @@ tr:hover td{background:var(--gray-50)}
 // ═══════════════════════════════════════════
 const SUPA_URL = window.__APP_CONFIG__.SUPA_URL;
 const SUPA_KEY = window.__APP_CONFIG__.SUPA_KEY;
-const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY, {auth:{autoRefreshToken:!window.AmorAndroid}});
 const g = id => document.getElementById(id);
 
 // ═══════════════════════════════════════════
@@ -1958,7 +1942,7 @@ document.querySelectorAll('.sn-item').forEach(el=>{
 });
 
 // ── VALIDATION ──
-function validatePage(p){
+function legacyValidatePage(p){
   if(p===1){
     let ok=true;
     const nome = g('inp-nome').value.trim();
@@ -2138,7 +2122,7 @@ function clearCanvas(){
 }
 
 window.addEventListener('load', ()=>{ if(g('page4')?.classList.contains('active')) initCanvas(); });
-window.addEventListener('resize', ()=>{ if(sigCanvas){ const w=g('canvas-wrap').offsetWidth; sigCanvas.width=w; } });
+window.addEventListener('resize', ()=>{ if(sigCanvas && !hasSigned){ const w=g('canvas-wrap').offsetWidth; if(w>0) sigCanvas.width=w; } });
 
 // ── SUMMARY ──
 function buildSummary(){
@@ -2178,61 +2162,19 @@ function buildSummary(){
 }
 
 // ── SUBMIT ──
-async function submitForm(){
-  const cidadeUF = g('inp-cidade').value.split(' / ');
-  const sigData = (sigCanvas && hasSigned) ? sigCanvas.toDataURL() : null;
-  const { data: existing } = await sb.from('associados').select('numero_associado').order('numero_associado', { ascending: false }).limit(1);
-  const lastNum = existing && existing.length > 0 ? existing[0].numero_associado : 0;
-  const numero_associado = lastNum + 1;
-  const payload = {
-    numero_associado: numero_associado,
-    nome: g('inp-nome').value.trim(),
-    data_nascimento: parseDate(g('inp-nasc').value),
-    cpf: g('inp-cpf').value.replace(/\D/g,''),
-    rg: g('inp-rg').value,
-    estado_civil: g('inp-ecivil').value,
-    profissao: g('inp-prof').value,
-    cep: g('inp-cep').value,
-    logradouro: g('inp-log').value,
-    numero: g('inp-num').value,
-    complemento: g('inp-comp').value,
-    bairro: g('inp-bairro').value,
-    cidade: cidadeUF[0]?.trim()||g('inp-cidade').value,
-    uf: cidadeUF[1]?.trim()||'',
-    telefone: g('inp-tel').value,
-    email: g('inp-email').value,
-    valor_contribuicao: parseFloat(g('inp-valor').value.replace(',','.'))||30,
-    forma_pagamento: document.querySelector('input[name="pag"]:checked')?.value||'PIX',
-    dia_pagamento: parseInt(g('inp-dia').value)||10,
-    autoriza_lgpd: g('t-lgpd').checked,
-    autoriza_imagem: g('t-img').checked,
-    autoriza_comunicacoes: g('t-com').checked,
-    assinatura_tipo: 'desenho',
-    assinatura_data: sigData,
-    status: 'ativo',
-    created_at: new Date().toISOString()
-  };
-  try{
-    const {error} = await sb.from('associados').insert([payload]);
-    if(error) { toast('Erro ao enviar ficha: ' + error.message, 'err'); return; }
-    const mesAtual = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
-    const pagamentoPayload = {
-      associado_id: (await sb.from('associados').select('id').eq('cpf', payload.cpf).single()).data.id,
-      mes_referencia: mesAtual,
-      valor: payload.valor_contribuicao,
-      status: 'pendente',
-      data_vencimento: `${mesAtual}-${String(payload.dia_pagamento).padStart(2,'0')}`
-    };
-    await sb.from('pagamentos').insert([pagamentoPayload]);
-    toast('Ficha enviada com sucesso! 🎉');
-  }catch(e){ toast('Erro ao enviar ficha: ' + e.message, 'err'); return; }
-  document.querySelectorAll('.form-page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.sn-item').forEach(el=>el.classList.add('done'));
-  g('suc-screen').classList.add('active');
-  window.scrollTo({top:0,behavior:'smooth'});
-}
+function submitForm(...args){return AmorApp.submitForm(...args);}
 
-function parseDate(s){ if(!s) return null; const [d,m,y]=s.split('/'); return y&&m&&d?`${y}-${m}-${d}`:null; }
+function validatePage(p){
+    let ok=legacyValidatePage(p);
+    if(p===1){
+      const cpfOK=AmorDomain.validCPF(g('inp-cpf').value);setErr('f-cpf',!cpfOK);ok=ok&&cpfOK;
+      const dobOK=AmorDomain.validDate(g('inp-nasc').value);setErr('f-nasc',!dobOK);ok=ok&&dobOK;
+      const email=g('inp-email');if(email.value&&!email.checkValidity()){email.setAttribute('aria-invalid','true');ok=false;}else email.removeAttribute('aria-invalid');
+    }
+    if(p===2){const value=Number(g('inp-valor').value.replace(',','.'));ok=ok&&Number.isFinite(value)&&value>=30&&Number(g('inp-dia').value)>=1&&Number(g('inp-dia').value)<=28;}
+    return ok;
+  }
+  function parseDate(s){ if(!s) return null; const [d,m,y]=s.split('/'); return y&&m&&d?`${y}-${m}-${d}`:null; }
 
 function resetForm(){
   g('suc-screen').classList.remove('active');
@@ -2261,52 +2203,7 @@ function switchLoginTab(id){
 // ═══════════════════════════════════════════
 //  CADASTRO DE ASSOCIADO (email + senha)
 // ═══════════════════════════════════════════
-async function doCadastro(){
-  const nome  = g('cad-nome').value.trim();
-  const email = g('cad-email').value.trim().toLowerCase();
-  const senha = g('cad-senha').value;
-  const senha2= g('cad-senha2').value;
-  const errEl = g('cad-err'), okEl = g('cad-ok');
-  const msgEl = g('cad-err-msg'), okMsg = g('cad-ok-msg');
-  errEl.classList.remove('show'); okEl.classList.remove('show');
-
-  if(!nome || nome.length < 3){ msgEl.textContent='Nome completo obrigatório (mín. 3 letras).'; errEl.classList.add('show'); return; }
-  if(!email || !email.includes('@')){ msgEl.textContent='E-mail inválido.'; errEl.classList.add('show'); return; }
-  if(senha.length < 6){ msgEl.textContent='A senha deve ter pelo menos 6 caracteres.'; errEl.classList.add('show'); return; }
-  if(senha !== senha2){ msgEl.textContent='As senhas não coincidem.'; errEl.classList.add('show'); return; }
-
-  const btn = g('btn-cadastrar');
-  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando conta...';
-  try {
-    // Verifica se já existe
-    const {data: existente} = await sb.from('usuarios_associados').select('id').eq('email', email).single();
-    if(existente){ msgEl.textContent='Este e-mail já está cadastrado. Faça login.'; errEl.classList.add('show'); return; }
-    // Cria hash simples (base64) — em produção real use bcrypt no servidor
-    const senhaHash = btoa(unescape(encodeURIComponent(senha)));
-    const {data, error} = await sb.from('usuarios_associados').insert([{
-      nome, email, senha_hash: senhaHash, criado_em: new Date().toISOString()
-    }]).select().single();
-    if(error) throw error;
-    okMsg.textContent = 'Conta criada! Escolha como deseja participar...';
-    okEl.classList.add('show');
-    // Loga automaticamente e abre seleção de tipo
-    setTimeout(async () => {
-      okEl.classList.remove('show');
-      associadoLogado = data;
-      localStorage.setItem('assoc_sessao', JSON.stringify(data));
-      await carregarDadosAssociado(); // fichaAssociado será null (conta nova)
-      g('cad-nome').value=''; g('cad-email').value=''; g('cad-senha').value=''; g('cad-senha2').value='';
-      showView('view-admin-login');
-      // Abre seleção de tipo
-      abrirTipoSelect();
-    }, 1200);
-  } catch(e) {
-    msgEl.textContent = 'Erro ao criar conta: ' + (e.message||'tente novamente.');
-    errEl.classList.add('show');
-  } finally {
-    btn.disabled=false; btn.innerHTML='<i class="fas fa-user-plus"></i> Criar Conta';
-  }
-}
+function doCadastro(...args){return AmorApp.doCadastro(...args);}
 
 // ═══════════════════════════════════════════════════════════════
 //  REDIRECIONAMENTO PÓS-LOGIN
@@ -2347,48 +2244,9 @@ function _redirecionarAposLogin(primeiroAcesso = false){
 // ═══════════════════════════════════════════
 let associadoLogado = null; // dados do usuário associado logado
 
-async function doAssocLogin(){
-  const email = g('assoc-email-login').value.trim().toLowerCase();
-  const senha  = g('assoc-senha-login').value;
-  const errEl  = g('assoc-login-err');
-  const msgEl  = g('assoc-login-err-msg');
-  errEl.classList.remove('show');
+function doAssocLogin(...args){return AmorApp.doAssocLogin(...args);}
 
-  if(!email || !senha){ msgEl.textContent='Preencha e-mail e senha.'; errEl.classList.add('show'); return; }
-
-  const btn = g('btn-assoc-login');
-  btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Entrando...';
-  try {
-    const senhaHash = btoa(unescape(encodeURIComponent(senha)));
-    const {data, error} = await sb.from('usuarios_associados').select('*').eq('email', email).eq('senha_hash', senhaHash).single();
-    if(error || !data){ msgEl.textContent='E-mail ou senha incorretos.'; errEl.classList.add('show'); return; }
-    // Verifica se é doador puro (tem ficha de doador mas não de associado)
-    const isDoador = await checkDoadorLogin(email, senha);
-    if(isDoador){ return; } // já redirecionado pela função
-    associadoLogado = data;
-    localStorage.setItem('assoc_sessao', JSON.stringify(data));
-    await carregarDadosAssociado();
-    toast('Bem-vindo(a), ' + data.nome.split(' ')[0] + '! ❤️');
-    _redirecionarAposLogin(false);
-  } catch(e) {
-    msgEl.textContent = 'Erro ao fazer login: ' + (e.message||'tente novamente.');
-    errEl.classList.add('show');
-  } finally {
-    btn.disabled=false; btn.innerHTML='<i class="fas fa-arrow-right-to-bracket"></i> Entrar';
-  }
-}
-
-function doAssocLogout(){
-  associadoLogado = null;
-  fichaAssociado = null;
-  pagamentosAssociado = [];
-  localStorage.removeItem('assoc_sessao');
-  localStorage.removeItem('assoc_ultima_aba');
-  showView('view-admin-login');
-  switchLoginTab('tab-login');
-  const el = g('assoc-email-login'); if(el) el.value='';
-  const el2 = g('assoc-senha-login'); if(el2) el2.value='';
-}
+function doAssocLogout(...args){return AmorApp.doAssocLogout(...args);}
 
 // ═══════════════════════════════════════════
 //  DADOS DO ASSOCIADO LOGADO
@@ -2396,245 +2254,18 @@ function doAssocLogout(){
 let fichaAssociado = null;
 let pagamentosAssociado = [];
 
-async function carregarDadosAssociado(){
-  if(!associadoLogado) return;
-  fichaAssociado = null;
-
-  // 1) Por e-mail exato do login
-  try {
-    const {data: r} = await sb.from('associados').select('*').eq('email', associadoLogado.email).maybeSingle();
-    if(r) fichaAssociado = r;
-  } catch(e){}
-
-  // 2) Por nome completo (fallback: email diferente na ficha)
-  if(!fichaAssociado && associadoLogado.nome){
-    try {
-      const nome = associadoLogado.nome.trim();
-      const {data: r} = await sb.from('associados').select('*').ilike('nome', nome);
-      if(r && r.length > 0) fichaAssociado = r[0];
-    } catch(e){}
-  }
-
-  // 3) Último recurso: busca TODOS os associados e compara nome token a token
-  if(!fichaAssociado && associadoLogado.nome){
-    try {
-      const {data: todos} = await sb.from('associados').select('*');
-      const nomeBusca = associadoLogado.nome.trim().toLowerCase();
-      const tokensLogin = nomeBusca.split(' ').filter(Boolean);
-      fichaAssociado = (todos||[]).find(a => {
-        if(!a.nome) return false;
-        const nomeA = a.nome.toLowerCase();
-        // Bate se primeiro E último token coincidem
-        return tokensLogin[0] === nomeA.split(' ')[0] &&
-               tokensLogin[tokensLogin.length-1] === nomeA.split(' ').pop();
-      }) || null;
-    } catch(e){}
-  }
-
-  if(fichaAssociado){
-    await _garantirPagamentosPendentes();
-    pagamentosAssociado = await _buscarTodosPagamentosAssociado();
-    // Sincroniza MP automaticamente ao carregar (sem bloquear UI)
-    // Usa setTimeout para não atrasar a renderização inicial
-    setTimeout(() => sincronizarPagamentosAssociado().catch(()=>{}), 1500);
-  } else {
-    pagamentosAssociado = [];
-  }
-  renderAreaAssociado();
-}
+function carregarDadosAssociado(...args){return AmorApp.carregarDadosAssociado(...args);}
 
 // Garante registros de pagamento para os últimos 12 meses + mês atual.
 // Se o associado tiver created_at, começa naquele mês; senão começa 11 meses atrás.
-async function _garantirPagamentosPendentes(){
-  if(!fichaAssociado) return;
-  try {
-    const hoje = new Date();
-    const mesAtual = getMesAtual();
-
-    // Mês de início: data de criação do associado (ou 11 meses atrás)
-    let inicio;
-    if(fichaAssociado.created_at){
-      const dc = new Date(fichaAssociado.created_at);
-      inicio = new Date(dc.getFullYear(), dc.getMonth(), 1);
-    } else {
-      inicio = new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1);
-    }
-    const fim = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-
-    // Gera lista de todos os meses do período
-    const meses = [];
-    const cur = new Date(inicio);
-    while(cur <= fim){
-      meses.push(`${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}`);
-      cur.setMonth(cur.getMonth() + 1);
-    }
-
-    // Busca quais meses JÁ têm registro (qualquer status)
-    const {data: pagsExist} = await sb.from('pagamentos')
-      .select('mes_referencia')
-      .eq('associado_id', fichaAssociado.id);
-    const mesesComRegistro = new Set((pagsExist||[]).map(p=>p.mes_referencia));
-
-    // Insere apenas os meses sem nenhum registro
-    const novos = meses
-      .filter(m => !mesesComRegistro.has(m))
-      .map(m => ({
-        associado_id:    fichaAssociado.id,
-        email:           fichaAssociado.email || associadoLogado.email || null,
-        nome_completo:   fichaAssociado.nome  || associadoLogado.nome  || null,
-        mes_referencia:  m,
-        valor:           fichaAssociado.valor_contribuicao || 30,
-        status:          'pendente',
-        data_vencimento: `${m}-${String(fichaAssociado.dia_pagamento||10).padStart(2,'0')}`
-      }));
-
-    if(novos.length > 0){
-      await sb.from('pagamentos').insert(novos);
-    }
-  } catch(e){ console.warn('_garantirPagamentosPendentes:', e.message); }
-}
+function _garantirPagamentosPendentes(...args){return AmorApp._garantirPagamentosPendentes(...args);}
 
 // Busca todos os pagamentos do associado considerando possíveis duplicatas de cadastro.
 // Consolida por mês, priorizando registros com status 'pago'.
-async function _buscarTodosPagamentosAssociado(){
-  if(!fichaAssociado) return [];
-  try {
-    // Coleta todos os IDs do mesmo associado (mesmo nome ou email)
-    const {data: todos} = await sb.from('associados').select('id,nome,email');
-    const nomeFicha = (fichaAssociado.nome||'').toLowerCase().trim();
-    const emailFicha = (fichaAssociado.email||'').toLowerCase();
-    const emailLogin = (associadoLogado.email||'').toLowerCase();
-
-    const idsRelacionados = new Set([fichaAssociado.id]);
-    (todos||[]).forEach(a => {
-      const nomeA  = (a.nome||'').toLowerCase().trim();
-      const emailA = (a.email||'').toLowerCase();
-      // Mesmo nome OU mesmo email (login ou ficha)
-      if(nomeA === nomeFicha || emailA === emailFicha || emailA === emailLogin){
-        idsRelacionados.add(a.id);
-      }
-    });
-
-    const ids = [...idsRelacionados];
-    // Busca por associado_id OU por email diretamente na tabela pagamentos
-    // (captura pagamentos PIX avulsos que foram gravados sem associado_id correto)
-    const emailsParaBuscar = [...new Set([
-      (fichaAssociado.email||'').toLowerCase(),
-      (associadoLogado.email||'').toLowerCase()
-    ].filter(Boolean))];
-
-    const [{data: pagsPorId}, {data: pagsPorEmail}] = await Promise.all([
-      sb.from('pagamentos').select('*').in('associado_id', ids).order('mes_referencia',{ascending:false}),
-      emailsParaBuscar.length > 0
-        ? sb.from('pagamentos').select('*').in('email', emailsParaBuscar).order('mes_referencia',{ascending:false})
-        : Promise.resolve({data:[]})
-    ]);
-
-    // Une os dois resultados sem duplicatas
-    const pagMap = new Map();
-    for(const p of [...(pagsPorId||[]), ...(pagsPorEmail||[])]){
-      if(!pagMap.has(p.id)) pagMap.set(p.id, p);
-    }
-    const pags = [...pagMap.values()];
-
-    // Agrupa por mês: prioriza pago > mais recente
-    const porMes = {};
-    for(const p of (pags||[])){
-      const m = p.mes_referencia;
-      if(!porMes[m] || p.status==='pago'){
-        porMes[m] = p;
-      } else if(porMes[m].status !== 'pago' && new Date(p.created_at||0) > new Date(porMes[m].created_at||0)){
-        porMes[m] = p;
-      }
-    }
-    return Object.values(porMes).sort((a,b)=>b.mes_referencia.localeCompare(a.mes_referencia));
-  } catch(e){ return []; }
-}
+function _buscarTodosPagamentosAssociado(...args){return AmorApp._buscarTodosPagamentosAssociado(...args);}
 
 // ─── SINCRONIZAÇÃO MANUAL DO ASSOCIADO ───────────────────────────────────────
-async function sincronizarPagamentosAssociado(){
-  if(!fichaAssociado || !associadoLogado) return;
-  const btn = g('btn-sync-pags');
-  if(btn){ btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Sincronizando...'; }
-
-  try{
-    // Monta lista de todos os cadastros com mesmo nome ou email
-    const {data: todosNoBanco} = await sb.from('associados').select('*');
-    const nomeFicha   = (fichaAssociado.nome||'').toLowerCase().trim();
-    const emailLogin  = (associadoLogado.email||'').toLowerCase();
-    const emailFicha  = (fichaAssociado.email||'').toLowerCase();
-
-    const todosAssoc = (todosNoBanco||[]).filter(a => {
-      const nA = (a.nome||'').toLowerCase().trim();
-      const eA = (a.email||'').toLowerCase();
-      return nA === nomeFicha || eA === emailLogin || eA === emailFicha;
-    });
-    if(!todosAssoc.find(a=>a.id===fichaAssociado.id)) todosAssoc.push(fichaAssociado);
-    const idsAssoc = [...new Set(todosAssoc.map(a=>a.id))];
-
-    // Busca TODOS aprovados no MP (sem filtro — identificamos pelo nome/email depois)
-    const mpResp = await fetch(
-      'https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=100&status=approved',
-      { headers:{ 'Authorization':'Bearer '+MP_ACCESS_TOKEN } }
-    );
-    const mpData = await mpResp.json();
-    const todosAprovados = mpData.results || [];
-
-    // Filtra apenas os que pertencem a este associado
-    const aprovados = todosAprovados.filter(mp => {
-      const { assoc } = identificarAssociadoMP(mp, todosAssoc);
-      return !!assoc;
-    });
-
-    // Para cada aprovado: grava/atualiza no Supabase
-    for(const mp of aprovados){
-      const mpId    = String(mp.id);
-      const mesRef  = identificarAssociadoMP(mp, todosAssoc).mesRef;
-      if(!mesRef) continue;
-      const dataPag = new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10);
-
-      // Busca registro existente para este mês em QUALQUER ID do associado
-      const {data: pagsSupa} = await sb.from('pagamentos')
-        .select('id,status,mp_payment_id')
-        .in('associado_id', idsAssoc)
-        .eq('mes_referencia', mesRef);
-
-      const pagPago  = (pagsSupa||[]).find(p => p.status==='pago' && p.mp_payment_id);
-      const pagExist = (pagsSupa||[]).find(p => p.associado_id===fichaAssociado.id) || pagsSupa?.[0];
-
-      if(pagPago) continue; // já está correto
-
-      const updates = {
-        status:'pago', data_pagamento:dataPag,
-        confirmado_por:'mercadopago', mp_payment_id:mpId,
-        email:         fichaAssociado.email || associadoLogado.email || null,
-        nome_completo: fichaAssociado.nome  || associadoLogado.nome  || null
-      };
-
-      if(pagExist){
-        await sb.from('pagamentos').update(updates).eq('id', pagExist.id);
-      } else {
-        await sb.from('pagamentos').insert([{
-          associado_id:    fichaAssociado.id,
-          mes_referencia:  mesRef,
-          valor:           mp.transaction_amount,
-          data_vencimento: `${mesRef}-${String(fichaAssociado.dia_pagamento||10).padStart(2,'0')}`,
-          ...updates
-        }]);
-      }
-    }
-  } catch(eMp){
-    console.warn('MP sync erro:', eMp.message);
-  }
-
-  // Recarrega do Supabase e atualiza UI
-  pagamentosAssociado = await _buscarTodosPagamentosAssociado();
-  renderPagamentosAssociado();
-  renderAreaAssociado();
-  toast('✅ Extrato atualizado!');
-
-  if(btn){ btn.disabled=false; btn.innerHTML='<i class="fas fa-rotate-right"></i> Atualizar'; }
-}
+function sincronizarPagamentosAssociado(...args){return AmorApp.sincronizarPagamentosAssociado(...args);}
 
 function abrirFormularioAssociado(){
   if(associadoLogado){
@@ -2647,180 +2278,11 @@ function abrirFormularioAssociado(){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-async function submitFormAndReturn(){
-  await submitForm();
-  await carregarDadosAssociado();
-  showView('view-associado');
-  showAssocTab('tab-assoc-inicio');
-  toast('✅ Ficha enviada! Bem-vindo(a) à ONG Por Amor! ❤️');
-}
+async function submitFormAndReturn(){return submitForm();}
 
-function renderPagamentosAssociado(){
-  const el = g('assoc-pay-list');
-  const resumoEl = g('assoc-pay-resumo');
-  if(!el) return;
-  if(!fichaAssociado){
-    el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gray-400)"><i class="fas fa-file-alt"></i> Cadastre-se como associado para ver seus pagamentos.</div>';
-    return;
-  }
-  if(pagamentosAssociado.length === 0){
-    el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gray-400)"><i class="fas fa-inbox"></i> Carregando pagamentos...</div>';
-    return;
-  }
+function renderPagamentosAssociado(...args){return AmorApp.renderPagamentosAssociado(...args);}
 
-  const mesAtual = getMesAtual();
-  const hoje = new Date();
-  const diaPag = fichaAssociado.dia_pagamento || 10;
-  const totalPago = pagamentosAssociado.filter(p=>p.status==='pago').reduce((s,p)=>s+(p.valor||0),0);
-  const qtdAtrasado = pagamentosAssociado.filter(p=>p.status!=='pago' && p.mes_referencia < mesAtual).length;
-
-  // Resumo no cabeçalho
-  if(resumoEl){
-    const qtdPago = pagamentosAssociado.filter(p=>p.status==='pago').length;
-    resumoEl.innerHTML =
-      `<span style="color:var(--success);font-weight:600">✓ ${qtdPago} pago(s)</span>` +
-      (qtdAtrasado > 0 ? `&ensp;<span style="color:var(--error);font-weight:600">⚠ ${qtdAtrasado} atrasado(s)</span>` : '') +
-      `&ensp;<span style="color:var(--gray-600)">Total: R$ ${totalPago.toFixed(2).replace('.',',')}</span>`;
-  }
-
-  // Agrupa: pagos / mês atual e futuros / atrasados
-  const pagos     = pagamentosAssociado.filter(p => p.status === 'pago');
-  const atrasados = pagamentosAssociado.filter(p => p.status !== 'pago' && p.mes_referencia < mesAtual);
-  const pendentes = pagamentosAssociado.filter(p => p.status !== 'pago' && p.mes_referencia >= mesAtual);
-
-  function renderItem(p){
-    const isPago    = p.status === 'pago';
-    const isAtraso  = !isPago && p.mes_referencia < mesAtual;
-    const isMesAtual = p.mes_referencia === mesAtual;
-
-    // Verifica se ainda está dentro do prazo (dia de vencimento no mês atual)
-    let isPendenteDentroPrazo = false;
-    if(!isPago && isMesAtual){
-      const venc = new Date(p.mes_referencia + '-' + String(diaPag).padStart(2,'0') + 'T23:59:59');
-      isPendenteDentroPrazo = hoje <= venc;
-    }
-
-    const cls  = isPago ? 'pago' : isAtraso ? 'vencido' : 'pendente';
-    const icon = isPago ? 'fa-check-circle' : isAtraso ? 'fa-exclamation-circle' : 'fa-clock';
-    const [ano, mes] = p.mes_referencia.split('-');
-    const mesNome = new Date(+ano, +mes-1, 1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-    const mesNomeFmt = mesNome.charAt(0).toUpperCase() + mesNome.slice(1);
-
-    let badge;
-    if(isPago)                badge = '<span class="pay-item-badge pay-badge-pago">✓ Pago</span>';
-    else if(isAtraso)         badge = '<span class="pay-item-badge pay-badge-venc">⚠ Atrasado</span>';
-    else if(isPendenteDentroPrazo) badge = '<span class="pay-item-badge pay-badge-pend">📅 Vence dia '+diaPag+'</span>';
-    else                      badge = '<span class="pay-item-badge pay-badge-pend">Pendente</span>';
-
-    const dtPag = p.data_pagamento
-      ? ' · Pago em ' + new Date(p.data_pagamento+'T12:00:00').toLocaleDateString('pt-BR') : '';
-    const metodo = p.confirmado_por==='mercadopago'
-      ? '<i class="fas fa-credit-card" style="color:#009ee3"></i> Mercado Pago'
-      : 'PIX / Manual';
-    const mpBtn = (!isPago)
-      ? `<button class="btn-mp-pagar" onclick="pagarViaMPAssociado('${p.mes_referencia}',${p.valor})"
-           style="font-size:.75rem;padding:.45rem .9rem;border-radius:var(--r);margin-top:.5rem;display:inline-flex;align-items:center;gap:.4rem">
-           <i class="fas fa-credit-card"></i> Pagar com MP</button>
-         <button onclick="pagarAssinaturaMP('${p.mes_referencia}',${p.valor})"
-           style="background:linear-gradient(135deg,#009ee3,#0070b4);border:none;color:#fff;font-size:.75rem;padding:.45rem .9rem;border-radius:var(--r);margin-top:.5rem;margin-left:.4rem;display:inline-flex;align-items:center;gap:.4rem;cursor:pointer">
-           <i class="fas fa-repeat"></i> Pgto. Automático</button>`
-      : '';
-
-    return `<div class="pay-item ${cls}">
-      <div class="pay-item-icon"><i class="fas ${icon}"></i></div>
-      <div style="flex:1">
-        <div class="pay-item-mes">${mesNomeFmt} ${badge}</div>
-        <div class="pay-item-info">Vencimento: dia ${diaPag}${dtPag} · ${metodo}</div>
-        ${mpBtn}
-      </div>
-      <div class="pay-item-val" style="font-weight:700;font-size:1rem;color:${isPago?'var(--success)':isAtraso?'var(--error)':'var(--warn)'}">
-        R$ ${(p.valor||0).toFixed(2).replace('.',',')}
-      </div>
-    </div>`;
-  }
-
-  function separador(label, cor='var(--gray-400)'){
-    return `<div style="padding:.5rem 0 .3rem;font-size:.72rem;font-weight:700;text-transform:uppercase;
-      letter-spacing:.1em;color:${cor};display:flex;align-items:center;gap:.5rem;margin-top:.5rem">
-      <span style="flex:1;height:1px;background:currentColor;opacity:.2"></span>
-      ${label}
-      <span style="flex:1;height:1px;background:currentColor;opacity:.2"></span>
-    </div>`;
-  }
-
-  let html = '';
-
-  if(atrasados.length > 0){
-    html += separador('⚠ Atrasados', 'var(--error)');
-    html += atrasados.map(renderItem).join('');
-  }
-  if(pendentes.length > 0){
-    html += separador('📅 Pendentes / Próximos', 'var(--warn)');
-    html += pendentes.map(renderItem).join('');
-  }
-  if(pagos.length > 0){
-    html += separador('✓ Pagos', 'var(--success)');
-    html += pagos.map(renderItem).join('');
-  }
-
-  el.innerHTML = html;
-}
-
-async function pagarViaMPAssociado(mesRef, valor){
-  if(!fichaAssociado || !associadoLogado) return;
-  toast('Gerando link de pagamento...');
-  try {
-    const [ano, mes] = mesRef.split('-');
-    const mesNome = new Date(+ano, +mes-1, 1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-    const extRef = `${fichaAssociado.id}-${mesRef}`;
-    const payload = {
-      items:[{title:`Contribuição ONG Por Amor — ${mesNome}`,quantity:1,currency_id:'BRL',unit_price:valor}],
-      payer:{name:associadoLogado.nome, email:associadoLogado.email},
-      back_urls:{success:window.location.href,failure:window.location.href,pending:window.location.href},
-      auto_return:'approved',
-      statement_descriptor:'ONG Por Amor',
-      external_reference: extRef
-    };
-    const resp = await fetch('https://api.mercadopago.com/checkout/preferences',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+MP_ACCESS_TOKEN},
-      body:JSON.stringify(payload)
-    });
-    const data = await resp.json();
-    if(data.init_point){
-      window.open(data.init_point,'_blank');
-      toast('Checkout aberto! Aguardando confirmação... ⏳');
-
-      // Polling simples: só consulta Supabase (fonte da verdade), a cada 4s por 3 min
-      let tentativas = 0;
-      const pollPagamento = setInterval(async () => {
-        tentativas++;
-        if(tentativas > 45){ clearInterval(pollPagamento); return; } // 45×4s = 3min
-
-        try{
-          const {data: novosPags} = await sb.from('pagamentos')
-            .select('*')
-            .eq('associado_id', fichaAssociado.id)
-            .order('mes_referencia',{ascending:false});
-          if(!novosPags) return;
-
-          const pagConfirmado = novosPags.find(p => p.mes_referencia === mesRef && p.status === 'pago');
-          const anterior = pagamentosAssociado.find(p => p.mes_referencia === mesRef);
-
-          if(pagConfirmado && (!anterior || anterior.status !== 'pago')){
-            clearInterval(pollPagamento);
-            pagamentosAssociado = novosPags;
-            renderPagamentosAssociado();
-            renderAreaAssociado();
-            showAssocTab('tab-assoc-pagamentos');
-            toast(`✅ Pagamento de ${mesNome} confirmado! Obrigado! ❤️`);
-          }
-        }catch(e){ /* silencioso */ }
-      }, 4000);
-    }
-    else throw new Error(data.message||'Erro ao gerar link');
-  } catch(e){ toast('Erro Mercado Pago: '+e.message,'err'); }
-}
+function pagarViaMPAssociado(...args){return AmorApp.pagarViaMPAssociado(...args);}
 
 function showAssocTab(id){
   document.querySelectorAll('.assoc-panel').forEach(p=>p.classList.remove('active'));
@@ -2917,14 +2379,14 @@ function renderCadastroContent(f){
   }
 
   // Com ficha: mostra resumo dos dados
-  const row = (k,v) => `<div class="assoc-row"><span class="assoc-key">${k}</span><span class="assoc-val">${v||'—'}</span></div>`;
+  const row = (k,v) => `<div class="assoc-row"><span class="assoc-key">${k}</span><span class="assoc-val">${AmorDomain.escapeHTML(v||'—')}</span></div>`;
   const statusCls = {ativo:'badge-green',inativo:'badge-gray',suspenso:'badge-warn'}[f.status]||'badge-gray';
   el.innerHTML = `
     <div style="display:grid;gap:1rem">
       <div class="assoc-section">
         <div class="assoc-section-hdr">
           <div class="assoc-section-title"><i class="fas fa-user" style="color:var(--teal)"></i> Dados Pessoais</div>
-          <span class="badge ${statusCls}" style="font-size:.72rem">${f.status||'ativo'} · #${String(f.numero_associado||'—').padStart(3,'0')}</span>
+          <span class="badge ${statusCls}" style="font-size:.72rem">${AmorDomain.escapeHTML(f.status||'ativo')} · #${String(f.numero_associado||'—').padStart(3,'0')}</span>
         </div>
         <div class="assoc-section-body">
           ${row('Nome completo','<strong>'+f.nome+'</strong>')}
@@ -2959,105 +2421,13 @@ function renderCadastroContent(f){
 // ═══════════════════════════════════════════
 //  ADMIN AUTH — credenciais via config.js (não suba config.js ao GitHub!)
 // ═══════════════════════════════════════════
-const ADMIN_CREDS = {
-  login: window.__APP_CONFIG__?.ADMIN_LOGIN || '',
-  senha: window.__APP_CONFIG__?.ADMIN_SENHA || ''
-};
 
-async function doLogin(){
-  const l=g('adm-login').value.trim(), s=g('adm-senha').value;
-  const err=g('login-err');
-  const ok = (ADMIN_CREDS.login && l===ADMIN_CREDS.login && s===ADMIN_CREDS.senha);
-  if(ok){
-    err.classList.remove('show');
-    // Abre admin em nova aba
-    const adminUrl = window.location.href.split('?')[0] + '?modo=admin&u=' + encodeURIComponent(l) + '&t=' + Date.now();
-    window.open(adminUrl, '_blank');
-  } else {
-    try{
-      const {data,error} = await sb.from('admins').select('*').eq('login',l).eq('senha_hash',s).single();
-      if(data && !error){
-        err.classList.remove('show');
-        const adminUrl = window.location.href.split('?')[0] + '?modo=admin&u=' + encodeURIComponent(l) + '&t=' + Date.now();
-        window.open(adminUrl, '_blank');
-      } else { err.classList.add('show'); }
-    }catch{ err.classList.add('show'); }
-  }
-}
-function doLogout(){ window.close(); }
+
+function doLogin(...args){return AmorApp.doLogin(...args);}
+function doLogout(...args){return AmorApp.doLogout(...args);}
 
 // Verifica se deve abrir diretamente em modo admin (nova aba)
-async function checkAdminMode(){
-  const params = new URLSearchParams(window.location.search);
-  const modo = params.get('modo');
-
-  if(modo === 'admin'){
-    showView('view-admin');
-    showPopup('Login realizado com sucesso! 🎉', 'Bem-vindo, Administrador ONG Por Amor.', 'success');
-    await loadAssociados();
-    await loadDoadores();
-    renderCharts();
-    return;
-  }
-
-  // Restaura sessão de doador
-  const doadorSessaoRaw = localStorage.getItem('doador_sessao');
-  if(doadorSessaoRaw){
-    try {
-      const sessao = JSON.parse(doadorSessaoRaw);
-      doadorLogado = sessao;
-      await carregarDadosDoador(); // já chama showDoadorTab('tab-doador-inicio') internamente
-      showView('view-doador');
-      showDoadorTab('tab-doador-inicio');
-      return;
-    } catch(e){ localStorage.removeItem('doador_sessao'); }
-  }
-
-  // Restaura sessão de associado do localStorage (persiste entre recargas/fechamentos)
-  const sessaoRaw = localStorage.getItem('assoc_sessao');
-  if(sessaoRaw){
-    try {
-      const sessao = JSON.parse(sessaoRaw);
-      const {data, error} = await sb.from('usuarios_associados').select('*').eq('id', sessao.id).single();
-      if(error || !data){
-        localStorage.removeItem('assoc_sessao');
-        localStorage.removeItem('assoc_ultima_aba');
-        showView('view-admin-login');
-        return;
-      }
-      associadoLogado = data;
-      localStorage.setItem('assoc_sessao', JSON.stringify(data));
-      await carregarDadosAssociado();
-
-      // Detecta retorno do Mercado Pago DEPOIS de ter a sessão restaurada
-      const mpParams = new URLSearchParams(window.location.search);
-      const mpStatus    = mpParams.get('status') || mpParams.get('payment_status');
-      const mpPaymentId = mpParams.get('payment_id');
-
-      if(mpPaymentId || mpStatus){
-        // Retorno do MP: ignora abertura de formulário, vai para pagamentos
-        window.history.replaceState({}, '', window.location.pathname);
-        showView('view-associado');
-        showAssocTab('tab-assoc-pagamentos');
-        localStorage.setItem('assoc_ultima_aba', 'tab-assoc-pagamentos');
-        if(mpStatus === 'approved' || mpStatus === 'success'){
-          setTimeout(()=> toast('🎉 Pagamento recebido! Extrato atualizado.'), 800);
-        } else {
-          setTimeout(()=> toast('⏳ Aguardando confirmação do pagamento...'), 800);
-        }
-      } else {
-        // Fluxo normal: verifica se tem ficha
-        _redirecionarAposLogin(false);
-      }
-      return;
-    } catch(e){
-      localStorage.removeItem('assoc_sessao');
-      localStorage.removeItem('assoc_ultima_aba');
-    }
-  }
-
-  showView('view-admin-login');
-}
+function checkAdminMode(...args){return AmorApp.checkAdminMode(...args);}
 
 // ── POPUP ──
 function showPopup(title, msg, type='success'){
@@ -3077,29 +2447,9 @@ function showPopup(title, msg, type='success'){
 let associados = [];
 let pagamentos = {};
 
-async function loadAssociados(){
-  try{
-    const {data, error} = await sb.from('associados').select('*').order('created_at',{ascending:false});
-    if(error) throw error;
-    associados = data || [];
-  }catch(e){ associados = []; }
-  await loadPagamentos();
-  renderTable();
-  updateKPIs();
-  renderPendencias();
-  // Sincroniza pagamentos MP silenciosamente em background
-  sincronizarMPBackground();
-}
+function loadAssociados(...args){return AmorApp.loadAssociados(...args);}
 
-async function sincronizarMPBackground(){
-  try{
-    const resp = await fetch('https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=50&status=approved',{
-      headers:{'Authorization':'Bearer '+MP_ACCESS_TOKEN}
-    });
-    const data = await resp.json();
-    if(data.results){ mpPayments = data.results; await sincronizarPagamentosMP(); }
-  }catch(e){ /* silent fail */ }
-}
+function sincronizarMPBackground(...args){return AmorApp.sincronizarMPBackground(...args);}
 
 async function loadPagamentos(){
   try{
@@ -3112,83 +2462,17 @@ async function loadPagamentos(){
   }catch(e){ pagamentos = {}; }
 }
 
-function getMesAtual(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+function getMesAtual(){return AmorDomain.month();}
 function getMesesDoAno(){ const anoAtual = new Date().getFullYear(); return Array.from({length:12}, (_, i) => `${anoAtual}-${String(i+1).padStart(2,'0')}`); }
 
 // ═══════════════════════════════════════════
 //  TABLE RENDER
 // ═══════════════════════════════════════════
-function renderTable(){
-  const busca = g('f-busca').value.toLowerCase();
-  const dia = g('f-dia').value;
-  const status = g('f-status').value;
-  const pgstatus = g('f-pgstatus').value;
-  const mesAtual = getMesAtual();
-  let filtered = associados.filter(a=>{
-    if(busca && !a.nome?.toLowerCase().includes(busca) && !a.cpf?.includes(busca) && !a.email?.toLowerCase().includes(busca)) return false;
-    if(dia && String(a.dia_pagamento) !== dia) return false;
-    if(status && a.status !== status) return false;
-    if(pgstatus==='pendente'){ const pags=pagamentos[a.id]||[]; if(!pags.some(p=>p.status==='pendente'&&p.mes_referencia===mesAtual)) return false; }
-    if(pgstatus==='em_dia'){ const pags=pagamentos[a.id]||[]; if(pags.some(p=>p.status==='pendente'&&p.mes_referencia===mesAtual)) return false; }
-    return true;
-  });
-  g('count-badge').textContent = filtered.length;
-  const pendentes = filtered.filter(a=>(pagamentos[a.id]||[]).some(p=>p.status==='pendente'&&p.mes_referencia===mesAtual));
-  const pAlert = g('pending-alert');
-  if(pendentes.length>0 && dia){ pAlert.style.display='flex'; g('pending-msg').textContent=`${pendentes.length} associado(s) com pagamento PENDENTE para o dia ${dia} no mês atual`; }
-  else { pAlert.style.display='none'; }
-  const meses = getMesesDoAno();
-  const tbody = g('table-body');
-  tbody.innerHTML = filtered.map(a=>{
-    const pags = pagamentos[a.id]||[];
-    const payChips = meses.map(m=>{
-      const p = pags.find(x=>x.mes_referencia===m);
-      const mesLabel = m.slice(5)+'/'+m.slice(2,4);
-      if(!p||p.status==='pendente'){
-        const isOverdue = m<mesAtual;
-        const cls = isOverdue?'overdue':'pending';
-        return `<span class="pay-chip ${cls}" onclick="togglePay('${a.id}','${m}')" title="Clique para confirmar pagamento de ${mesLabel}">${mesLabel} ○</span>`;
-      }
-      return `<span class="pay-chip paid" onclick="togglePay('${a.id}','${m}')" title="Pago - clique para reverter">${mesLabel} ✓</span>`;
-    }).join('');
-    const statusBadge = {ativo:'badge-green',inativo:'badge-gray',suspenso:'badge-red'}[a.status]||'badge-gray';
-    return `<tr id="row-${a.id}">
-      <td><span class="td-num">#${String(a.numero_associado||'--').padStart(3,'0')}</span></td>
-      <td><span class="td-name">${a.nome}</span><br><span class="td-num">${a.cpf||''}</span></td>
-      <td>${a.telefone||'—'}</td>
-      <td><strong>Dia ${a.dia_pagamento||10}</strong></td>
-      <td style="font-weight:700;color:var(--navy)">R$ ${(a.valor_contribuicao||30).toFixed(2).replace('.',',')}</td>
-      <td>${a.forma_pagamento||'PIX'}</td>
-      <td><span class="badge ${statusBadge}">${a.status||'ativo'}</span></td>
-      <td><div class="pay-month-row">${payChips}</div></td>
-      <td><div class="actions-cell">
-        <button class="btn-sm btn-sm-warn" onclick="openCobranca('${a.id}')"><i class="fas fa-paper-plane"></i> Cobrar</button>
-        <button class="btn-sm btn-sm-teal" onclick="openEdit('${a.id}')"><i class="fas fa-pen"></i> Editar</button>
-        <button class="btn-sm btn-sm-navy" onclick="printAssociado('${a.id}')"><i class="fas fa-print"></i></button>
-        <button class="btn-sm btn-sm-red" onclick="confirmDelete('${a.id}')"><i class="fas fa-trash"></i></button>
-      </div></td>
-    </tr>`;
-  }).join('') || '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--gray-400)"><i class="fas fa-search"></i> Nenhum resultado encontrado</td></tr>';
-}
+function renderTable(...args){return AmorApp.renderTable(...args);}
 
 function clearFilters(){ g('f-busca').value=''; g('f-dia').value=''; g('f-status').value=''; g('f-pgstatus').value=''; renderTable(); }
 
-async function togglePay(aid, mes){
-  const pags = pagamentos[aid]||[];
-  const p = pags.find(x=>x.mes_referencia===mes);
-  const newStatus = (!p || p.status==='pendente') ? 'pago' : 'pendente';
-  if(p){
-    try{ await sb.from('pagamentos').update({status:newStatus,data_pagamento:newStatus==='pago'?new Date().toISOString().slice(0,10):null,confirmado_por:'ongadmin'}).eq('id',p.id); p.status = newStatus; }
-    catch(e){ console.error(e.message); }
-  } else {
-    const a = associados.find(x=>x.id===aid);
-    const novoPag = { associado_id: aid, mes_referencia: mes, valor: a?.valor_contribuicao||30, status: newStatus, data_vencimento: `${mes}-${String(a?.dia_pagamento||10).padStart(2,'0')}`, confirmado_por: newStatus==='pago'?'ongadmin':null, data_pagamento: newStatus==='pago'?new Date().toISOString().slice(0,10):null, email: a?.email||null, nome_completo: a?.nome||null };
-    try{ const {data, error} = await sb.from('pagamentos').insert([novoPag]).select(); if(error) throw error; if(!pagamentos[aid]) pagamentos[aid]=[]; pagamentos[aid].push(data[0]); }
-    catch(e){ console.error(e.message); }
-  }
-  toast(newStatus==='pago'?'✓ Pagamento confirmado!':'Pagamento marcado como pendente');
-  renderTable(); updateKPIs(); renderPendencias();
-}
+function togglePay(...args){return AmorApp.togglePay(...args);}
 
 // ═══════════════════════════════════════════
 //  EDIT ASSOCIADO
@@ -3206,36 +2490,13 @@ function openEdit(aid){
 }
 function closeEdit(){ g('modal-edit').classList.remove('open'); editingId=null; }
 
-async function saveEdit(){
-  if(!editingId) return;
-  const novoValor = parseFloat(g('edit-valor').value.replace(',','.'))||30;
-  const updates = { nome: g('edit-nome').value.trim(), cpf: g('edit-cpf').value, telefone: g('edit-tel').value, email: g('edit-email').value, profissao: g('edit-prof').value, valor_contribuicao: novoValor, dia_pagamento: parseInt(g('edit-dia').value)||10, forma_pagamento: g('edit-pgto').value, status: g('edit-status').value };
-  try{ const {error} = await sb.from('associados').update(updates).eq('id',editingId); if(error) throw error; }
-  catch(e){ console.error(e.message); }
-  // Atualiza valor nos pagamentos PENDENTES do associado
-  const pagsPendentes = (pagamentos[editingId]||[]).filter(p=>p.status==='pendente');
-  for(const p of pagsPendentes){
-    try{
-      await sb.from('pagamentos').update({valor: novoValor}).eq('id', p.id);
-      p.valor = novoValor;
-    }catch(e){ console.warn('Erro ao atualizar valor do pagamento:', e.message); }
-  }
-  const idx = associados.findIndex(x=>x.id===editingId);
-  if(idx>-1) associados[idx] = {...associados[idx], ...updates};
-  closeEdit(); toast('Associado e pagamentos pendentes atualizados! ✅'); renderTable(); updateKPIs();
-}
+function saveEdit(...args){return AmorApp.saveEdit(...args);}
 
 let deleteId = null;
 function confirmDelete(aid){ deleteId = aid; const a = associados.find(x=>x.id===aid); g('delete-name').textContent = a?.nome||'este associado'; g('modal-delete').classList.add('open'); }
 function closeDelete(){ g('modal-delete').classList.remove('open'); deleteId=null; }
 
-async function doDelete(){
-  if(!deleteId) return;
-  try{ await sb.from('pagamentos').delete().eq('associado_id',deleteId); const {error} = await sb.from('associados').delete().eq('id',deleteId); if(error) throw error; }
-  catch(e){ console.error(e.message); }
-  associados = associados.filter(x=>x.id!==deleteId); delete pagamentos[deleteId];
-  closeDelete(); toast('Associado removido.'); renderTable(); updateKPIs();
-}
+function doDelete(...args){return AmorApp.doDelete(...args);}
 
 // ═══════════════════════════════════════════
 //  COBRANÇA MODAL
@@ -3243,408 +2504,25 @@ async function doDelete(){
 let cobrancaAssociadoId = null;
 let cobrancaMPLink = '';
 
-async function openCobranca(aid){
-  const a = associados.find(x=>x.id===aid);
-  if(!a) return;
-  cobrancaAssociadoId = aid;
-  const pend = (pagamentos[aid]||[]).filter(p=>p.status==='pendente');
-  const totalPend = pend.reduce((s,p)=>s+p.valor,0);
-  const mesAtual = getMesAtual();
-  const pendMes = pend.find(p=>p.mes_referencia===mesAtual);
-  const valor = pendMes?.valor || a.valor_contribuicao || 30;
-  const [ano, mes] = mesAtual.split('-');
-  const mesNome = new Date(+ano, +mes-1, 1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-
-  const buildMsg = (linkMP) => {
-    const gerando  = linkMP === 'gerando';
-    const temLink  = linkMP && !gerando;
-    const linkTxt  = temLink
-      ? `\n\n💳 *Pague agora pelo Mercado Pago* (cartão, PIX ou boleto — confirmação automática no sistema):\n${linkMP}`
-      : (gerando ? '\n\n💳 *Gerando link de pagamento...*' : '');
-    const atrasado = totalPend > valor
-      ? `\n⚠️ *Total em atraso:* R$ ${totalPend.toFixed(2).replace('.',',')}` : '';
-    return `Olá, ${a.nome.split(' ')[0]}! 😊\n\nPassamos para lembrar que há uma contribuição em aberto com a *ONG Por Amor*.\n\n📋 *Associado:* ${a.nome} — #${String(a.numero_associado||'').padStart(3,'0')}\n💰 *Valor do mês:* R$ ${valor.toFixed(2).replace('.',',')}\n📅 *Vencimento:* Todo dia ${a.dia_pagamento||10}${atrasado}${linkTxt}\n\nAo pagar pelo link acima, a confirmação é feita automaticamente. ❤️\n— Equipe ONG Por Amor | (83) 98231-5427`;
-  };
-
-  const msgTemplate = g('msg-template');
-  if(msgTemplate) msgTemplate.textContent = buildMsg('gerando');
-  g('modal-cobranca').classList.add('open');
-
-  // Gera link MP personalizado com external_reference identificando o associado e o mês
-  cobrancaMPLink = '';
-  try{
-    const extRef = `${a.id}-${mesAtual}`;
-    const payload = {
-      items:[{title:`Contribuição ONG Por Amor — ${mesNome}`,quantity:1,currency_id:'BRL',unit_price:valor}],
-      payer:{name:a.nome,email:a.email||'associado@ongporamor.com.br'},
-      back_urls:{success:window.location.href,failure:window.location.href,pending:window.location.href},
-      auto_return:'approved',
-      statement_descriptor:'ONG Por Amor',
-      external_reference: extRef
-    };
-    const resp = await fetch('https://api.mercadopago.com/checkout/preferences',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+MP_ACCESS_TOKEN},
-      body:JSON.stringify(payload)
-    });
-    const data = await resp.json();
-    cobrancaMPLink = data.init_point || '';
-  }catch(e){ cobrancaMPLink = ''; toast('Aviso: não foi possível gerar link MP. PIX disponível na mensagem.', 'err'); }
-
-  const msg = buildMsg(cobrancaMPLink);
-  if(msgTemplate) msgTemplate.textContent = msg;
-
-  const waNum = (a.telefone||'').replace(/\D/g,'');
-  g('btn-wa-send').onclick = () => window.open(`https://wa.me/55${waNum}?text=${encodeURIComponent(msg)}`,'_blank');
-  g('btn-email-send').onclick = () => window.open(`mailto:${a.email||''}?subject=${encodeURIComponent('ONG Por Amor — Contribuição Mensal')}&body=${encodeURIComponent(msg)}`,'_blank');
-}
+function openCobranca(...args){return AmorApp.openCobranca(...args);}
 function closeModal(){ g('modal-cobranca').classList.remove('open'); }
 function copyMsg(){ navigator.clipboard.writeText(g('msg-template').textContent).then(()=>toast('Mensagem copiada!')); }
 
 // ═══════════════════════════════════════════
 //  PRINT
 // ═══════════════════════════════════════════
-function printFichaEmBranco(){
-  const hoje = new Date();
-  const dataHoje = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
-  const w = window.open('','_blank');
-  w.document.write(`<!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="UTF-8">
-<title>Ficha de Associação — ONG Por Amor</title>
-<style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Segoe UI',Arial,sans-serif;color:#0f172a;background:#fff;font-size:12px}
-  .page{max-width:800px;margin:0 auto;padding:2.2rem 2.5rem}
+function printFichaEmBranco(...args){return AmorApp.printFichaEmBranco(...args);}
 
-  /* HEADER */
-  .hdr{display:flex;align-items:center;gap:1.2rem;margin-bottom:.6rem}
-  .hdr-heart{font-size:2.2rem;line-height:1}
-  .hdr-title{font-size:1.7rem;font-weight:800;color:#0b1f31}
-  .hdr-title em{font-style:italic;color:#0d8f8f}
-  .hdr-sub{font-size:.72rem;color:#64748b;margin-top:.1rem}
-  .hdr-info{margin-left:auto;text-align:right;font-size:.7rem;color:#64748b;line-height:1.7}
-  .divider{border:none;border-top:3px solid #0b1f31;margin:.7rem 0 1.2rem}
-  .divider-thin{border:none;border-top:1px dashed #cbd5e1;margin:.8rem 0}
+function printTable(...args){return AmorApp.printTable(...args);}
 
-  /* SECTION TITLE */
-  .sec-title{
-    background:#0b1f31;color:#fff;
-    font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
-    padding:.38rem 1rem;border-radius:5px;margin-bottom:.9rem;
-    display:flex;align-items:center;gap:.5rem
-  }
-
-  /* FIELDS GRID */
-  .fields{display:grid;gap:.65rem .9rem;margin-bottom:.3rem}
-  .g1{grid-template-columns:1fr}
-  .g2{grid-template-columns:1fr 1fr}
-  .g3{grid-template-columns:1fr 1fr 1fr}
-  .g4{grid-template-columns:1fr 1fr 1fr 1fr}
-  .s2{grid-column:span 2}
-  .s3{grid-column:span 3}
-
-  .field{display:flex;flex-direction:column;gap:.22rem}
-  .field label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#475569}
-  .field .line{
-    border-bottom:1.5px solid #0b1f31;
-    height:22px;width:100%;
-    position:relative;
-  }
-  .field .hint{font-size:.6rem;color:#94a3b8;margin-top:.1rem}
-
-  /* CONTRIBUIÇÃO */
-  .contrib-box{
-    background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;
-    padding:.9rem 1.1rem;margin-bottom:.5rem
-  }
-  .contrib-row{display:flex;gap:1.5rem;align-items:flex-end;flex-wrap:wrap}
-  .valor-field .line{min-width:110px;font-size:1.1rem;font-weight:700;padding-bottom:3px}
-  .day-grid{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.35rem}
-  .day-opt{
-    width:36px;height:36px;border:1.5px solid #cbd5e1;border-radius:6px;
-    display:flex;align-items:center;justify-content:center;
-    font-size:.78rem;font-weight:600;color:#334155;cursor:default;
-    position:relative;flex-shrink:0
-  }
-  .day-opt::after{
-    content:'';position:absolute;top:3px;left:3px;right:3px;bottom:3px;
-    border-radius:3px;background:transparent;border:1.5px solid transparent;
-  }
-
-  .pgto-opts{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.35rem}
-  .pgto-opt{
-    display:flex;align-items:center;gap:.35rem;
-    font-size:.76rem;color:#334155;cursor:default;
-    padding:.25rem .6rem;border:1.5px solid #cbd5e1;border-radius:100px;
-  }
-  .pgto-opt .circle{
-    width:13px;height:13px;border-radius:50%;
-    border:1.5px solid #0b1f31;flex-shrink:0;display:inline-block
-  }
-
-  /* AUTORIZAÇÕES */
-  .auth-row{display:flex;align-items:flex-start;gap:.5rem;padding:.45rem 0;border-bottom:1px dashed #e2e8f0;font-size:.77rem;color:#334155;line-height:1.5}
-  .auth-row:last-child{border-bottom:none}
-  .chk{width:15px;height:15px;border:1.5px solid #0b1f31;border-radius:3px;flex-shrink:0;margin-top:.05rem}
-  .auth-lbl{flex:1}
-  .auth-lbl strong{color:#0b1f31}
-
-  /* ASSINATURA */
-  .sig-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.8rem;margin-top:1.5rem}
-  .sig-block .sig-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#475569;margin-bottom:.5rem;display:flex;align-items:center;gap:.3rem}
-  .sig-line{border-bottom:1.5px solid #0b1f31;min-height:54px}
-  .sig-hint{font-size:.62rem;color:#94a3b8;margin-top:.25rem}
-
-  /* FOOTER */
-  .footer{margin-top:1.4rem;padding-top:.9rem;border-top:1px solid #e2e8f0;text-align:center;font-size:.65rem;color:#94a3b8;line-height:1.8}
-  .footer strong{color:#475569}
-
-  /* NUMERO FICHA */
-  .ficha-num{display:flex;gap:1.5rem;align-items:center;background:#f1f5f9;border-radius:6px;padding:.55rem 1rem;margin-bottom:1rem;font-size:.75rem;color:#475569}
-  .ficha-num strong{color:#0b1f31}
-  .ficha-num .blank{display:inline-block;min-width:80px;border-bottom:1.5px solid #0b1f31;height:16px}
-
-  @media print{
-    body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    .page{padding:1.5rem}
-    @page{margin:1.2cm;size:A4}
-  }
-</style>
-</head>
-<body>
-<div class="page">
-
-  <!-- CABEÇALHO -->
-  <div class="hdr">
-    <div class="hdr-heart">❤️</div>
-    <div>
-      <div class="hdr-title">ONG <em>Por Amor</em></div>
-      <div class="hdr-sub">CNPJ: 54.286.499/0001-74 &nbsp;·&nbsp; Rua Fernandes Vieira 1148, José Pinheiro, Campina Grande – PB &nbsp;·&nbsp; (83) 98231-5427</div>
-    </div>
-    <div class="hdr-info">
-      <div><strong>FICHA DE ASSOCIAÇÃO</strong></div>
-      <div>Emitida em: ${dataHoje}</div>
-      <div>Uso interno — ONG Por Amor</div>
-    </div>
-  </div>
-  <hr class="divider">
-
-  <!-- Nº DA FICHA / DATA -->
-  <div class="ficha-num">
-    <div>Nº do Associado: <span class="blank"></span></div>
-    <div>Data de Adesão: <span class="blank" style="min-width:110px"></span></div>
-    <div>Status: <span class="blank" style="min-width:90px"></span></div>
-  </div>
-
-  <!-- 1. DADOS PESSOAIS -->
-  <div class="sec-title">👤 1. Dados Pessoais</div>
-  <div class="fields g2" style="margin-bottom:.9rem">
-    <div class="field s2"><label>Nome Completo *</label><div class="line"></div></div>
-    <div class="field"><label>Data de Nascimento *</label><div class="line"></div><div class="hint">DD/MM/AAAA</div></div>
-    <div class="field"><label>CPF *</label><div class="line"></div><div class="hint">000.000.000-00</div></div>
-    <div class="field"><label>RG</label><div class="line"></div></div>
-    <div class="field"><label>Estado Civil</label><div class="line"></div></div>
-    <div class="field"><label>Profissão</label><div class="line"></div></div>
-  </div>
-
-  <!-- 2. ENDEREÇO -->
-  <div class="sec-title">📍 2. Endereço</div>
-  <div class="fields g2" style="margin-bottom:.9rem">
-    <div class="field"><label>CEP</label><div class="line"></div></div>
-    <div class="field"><label>Cidade / UF</label><div class="line"></div></div>
-    <div class="field s2"><label>Logradouro (Rua / Avenida)</label><div class="line"></div></div>
-    <div class="field"><label>Número</label><div class="line"></div></div>
-    <div class="field"><label>Complemento</label><div class="line"></div></div>
-    <div class="field"><label>Bairro</label><div class="line"></div></div>
-  </div>
-
-  <!-- 3. CONTATO -->
-  <div class="sec-title">📞 3. Contato</div>
-  <div class="fields g2" style="margin-bottom:.9rem">
-    <div class="field"><label>Telefone / WhatsApp *</label><div class="line"></div><div class="hint">(  )  _____-____</div></div>
-    <div class="field"><label>E-mail</label><div class="line"></div></div>
-  </div>
-
-  <!-- 4. CONTRIBUIÇÃO -->
-  <div class="sec-title">💰 4. Contribuição Mensal</div>
-  <div class="contrib-box">
-    <div class="contrib-row">
-      <div class="field valor-field" style="min-width:160px">
-        <label>Valor Mensal (R$) *</label>
-        <div class="line" style="min-width:140px"></div>
-        <div class="hint">Mínimo: R$ 30,00</div>
-      </div>
-      <div style="flex:1">
-        <label style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#475569;display:block;margin-bottom:.3rem">Melhor Dia para Pagamento *</label>
-        <div class="day-grid">
-          ${['1','5','10','15','20','25','28'].map(d=>`<div class="day-opt">${d}</div>`).join('')}
-        </div>
-      </div>
-    </div>
-    <div style="margin-top:.8rem">
-      <label style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#475569;display:block;margin-bottom:.3rem">Forma de Pagamento *</label>
-      <div class="pgto-opts">
-        ${['PIX','Mercado Pago','Pgto. Automático','Transferência Bancária','Boleto','Débito Automático','Outro'].map(p=>`<div class="pgto-opt"><span class="circle"></span>${p}</div>`).join('')}
-      </div>
-    </div>
-  </div>
-
-  <!-- 5. LGPD / AUTORIZAÇÕES -->
-  <div class="sec-title" style="margin-top:.9rem">🛡️ 5. Declarações e Autorizações (LGPD)</div>
-  <p style="font-size:.75rem;color:#475569;line-height:1.65;margin-bottom:.7rem">
-    Declaro estar ciente das finalidades sociais da Associação e me comprometo a contribuir mensalmente com o valor indicado. Tenho ciência de que a condição de associado poderá ser suspensa ou cancelada nos termos do Estatuto Social.
-  </p>
-  <div>
-    <div class="auth-row">
-      <div class="chk"></div>
-      <div class="auth-lbl"><strong>Uso de Dados (LGPD):</strong> Autorizo a ONG Por Amor a utilizar meus dados pessoais para fins institucionais (cadastro, comunicação, emissão de recibos).</div>
-    </div>
-    <div class="auth-row">
-      <div class="chk"></div>
-      <div class="auth-lbl"><strong>Uso de Imagem e Vídeo:</strong> Autorizo o uso da minha imagem em materiais de comunicação institucional da ONG.</div>
-    </div>
-    <div class="auth-row">
-      <div class="chk"></div>
-      <div class="auth-lbl"><strong>Comunicações:</strong> Desejo receber informativos e comunicados via WhatsApp e e-mail.</div>
-    </div>
-  </div>
-
-  <!-- 6. ASSINATURAS -->
-  <div class="sig-grid">
-    <div class="sig-block">
-      <div class="sig-label">📍 Local e Data</div>
-      <div class="sig-line" style="padding-top:.5rem">
-        <span style="font-size:.77rem;color:#334155">Campina Grande – PB, ____/____/________</span>
-      </div>
-      <div class="sig-hint">Preenchido pelo associado</div>
-    </div>
-    <div class="sig-block">
-      <div class="sig-label">✍️ Assinatura do Associado</div>
-      <div class="sig-line"></div>
-      <div class="sig-hint">Assinatura por extenso</div>
-    </div>
-    <div class="sig-block">
-      <div class="sig-label">🏢 Responsável ONG</div>
-      <div class="sig-line"></div>
-      <div class="sig-hint">Uso interno — ONG Por Amor</div>
-    </div>
-  </div>
-
-  <!-- FOOTER -->
-  <div class="footer">
-    <strong>ONG Por Amor</strong> &nbsp;·&nbsp; CNPJ 54.286.499/0001-74 &nbsp;·&nbsp;
-    Rua Fernandes Vieira 1148, José Pinheiro, Campina Grande – PB &nbsp;·&nbsp;
-    (83) 98231-5427 &nbsp;·&nbsp; Poramorongcg@gmail.com<br>
-    Documento oficial de adesão &nbsp;·&nbsp; Campos marcados com <strong>*</strong> são obrigatórios &nbsp;·&nbsp;
-    Dados protegidos pela Lei Geral de Proteção de Dados (LGPD)
-  </div>
-
-</div>
-</body></html>`);
-  w.document.close();
-  setTimeout(()=>w.print(), 500);
-}
-
-function printTable(){ window.print(); }
-
-function printAssociado(aid){
-  const a = associados.find(x=>x.id===aid);
-  if(!a) return;
-  const pags = pagamentos[aid]||[];
-  const hoje = new Date();
-  const dataImpressao = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
-  const statusColor = {ativo:'#059669',inativo:'#94a3b8',suspenso:'#dc2626'}[a.status]||'#94a3b8';
-  const pagRows = pags.map(p=>`<tr><td>${p.mes_referencia}</td><td>R$ ${(p.valor||0).toFixed(2)}</td><td>${p.data_vencimento||'—'}</td><td style="color:${p.status==='pago'?'#059669':'#d97706'};font-weight:700">${p.status==='pago'?'✓ Pago':'○ Pendente'}</td></tr>`).join('');
-  const sigSrc = a.assinatura_data||'';
-  const w = window.open('','_blank');
-  w.document.write(`<!DOCTYPE html><html><head><title>Ficha — ${a.nome}</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;padding:2.5rem;color:#0f172a;max-width:800px;margin:0 auto;font-size:13px}.logo{display:flex;align-items:center;gap:.8rem;margin-bottom:.3rem}.logo-heart{font-size:2rem}.logo-title{font-size:1.6rem;font-weight:800;color:#0b1f31}.logo-title em{font-style:italic;color:#0d8f8f}.sub{font-size:.75rem;color:#64748b;margin-bottom:.2rem}.hr{border:none;border-top:3px solid #0b1f31;margin:1rem 0 1.5rem}h2{font-size:1rem;font-weight:700;color:#fff;background:#0b1f31;padding:.5rem 1rem;border-radius:6px;margin:1.2rem 0 .6rem}table{width:100%;border-collapse:collapse;margin-bottom:.5rem}td,th{border:1px solid #e2e8f0;padding:.45rem .7rem;font-size:.8rem}th{background:#f1f5f9;font-weight:700;color:#475569}.key{background:#f8fafc;font-weight:600;color:#334155;width:35%}.status-badge{display:inline-block;padding:.15rem .6rem;border-radius:100px;font-size:.72rem;font-weight:700;background:${statusColor}20;color:${statusColor}}.sig-area{display:flex;gap:2rem;margin-top:2.5rem}.sig-box{flex:1;text-align:center}.sig-box .label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:.4rem}.sig-box .line{border-bottom:2px solid #0b1f31;min-height:60px;display:flex;align-items:center;justify-content:center}.footer{margin-top:2rem;padding-top:1rem;border-top:1px solid #e2e8f0;text-align:center;font-size:.72rem;color:#94a3b8}@media print{body{padding:1.5rem}}</style></head><body>
-<div class="logo"><span class="logo-heart">❤️</span><div><div class="logo-title">ONG <em>Por Amor</em></div><div class="sub">CNPJ: 54.286.499/0001-74 &nbsp;|&nbsp; Rua Fernandes Vieira 1148, José Pinheiro, Campina Grande - PB &nbsp;|&nbsp; (83) 98231-5427</div></div></div>
-<hr class="hr">
-<div style="text-align:right;font-size:.75rem;color:#64748b">Impresso em: ${dataImpressao} &nbsp;|&nbsp; Nº Associado: #${String(a.numero_associado||'--').padStart(3,'0')}</div>
-<h2>📋 Dados Pessoais</h2>
-<table><tr><td class="key">Nome Completo</td><td><strong>${a.nome}</strong></td><td class="key">CPF</td><td>${a.cpf||'—'}</td></tr>
-<tr><td class="key">Data Nasc.</td><td>${a.data_nascimento||'—'}</td><td class="key">RG</td><td>${a.rg||'—'}</td></tr>
-<tr><td class="key">Estado Civil</td><td>${a.estado_civil||'—'}</td><td class="key">Profissão</td><td>${a.profissao||'—'}</td></tr></table>
-<h2>📍 Endereço</h2>
-<table><tr><td class="key">Logradouro</td><td>${a.logradouro||'—'}, nº ${a.numero||'—'} ${a.complemento?'/ '+a.complemento:''}</td><td class="key">CEP</td><td>${a.cep||'—'}</td></tr>
-<tr><td class="key">Bairro</td><td>${a.bairro||'—'}</td><td class="key">Cidade / UF</td><td>${a.cidade||'—'} / ${a.uf||'—'}</td></tr></table>
-<h2>📞 Contato</h2>
-<table><tr><td class="key">Telefone/WhatsApp</td><td>${a.telefone||'—'}</td><td class="key">E-mail</td><td>${a.email||'—'}</td></tr></table>
-<h2>💰 Contribuição</h2>
-<table><tr><td class="key">Valor Mensal</td><td><strong>R$ ${(a.valor_contribuicao||30).toFixed(2)}</strong></td><td class="key">Dia Vencimento</td><td>Todo dia <strong>${a.dia_pagamento||10}</strong></td></tr>
-<tr><td class="key">Forma de Pagamento</td><td>${a.forma_pagamento||'PIX'}</td><td class="key">Status</td><td><span class="status-badge">${a.status||'ativo'}</span></td></tr></table>
-<h2>✅ Autorizações (LGPD)</h2>
-<table><tr><td class="key">Dados Pessoais</td><td>${a.autoriza_lgpd?'✅ Autorizado':'❌ Não autorizado'}</td><td class="key">Uso de Imagem</td><td>${a.autoriza_imagem?'✅ Autorizado':'❌ Não autorizado'}</td></tr>
-<tr><td class="key">Comunicações</td><td colspan="3">${a.autoriza_comunicacoes?'✅ Autorizado':'❌ Não autorizado'}</td></tr></table>
-${pags.length>0?`<h2>🗓️ Histórico de Pagamentos</h2><table><thead><tr><th>Mês</th><th>Valor</th><th>Vencimento</th><th>Status</th></tr></thead><tbody>${pagRows}</tbody></table>`:''}
-<div class="sig-area">
-  <div class="sig-box"><div class="label">Local e Data</div><div class="line"><span>${a.cidade||'Campina Grande'} – ${a.uf||'PB'}, ${dataImpressao}</span></div></div>
-  <div class="sig-box"><div class="label">Assinatura do Associado</div><div class="line">${sigSrc?`<img src="${sigSrc}" style="max-height:56px;max-width:90%">`:'&nbsp;'}</div></div>
-  <div class="sig-box"><div class="label">Responsável ONG</div><div class="line">&nbsp;</div></div>
-</div>
-<div class="footer">ONG Por Amor · Ficha de Associação · Documento gerado automaticamente · Campina Grande – PB</div>
-</body></html>`);
-  w.document.close();
-  setTimeout(()=>w.print(), 400);
-}
+function printAssociado(...args){return AmorApp.printAssociado(...args);}
 
 // ═══════════════════════════════════════════
 //  KPIs
 // ═══════════════════════════════════════════
-function updateKPIs(){
-  // ── ASSOCIADOS ──
-  const ativos = associados.filter(a=>a.status==='ativo');
-  g('kpi-total').textContent = associados.length;
-  g('kpi-ativos').textContent = `${ativos.length} ativos`;
-  const receitaAssoc = ativos.reduce((s,a)=>s+(a.valor_contribuicao||30),0);
-  g('kpi-receita').textContent = `R$ ${receitaAssoc.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}`;
-  const mesAtual = getMesAtual();
-  const pendMes = Object.values(pagamentos).flat().filter(p=>p.status==='pendente'&&p.mes_referencia===mesAtual).reduce((s,p)=>s+p.valor,0);
-  g('kpi-pend').textContent = `R$ ${pendMes.toFixed(0)}`;
-  const assocPend = ativos.filter(a=>(pagamentos[a.id]||[]).some(p=>p.status==='pendente'&&p.mes_referencia===mesAtual));
-  g('kpi-npend').textContent = `${assocPend.length} associados`;
-  const ticket = ativos.length>0 ? receitaAssoc/ativos.length : 0;
-  g('kpi-ticket').textContent = `R$ ${ticket.toFixed(0)}`;
+function updateKPIs(...args){return AmorApp.updateKPIs(...args);}
 
-  // ── DOADORES ──
-  const doadoresAtivos = doadores.filter(d=>d.status==='ativo');
-  const elDTotal = g('kpi-d-total'); if(elDTotal) elDTotal.textContent = doadores.length;
-  const elDAtivos = g('kpi-d-ativos'); if(elDAtivos) elDAtivos.textContent = `${doadoresAtivos.length} ativos`;
-  const receitaDoadores = doadoresAtivos.reduce((s,d)=>s+(d.valor_contribuicao||30),0);
-  const elDReceita = g('kpi-d-receita'); if(elDReceita) elDReceita.textContent = `R$ ${receitaDoadores.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}`;
-  const pendDoadores = Object.values(pagamentosDoadores).flat().filter(p=>p.status==='pendente'&&p.mes_referencia===mesAtual).reduce((s,p)=>s+p.valor,0);
-  const elDPend = g('kpi-d-pend'); if(elDPend) elDPend.textContent = `R$ ${pendDoadores.toFixed(0)}`;
-  const doadoresPend = doadoresAtivos.filter(d=>(pagamentosDoadores[d.id]||[]).some(p=>p.status==='pendente'&&p.mes_referencia===mesAtual));
-  const elDNPend = g('kpi-d-npend'); if(elDNPend) elDNPend.textContent = `${doadoresPend.length} doadores`;
-
-  // ── TOTAL GERAL ──
-  const totalGeral = receitaAssoc + receitaDoadores;
-  const elGeral = g('kpi-total-geral'); if(elGeral) elGeral.textContent = `R$ ${totalGeral.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}`;
-}
-
-function renderPendencias(){
-  // Pendências de Associados
-  const tbody = g('pend-body');
-  const mesAtual = getMesAtual();
-  const list = associados.filter(a=>a.status==='ativo').map(a=>({a, p:(pagamentos[a.id]||[]).find(x=>x.mes_referencia===mesAtual)})).filter(({p})=>!p||p.status==='pendente');
-  const hoje = new Date();
-  tbody.innerHTML = list.slice(0,15).map(({a})=>{
-    const venc = `${String(a.dia_pagamento||10).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
-    const isOverdue = hoje.getDate() > (a.dia_pagamento||10);
-    return `<tr><td class="td-name">${a.nome}</td><td>${a.telefone||'—'}</td><td style="font-weight:700">R$ ${(a.valor_contribuicao||30).toFixed(2)}</td><td><span style="color:${isOverdue?'var(--error)':'var(--warn)'}">⏰ ${venc}</span></td><td><button class="btn-sm btn-sm-warn" onclick="openCobranca('${a.id}')"><i class="fas fa-paper-plane"></i> Enviar cobrança</button></td></tr>`;
-  }).join('')||'<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--gray-400)">✅ Nenhuma pendência no mês atual</td></tr>';
-
-  // Pendências de Doadores
-  const tbodyD = g('pend-body-doadores');
-  if(!tbodyD) return;
-  const listD = doadores.filter(d=>d.status==='ativo').map(d=>({d, p:(pagamentosDoadores[d.id]||[]).find(x=>x.mes_referencia===mesAtual)})).filter(({p})=>!p||p.status==='pendente');
-  tbodyD.innerHTML = listD.slice(0,15).map(({d})=>{
-    const venc = `${String(d.dia_pagamento||10).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
-    const isOverdue = hoje.getDate() > (d.dia_pagamento||10);
-    return `<tr><td class="td-name">${d.nome}<br><span style="font-size:.75rem;color:var(--gray-400)">❤️ Doador</span></td><td>${d.telefone||'—'}</td><td style="font-weight:700">R$ ${(d.valor_contribuicao||30).toFixed(2)}</td><td><span style="color:${isOverdue?'var(--error)':'var(--warn)'}">⏰ ${venc}</span></td><td><button class="btn-sm btn-sm-warn" onclick="openCobrancaDoador('${d.id}')"><i class="fas fa-paper-plane"></i> Cobrar</button></td></tr>`;
-  }).join('')||'<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--gray-400)">✅ Nenhuma pendência de doadores no mês atual</td></tr>';
-}
+function renderPendencias(...args){return AmorApp.renderPendencias(...args);}
 
 // ═══════════════════════════════════════════
 //  CHARTS
@@ -3788,57 +2666,11 @@ function toast(msg, type='ok'){
 // ═══════════════════════════════════════════
 //  MERCADO PAGO
 // ═══════════════════════════════════════════
-const MP_ACCESS_TOKEN = 'APP_USR-5360690031869796-042714-536618cfd302efbf360cbc197c933719-3320288779';
+
 // ⬇ Substitua pela URL do seu Cloudflare Worker após criar
 const MP_PROXY_URL = 'https://ong-mp-proxy.ongporamoradmin.workers.dev';
 
-async function criarPagamentoMP(){
-  const nome = g('inp-nome')?.value.trim() || 'Associado';
-  const email = g('inp-email')?.value.trim() || 'associado@ong.com.br';
-  const valor = parseFloat((g('inp-valor')?.value||'30').replace(',','.')) || 30;
-  const statusEl = g('mp-status');
-  const btnWrap = g('mp-btn-wrap');
-  if(statusEl) statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando link de pagamento...';
-  try {
-    // Cria preferência de pagamento via Mercado Pago
-    const payload = {
-      items: [{
-        title: 'Contribuição Mensal — ONG Por Amor',
-        quantity: 1,
-        currency_id: 'BRL',
-        unit_price: valor
-      }],
-      payer: { name: nome, email: email },
-      back_urls: {
-        success: window.location.href,
-        failure: window.location.href,
-        pending: window.location.href
-      },
-      auto_return: 'approved',
-      statement_descriptor: 'ONG Por Amor',
-      external_reference: `ong-${Date.now()}`
-    };
-    const resp = await fetch('https://api.mercadopago.com/checkout/preferences', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + MP_ACCESS_TOKEN
-      },
-      body: JSON.stringify(payload)
-    });
-    const data = await resp.json();
-    if(data.init_point){
-      if(statusEl) statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:var(--success)"></i> Link gerado! Abrindo checkout...';
-      window.open(data.init_point, '_blank');
-      if(btnWrap) btnWrap.innerHTML = `<a href="${data.init_point}" target="_blank" style="display:inline-flex;align-items:center;gap:.5rem;background:linear-gradient(135deg,#009ee3,#0070b4);color:#fff;padding:.75rem 1.5rem;border-radius:var(--r);text-decoration:none;font-weight:700;font-size:.88rem"><i class="fas fa-external-link-alt"></i> Abrir novamente o checkout</a>`;
-    } else {
-      throw new Error(data.message || 'Erro ao gerar preferência');
-    }
-  } catch(e) {
-    if(statusEl) statusEl.innerHTML = `<i class="fas fa-exclamation-circle" style="color:var(--error)"></i> Erro: ${e.message}`;
-    toast('Erro ao conectar com Mercado Pago: ' + e.message, 'err');
-  }
-}
+function criarPagamentoMP(...args){return AmorApp.criarPagamentoMP(...args);}
 
 // ═══════════════════════════════════════════
 //  FINANCEIRO MP (Admin) — consulta pagamentos reais
@@ -3846,38 +2678,7 @@ async function criarPagamentoMP(){
 let mpPayments = [];
 let mpBalance = null;
 
-async function loadMPFinanceiro(){
-  const statusEl = g('mp-fin-status');
-  if(statusEl) statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Consultando conta Mercado Pago...';
-  try {
-    // Busca saldo
-    const balResp = await fetch('https://api.mercadopago.com/v1/account/balance', {
-      headers: { 'Authorization': 'Bearer ' + MP_ACCESS_TOKEN }
-    });
-    const balData = await balResp.json();
-    if(balData.available_balance !== undefined){
-      mpBalance = balData.available_balance;
-      const el = g('mp-saldo');
-      if(el) el.textContent = 'R$ ' + mpBalance.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
-    }
-  } catch(e){ console.warn('Saldo MP:', e.message); }
-
-  try {
-    // Busca pagamentos recentes
-    const pagResp = await fetch('https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=50', {
-      headers: { 'Authorization': 'Bearer ' + MP_ACCESS_TOKEN }
-    });
-    const pagData = await pagResp.json();
-    mpPayments = pagData.results || [];
-    renderMPPayments();
-    // Sincroniza pagamentos aprovados com associados no Supabase
-    await sincronizarPagamentosMP();
-  } catch(e){
-    console.warn('Pagamentos MP:', e.message);
-    const el = g('mp-fin-status');
-    if(el) el.innerHTML = '<i class="fas fa-exclamation-circle" style="color:var(--warn)"></i> Não foi possível carregar dados do Mercado Pago. Verifique o Access Token.';
-  }
-}
+function loadMPFinanceiro(...args){return AmorApp.loadMPFinanceiro(...args);}
 
 let mpFiltroAtivo = 'dia';
 function setMPFiltro(filtro){
@@ -3996,227 +2797,14 @@ function identificarAssociadoMP(mp, listaAssociados){
   return { assoc, mesRef };
 }
 
-async function sincronizarPagamentosMP(){
-  // Busca mp_payment_ids já gravados como PAGO no Supabase
-  let jaGravados = new Set();
-  try{
-    const {data: g2} = await sb.from('pagamentos').select('mp_payment_id').not('mp_payment_id','is',null);
-    (g2||[]).forEach(p => { if(p.mp_payment_id) jaGravados.add(p.mp_payment_id); });
-  }catch(e){}
-
-  const aprovados = mpPayments.filter(p => p.status === 'approved');
-  let sincCount = 0;
-
-  for(const mp of aprovados){
-    if(jaGravados.has(String(mp.id))) continue;
-
-    const { assoc, mesRef } = identificarAssociadoMP(mp, associados);
-    if(!assoc || !mesRef) continue;
-
-    const pags = pagamentos[assoc.id]||[];
-    const pagExist = pags.find(p => p.mes_referencia === mesRef);
-    const dataPag = new Date(mp.date_approved||mp.date_created).toISOString().slice(0,10);
-
-    const emailMP  = mp.payer?.email && !mp.payer.email.includes('XXXX') ? mp.payer.email : (assoc.email||null);
-    const nomeMP   = assoc.nome || ((mp.payer?.first_name||'')+' '+(mp.payer?.last_name||'')).trim() || null;
-    if(pagExist){
-      try{
-        await sb.from('pagamentos').update({
-          status:'pago', data_pagamento:dataPag,
-          confirmado_por:'mercadopago', mp_payment_id:String(mp.id),
-          email: emailMP, nome_completo: nomeMP
-        }).eq('id',pagExist.id);
-        pagExist.status='pago'; pagExist.mp_payment_id=String(mp.id);
-        pagExist.data_pagamento=dataPag; pagExist.confirmado_por='mercadopago';
-        jaGravados.add(String(mp.id));
-        sincCount++;
-      }catch(e){ console.warn(e); }
-    } else {
-      const novo = {
-        associado_id:assoc.id, mes_referencia:mesRef,
-        valor:mp.transaction_amount, status:'pago',
-        data_vencimento:`${mesRef}-${String(assoc.dia_pagamento||10).padStart(2,'0')}`,
-        data_pagamento:dataPag, confirmado_por:'mercadopago', mp_payment_id:String(mp.id),
-        email: emailMP, nome_completo: nomeMP
-      };
-      try{
-        const {data} = await sb.from('pagamentos').insert([novo]).select();
-        if(data?.[0]){
-          if(!pagamentos[assoc.id]) pagamentos[assoc.id]=[];
-          pagamentos[assoc.id].push(data[0]);
-          jaGravados.add(String(mp.id));
-          sincCount++;
-        }
-      }catch(e){ console.warn(e); }
-    }
-  }
-
-  const el = g('mp-sinc-info');
-  if(sincCount > 0){
-    toast(`✅ ${sincCount} pagamento(s) sincronizado(s) do Mercado Pago!`);
-    renderTable(); updateKPIs(); renderPendencias();
-    if(el) el.textContent = `${sincCount} pagamento(s) sincronizado(s)`;
-  } else {
-    if(el) el.textContent = 'Nenhum novo pagamento para sincronizar';
-  }
-  return sincCount;
-}
+function sincronizarPagamentosMP(...args){return AmorApp.sincronizarPagamentosMP(...args);}
 
 // ═══════════════════════════════════════════
 //  SINCRONIZAÇÃO TOTAL FORÇADA (botão admin)
 //  Lê TODOS os aprovados do MP, compara com
 //  Supabase e corrige qualquer inconsistência
 // ═══════════════════════════════════════════
-async function forceSincronizacaoTotal(){
-  const btn = document.getElementById('btn-force-sinc');
-  const painel = document.getElementById('painel-diagnostico');
-  const logEl  = document.getElementById('diagnostico-log');
-  if(!btn || !logEl) return;
-
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sincronizando...';
-  painel.style.display = 'block';
-  logEl.innerHTML = '';
-
-  function dlog(msg, cor='#334155'){
-    logEl.innerHTML += `<div style="color:${cor}">${new Date().toLocaleTimeString('pt-BR')} · ${msg}</div>`;
-    logEl.scrollTop = logEl.scrollHeight;
-  }
-
-  let corrigidos = 0, pulados = 0, erros = 0;
-
-  try {
-    dlog('Buscando pagamentos aprovados no Mercado Pago...', '#0070b4');
-    const mpResp = await fetch(
-      'https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=100&status=approved',
-      { headers: { 'Authorization': 'Bearer ' + MP_ACCESS_TOKEN } }
-    );
-    const mpData = await mpResp.json();
-    const aprovados = mpData.results || [];
-    dlog(`✓ ${aprovados.length} pagamento(s) aprovado(s) encontrado(s) no MP`, '#059669');
-
-    // Garante que temos os associados carregados
-    if(associados.length === 0){
-      dlog('Carregando associados do Supabase...', '#0070b4');
-      const {data} = await sb.from('associados').select('*').order('created_at',{ascending:false});
-      associados = data || [];
-    }
-    dlog(`✓ ${associados.length} associado(s) carregados`, '#059669');
-
-    // Carrega TODOS os pagamentos do Supabase (incluindo mp_payment_id)
-    dlog('Carregando pagamentos do Supabase...', '#0070b4');
-    const ids = associados.map(a=>a.id);
-    let todosPags = [];
-    if(ids.length > 0){
-      const {data: pags} = await sb.from('pagamentos').select('*').in('associado_id', ids);
-      todosPags = pags || [];
-    }
-    dlog(`✓ ${todosPags.length} pagamento(s) no Supabase`, '#059669');
-
-    // Monta Set com mp_payment_ids já gravados como PAGO
-    const jaGravados = new Set(
-      todosPags.filter(p => p.status === 'pago' && p.mp_payment_id)
-               .map(p => p.mp_payment_id)
-    );
-    dlog(`ℹ️ ${jaGravados.size} pagamentos já marcados como pago com MP ID`, '#475569');
-    dlog('─'.repeat(50), '#e2e8f0');
-
-    for(const mp of aprovados){
-      const mpId  = String(mp.id);
-      const ext   = mp.external_reference || '';
-      const email = mp.payer?.email || '';
-      const dataPag = new Date(mp.date_approved || mp.date_created).toISOString().slice(0, 10);
-      const valor   = mp.transaction_amount || 0;
-
-      // Já está corretamente gravado?
-      if(jaGravados.has(mpId)){
-        pulados++;
-        continue;
-      }
-
-      // Identifica usando helper (external_reference → email → nome do pagador)
-      const { assoc, mesRef } = identificarAssociadoMP(mp, associados);
-
-      if(!assoc){
-        const nomeMP = ((mp.payer?.first_name||'')+' '+(mp.payer?.last_name||'')).trim();
-        dlog(`⚠️ MP ID ${mpId} — não identificado (email:"${email}", nome:"${nomeMP}")`, '#d97706');
-        pulados++;
-        continue;
-      }
-
-      // Busca registro no Supabase para este associado+mês
-      const pagExist = todosPags.find(p => p.associado_id === assoc.id && p.mes_referencia === mesRef);
-
-      const emailPag = mp.payer?.email && !mp.payer.email.includes('XXXX') ? mp.payer.email : (assoc?.email||null);
-      const nomePag  = assoc?.nome || ((mp.payer?.first_name||'')+' '+(mp.payer?.last_name||'')).trim() || null;
-      try {
-        if(pagExist){
-          // Atualiza para pago
-          await sb.from('pagamentos').update({
-            status: 'pago',
-            data_pagamento: dataPag,
-            confirmado_por: 'mercadopago',
-            mp_payment_id: mpId,
-            email: emailPag,
-            nome_completo: nomePag
-          }).eq('id', pagExist.id);
-          // Atualiza array local também
-          pagExist.status = 'pago';
-          pagExist.mp_payment_id = mpId;
-          pagExist.data_pagamento = dataPag;
-          pagExist.confirmado_por = 'mercadopago';
-          dlog(`✅ ATUALIZADO: ${assoc.nome} / ${mesRef} → pago (MP ID: ${mpId})`, '#059669');
-        } else {
-          // Cria novo registro
-          const novo = {
-            associado_id: assoc.id,
-            mes_referencia: mesRef,
-            valor: valor,
-            status: 'pago',
-            data_vencimento: `${mesRef}-${String(assoc.dia_pagamento || 10).padStart(2,'0')}`,
-            data_pagamento: dataPag,
-            confirmado_por: 'mercadopago',
-            mp_payment_id: mpId,
-            email: emailPag,
-            nome_completo: nomePag
-          };
-          const {data: criado} = await sb.from('pagamentos').insert([novo]).select();
-          if(criado?.[0]){
-            if(!pagamentos[assoc.id]) pagamentos[assoc.id] = [];
-            pagamentos[assoc.id].push(criado[0]);
-            todosPags.push(criado[0]);
-          }
-          dlog(`✅ CRIADO: ${assoc.nome} / ${mesRef} = R$${valor.toFixed(2)} pago (MP ID: ${mpId})`, '#059669');
-        }
-        jaGravados.add(mpId);
-        corrigidos++;
-      } catch(eUp){
-        dlog(`❌ ERRO ao corrigir ${assoc.nome} / ${mesRef}: ${eUp.message}`, '#dc2626');
-        erros++;
-      }
-    }
-
-    dlog('─'.repeat(50), '#e2e8f0');
-    dlog(`Concluído: ${corrigidos} corrigido(s), ${pulados} já ok, ${erros} erro(s)`,
-      corrigidos > 0 ? '#059669' : '#475569');
-
-    // Recarrega UI
-    if(corrigidos > 0){
-      await loadPagamentos();
-      renderTable(); updateKPIs(); renderPendencias();
-      toast(`✅ ${corrigidos} pagamento(s) sincronizado(s) com sucesso!`);
-    } else {
-      dlog('ℹ️ Nenhuma correção necessária — dados já estão sincronizados', '#0070b4');
-    }
-
-  } catch(e){
-    dlog('❌ ERRO GERAL: ' + e.message, '#dc2626');
-    toast('Erro na sincronização: ' + e.message, 'err');
-  }
-
-  btn.disabled = false;
-  btn.innerHTML = '<i class="fas fa-bolt"></i> Forçar Sincronização Completa';
-}
+function forceSincronizacaoTotal(...args){return AmorApp.forceSincronizacaoTotal(...args);}
 
 // ═══════════════════════════════════════════
 //  TOGGLE SENHA VISÍVEL
@@ -4303,78 +2891,7 @@ function fecharDonorForm(){
 
 function maskTel(v){ v=v.replace(/\D/g,'').slice(0,11); if(v.length>10) return v.replace(/(\d{2})(\d{5})(\d{0,4})/,'($1) $2-$3'); if(v.length>6) return v.replace(/(\d{2})(\d{4})(\d{0,4})/,'($1) $2-$3'); if(v.length>2) return v.replace(/(\d{2})(\d{0,5})/,'($1) $2'); return v; }
 
-async function submitDonorForm(){
-  const errEl = g('donor-form-err'); const errMsg = g('donor-form-err-msg');
-  if(errEl) errEl.classList.remove('show');
-  const nome  = (g('df-nome')?.value||'').trim();
-  const email = (g('df-email')?.value||'').trim().toLowerCase();
-  const tel   = (g('df-tel')?.value||'').trim();
-  const dia   = g('df-dia')?.value;
-  const pgto  = g('df-pgto')?.value;
-  const valor = parseFloat((g('df-valor')?.value||'30').replace(',','.'));
-
-  if(!nome || nome.length < 3){ errMsg.textContent='Nome obrigatório (mín. 3 letras).'; errEl.classList.add('show'); return; }
-  if(!email || !email.includes('@')){ errMsg.textContent='E-mail inválido.'; errEl.classList.add('show'); return; }
-  if(!tel || tel.replace(/\D/g,'').length < 10){ errMsg.textContent='Telefone inválido.'; errEl.classList.add('show'); return; }
-  if(!dia){ errMsg.textContent='Selecione o dia de pagamento.'; errEl.classList.add('show'); return; }
-  if(!pgto){ errMsg.textContent='Selecione o tipo de pagamento.'; errEl.classList.add('show'); return; }
-  if(isNaN(valor) || valor < 10){ errMsg.textContent='Valor mínimo: R$ 10,00.'; errEl.classList.add('show'); return; }
-
-  const btn = g('btn-donor-submit');
-  btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Salvando...';
-
-  try {
-    // Usa a conta já logada (associadoLogado vem do cadastro de conta)
-    let userId = associadoLogado?.id || null;
-
-    // Se não tiver conta logada, verifica se já existe pelo email
-    if(!userId){
-      const {data: existeUser} = await sb.from('usuarios_associados').select('id').eq('email', email).maybeSingle();
-      if(existeUser) userId = existeUser.id;
-    }
-
-    // Verifica se já existe como doador
-    const {data: existeDoador} = await sb.from('doadores').select('id').eq('email', email).maybeSingle();
-    if(existeDoador){ errMsg.textContent='Este e-mail já está cadastrado como doador. Faça login.'; errEl.classList.add('show'); btn.disabled=false; btn.innerHTML='<i class="fas fa-heart"></i> Confirmar Cadastro'; return; }
-
-    // Cria doador
-    const {data: novoDoador, error: errDoador} = await sb.from('doadores').insert([{
-      nome, email, telefone: tel,
-      dia_pagamento: parseInt(dia), forma_pagamento: pgto,
-      valor_contribuicao: valor, status: 'ativo',
-      usuario_id: userId, created_at: new Date().toISOString()
-    }]).select().single();
-    if(errDoador) throw errDoador;
-
-    // Cria pagamento pendente do mês atual
-    const mesAtual = getMesAtual();
-    await sb.from('pagamentos_doadores').insert([{
-      doador_id: novoDoador.id, email,
-      mes_referencia: mesAtual, valor,
-      status: 'pendente',
-      data_vencimento: `${mesAtual}-${String(parseInt(dia)).padStart(2,'0')}`
-    }]);
-
-    fecharDonorForm();
-    toast('Cadastro como Doador realizado! ❤️');
-
-    // Redireciona para área do doador
-    doadorLogado = {...(associadoLogado||{}), ...novoDoador};
-    fichaDoador = novoDoador;
-    if(associadoLogado) localStorage.removeItem('assoc_sessao'); // era conta sem tipo definido
-    localStorage.setItem('doador_sessao', JSON.stringify(doadorLogado));
-    associadoLogado = null;
-    pagamentosDoador = await _buscarPagamentosDoador();
-    renderAreaDoador();
-    showView('view-doador');
-
-  } catch(e){
-    errMsg.textContent = 'Erro: ' + (e.message||'tente novamente.');
-    errEl.classList.add('show');
-  } finally {
-    btn.disabled=false; btn.innerHTML='<i class="fas fa-heart"></i> Confirmar Cadastro';
-  }
-}
+function submitDonorForm(...args){return AmorApp.submitDonorForm(...args);}
 
 // ═══════════════════════════════════════════
 //  ÁREA DO DOADOR
@@ -4383,62 +2900,13 @@ let doadorLogado = null;
 let fichaDoador = null;
 let pagamentosDoador = [];
 
-async function _buscarPagamentosDoador(){
-  if(!fichaDoador) return [];
-  try {
-    const {data} = await sb.from('pagamentos_doadores').select('*').eq('doador_id', fichaDoador.id).order('mes_referencia',{ascending:false});
-    return data||[];
-  } catch(e){ return []; }
-}
+function _buscarPagamentosDoador(...args){return AmorApp._buscarPagamentosDoador(...args);}
 
-async function carregarDadosDoador(){
-  if(!doadorLogado) return;
-  fichaDoador = null;
-  try {
-    const {data} = await sb.from('doadores').select('*').eq('email', doadorLogado.email).maybeSingle();
-    if(data) fichaDoador = data;
-  } catch(e){}
-  if(fichaDoador){
-    await _garantirPagamentosDoadorPendentes();
-    pagamentosDoador = await _buscarPagamentosDoador();
-  } else { pagamentosDoador = []; }
-  showDoadorTab('tab-doador-inicio');
-  renderAreaDoador();
-}
+function carregarDadosDoador(...args){return AmorApp.carregarDadosDoador(...args);}
 
-async function _garantirPagamentosDoadorPendentes(){
-  if(!fichaDoador) return;
-  try {
-    const hoje = new Date();
-    const mesAtual = getMesAtual();
-    let inicio;
-    if(fichaDoador.created_at){
-      const dc = new Date(fichaDoador.created_at);
-      inicio = new Date(dc.getFullYear(), dc.getMonth(), 1);
-    } else {
-      inicio = new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1);
-    }
-    const fim = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-    const meses = [];
-    const cur = new Date(inicio);
-    while(cur <= fim){ meses.push(`${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}`); cur.setMonth(cur.getMonth()+1); }
-    const {data: pagsExist} = await sb.from('pagamentos_doadores').select('mes_referencia').eq('doador_id', fichaDoador.id);
-    const mesesComRegistro = new Set((pagsExist||[]).map(p=>p.mes_referencia));
-    const novos = meses.filter(m=>!mesesComRegistro.has(m)).map(m=>({
-      doador_id: fichaDoador.id, email: fichaDoador.email,
-      mes_referencia: m, valor: fichaDoador.valor_contribuicao||30,
-      status: 'pendente',
-      data_vencimento: `${m}-${String(fichaDoador.dia_pagamento||10).padStart(2,'0')}`
-    }));
-    if(novos.length>0) await sb.from('pagamentos_doadores').insert(novos);
-  } catch(e){ console.warn('_garantirPagamentosDoadorPendentes:', e.message); }
-}
+function _garantirPagamentosDoadorPendentes(...args){return AmorApp._garantirPagamentosDoadorPendentes(...args);}
 
-async function sincronizarPagamentosDoador(){
-  if(!fichaDoador) return;
-  pagamentosDoador = await _buscarPagamentosDoador();
-  renderPagamentosDoador();
-}
+function sincronizarPagamentosDoador(...args){return AmorApp.sincronizarPagamentosDoador(...args);}
 
 function renderAreaDoador(){
   if(!doadorLogado) return;
@@ -4474,91 +2942,9 @@ function renderAreaDoador(){
   renderPagamentosDoador();
 }
 
-function renderPagamentosDoador(){
-  const el = g('doador-pay-list');
-  if(!el) return;
-  if(!fichaDoador || pagamentosDoador.length === 0){
-    el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gray-400)"><i class="fas fa-inbox"></i> Nenhum registro de pagamento</div>';
-    return;
-  }
-  const mesAtual = getMesAtual();
-  const hoje = new Date();
-  const diaPag = fichaDoador?.dia_pagamento || 10;
-  // resumo
-  const pagos = pagamentosDoador.filter(p=>p.status==='pago').length;
-  const total = pagamentosDoador.length;
-  const resEl = g('doador-pay-resumo');
-  if(resEl) resEl.textContent = `${pagos} pago(s) de ${total}`;
+function renderPagamentosDoador(...args){return AmorApp.renderPagamentosDoador(...args);}
 
-  function renderItem(p){
-    const isPago = p.status==='pago';
-    const isAtraso = !isPago && p.mes_referencia < mesAtual;
-    const isMesAtual = p.mes_referencia === mesAtual;
-    let isPendenteDentroPrazo = false;
-    if(!isPago && isMesAtual){
-      const venc = new Date(p.mes_referencia+'-'+String(diaPag).padStart(2,'0')+'T23:59:59');
-      isPendenteDentroPrazo = hoje <= venc;
-    }
-    const cls = isPago?'pago':isAtraso?'vencido':'pendente';
-    const icon = isPago?'fa-check-circle':isAtraso?'fa-exclamation-circle':'fa-clock';
-    const [ano,mes] = p.mes_referencia.split('-');
-    const mesNomeFmt = new Date(+ano,+mes-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-    const mesLabel = mesNomeFmt.charAt(0).toUpperCase()+mesNomeFmt.slice(1);
-    let badge;
-    if(isPago) badge='<span class="pay-item-badge pay-badge-pago">✓ Pago</span>';
-    else if(isAtraso) badge='<span class="pay-item-badge pay-badge-venc">⚠ Atrasado</span>';
-    else if(isPendenteDentroPrazo) badge='<span class="pay-item-badge pay-badge-pend">📅 Vence dia '+diaPag+'</span>';
-    else badge='<span class="pay-item-badge pay-badge-pend">Pendente</span>';
-    const dtPag = p.data_pagamento?' · Pago em '+new Date(p.data_pagamento+'T12:00:00').toLocaleDateString('pt-BR'):'';
-    const mpBtn = !isPago
-      ? `<button class="btn-mp-pagar" onclick="pagarViaMPDoador('${p.mes_referencia}',${p.valor})" style="font-size:.75rem;padding:.45rem .9rem;border-radius:var(--r);margin-top:.5rem;display:inline-flex;align-items:center;gap:.4rem"><i class="fas fa-credit-card"></i> Pagar com MP</button>` : '';
-    const mpAssinBtn = !isPago
-      ? `<button onclick="pagarAssinaturaMP('${p.mes_referencia}',${p.valor})" style="background:linear-gradient(135deg,#009ee3,#0070b4);border:none;color:#fff;font-size:.75rem;padding:.45rem .9rem;border-radius:var(--r);margin-top:.5rem;margin-left:.4rem;display:inline-flex;align-items:center;gap:.4rem;cursor:pointer"><i class="fas fa-repeat"></i> Pgto. Automático</button>` : '';
-    return `<div class="pay-item ${cls}">
-      <div class="pay-item-icon"><i class="fas ${icon}"></i></div>
-      <div style="flex:1">
-        <div class="pay-item-mes">${mesLabel} ${badge}</div>
-        <div class="pay-item-info">Vencimento: dia ${diaPag}${dtPag}</div>
-        <div>${mpBtn}${mpAssinBtn}</div>
-      </div>
-      <div class="pay-item-val" style="font-weight:700;font-size:1rem;color:${isPago?'var(--success)':isAtraso?'var(--error)':'var(--warn)'}">
-        R$ ${(p.valor||0).toFixed(2).replace('.',',')}
-      </div>
-    </div>`;
-  }
-
-  const atrasados = pagamentosDoador.filter(p=>p.status!=='pago'&&p.mes_referencia<mesAtual);
-  const pendentes = pagamentosDoador.filter(p=>p.status!=='pago'&&p.mes_referencia>=mesAtual);
-  const pagosArr = pagamentosDoador.filter(p=>p.status==='pago');
-  function sep(label,cor='var(--gray-400)'){ return `<div style="padding:.5rem 0 .3rem;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:${cor};display:flex;align-items:center;gap:.5rem;margin-top:.5rem"><span style="flex:1;height:1px;background:currentColor;opacity:.2"></span>${label}<span style="flex:1;height:1px;background:currentColor;opacity:.2"></span></div>`; }
-  let html='';
-  if(atrasados.length>0){ html+=sep('⚠ Atrasados','var(--error)'); html+=atrasados.map(renderItem).join(''); }
-  if(pendentes.length>0){ html+=sep('📅 Pendentes / Próximos','var(--warn)'); html+=pendentes.map(renderItem).join(''); }
-  if(pagosArr.length>0){ html+=sep('✓ Pagos','var(--success)'); html+=pagosArr.map(renderItem).join(''); }
-  el.innerHTML = html;
-}
-
-async function pagarViaMPDoador(mesRef, valor){
-  if(!fichaDoador || !doadorLogado) return;
-  toast('Gerando link de pagamento...');
-  try {
-    const [ano,mes] = mesRef.split('-');
-    const mesNome = new Date(+ano,+mes-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-    const extRef = `doador-${fichaDoador.id}-${mesRef}`;
-    const payload = {
-      items:[{title:`Doação ONG Por Amor — ${mesNome}`,quantity:1,currency_id:'BRL',unit_price:valor}],
-      payer:{name:fichaDoador.nome||doadorLogado.nome, email:fichaDoador.email||doadorLogado.email},
-      back_urls:{success:window.location.href,failure:window.location.href,pending:window.location.href},
-      auto_return:'approved', statement_descriptor:'ONG Por Amor', external_reference: extRef
-    };
-    const resp = await fetch('https://api.mercadopago.com/checkout/preferences',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+MP_ACCESS_TOKEN},body:JSON.stringify(payload)});
-    const data = await resp.json();
-    if(data.init_point){
-      window.open(data.init_point,'_blank');
-      toast('Checkout aberto! Aguardando confirmação... ⏳');
-    } else throw new Error(data.message||'Erro ao gerar link');
-  } catch(e){ toast('Erro Mercado Pago: '+e.message,'err'); }
-}
+function pagarViaMPDoador(...args){return AmorApp.pagarViaMPDoador(...args);}
 
 // ═══════════════════════════════════════════
 //  PAGAMENTO AUTOMÁTICO — ASSINATURA MP
@@ -4566,51 +2952,7 @@ async function pagarViaMPDoador(mesRef, valor){
 //  Fallback automático para Checkout Pro se a
 //  API de planos estiver indisponível.
 // ═══════════════════════════════════════════
-async function pagarAssinaturaMP(mesRef, valor){
-  const isDoador = !!document.querySelector('#view-doador.active');
-  const ficha   = isDoador ? fichaDoador  : fichaAssociado;
-  const usuario = isDoador ? doadorLogado : associadoLogado;
-  if(!ficha || !usuario){ toast('Dados não encontrados. Faça login novamente.','err'); return; }
-
-  const nome  = ficha.nome  || usuario.nome  || 'Contribuinte';
-  const email = ficha.email || usuario.email || '';
-
-  // Verifica se o Worker foi configurado
-  if(!MP_PROXY_URL || MP_PROXY_URL.includes('SEU_USUARIO')){
-    toast('⚠️ Configure a URL do Worker no arquivo HTML.','err');
-    return;
-  }
-
-  toast('⏳ Gerando assinatura automática...');
-
-  try {
-    const resp = await fetch(`${MP_PROXY_URL}/criar-assinatura`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nome,
-        email,
-        valor,
-        external_reference: `${isDoador?'doador':'assoc'}-${ficha.id}-assin-${mesRef}`,
-        back_url: window.location.href
-      })
-    });
-
-    const data = await resp.json();
-    const link = data.init_point || data.sandbox_init_point;
-
-    if(link){
-      toast('✅ Assinatura criada! Abrindo checkout...');
-      setTimeout(()=> window.open(link, '_blank'), 400);
-    } else {
-      throw new Error(data.message || data.error || 'Erro ao criar assinatura');
-    }
-
-  } catch(e){
-    toast('Erro ao criar assinatura: ' + e.message, 'err');
-    console.error('pagarAssinaturaMP:', e);
-  }
-}
+function pagarAssinaturaMP(...args){return AmorApp.pagarAssinaturaMP(...args);}
 
 function showDoadorTab(id){
   document.querySelectorAll('#view-doador .assoc-panel').forEach(p=>p.classList.remove('active'));
@@ -4624,39 +2966,10 @@ function showDoadorTab(id){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function doDoadorLogout(){
-  doadorLogado=null; fichaDoador=null; pagamentosDoador=[];
-  localStorage.removeItem('doador_sessao');
-  showView('view-admin-login');
-  switchLoginTab('tab-login');
-}
+function doDoadorLogout(...args){return AmorApp.doDoadorLogout(...args);}
 
 // Login de doador (usado no fluxo de login normal - identifica tipo)
-async function checkDoadorLogin(email, senha){
-  const senhaHash = btoa(unescape(encodeURIComponent(senha)));
-  // Verifica credenciais
-  const {data: usuario} = await sb.from('usuarios_associados').select('*').eq('email', email).eq('senha_hash', senhaHash).single();
-  if(!usuario) return false;
-  // Verifica se tem ficha de doador
-  const {data: doador} = await sb.from('doadores').select('*').eq('email', email).maybeSingle();
-  if(!doador) return false;
-
-  // Monta estado do doador
-  doadorLogado = {...usuario, ...doador};
-  fichaDoador  = doador;
-  localStorage.setItem('doador_sessao', JSON.stringify(doadorLogado));
-
-  // Carrega pagamentos
-  await _garantirPagamentosDoadorPendentes();
-  pagamentosDoador = await _buscarPagamentosDoador();
-
-  // Mostra a view e garante aba de início ativa
-  showView('view-doador');
-  showDoadorTab('tab-doador-inicio');
-  renderAreaDoador();
-  toast('Bem-vindo(a), ' + (doador.nome||'Doador').split(' ')[0] + '! ❤️');
-  return true;
-}
+function checkDoadorLogin(...args){return AmorApp.checkDoadorLogin(...args);}
 
 // ═══════════════════════════════════════════
 //  ADMIN: DOADORES
@@ -4664,103 +2977,19 @@ async function checkDoadorLogin(email, senha){
 let doadores = [];
 let pagamentosDoadores = {};
 
-async function loadDoadores(){
-  try {
-    const {data} = await sb.from('doadores').select('*').order('created_at',{ascending:false});
-    doadores = data||[];
-    const ids = doadores.map(d=>d.id);
-    if(ids.length > 0){
-      const {data: pags} = await sb.from('pagamentos_doadores').select('*').in('doador_id', ids).order('mes_referencia',{ascending:false});
-      pagamentosDoadores = {};
-      (pags||[]).forEach(p=>{ if(!pagamentosDoadores[p.doador_id]) pagamentosDoadores[p.doador_id]=[]; pagamentosDoadores[p.doador_id].push(p); });
-    }
-    renderDoadores();
-  } catch(e){ console.warn('loadDoadores:', e.message); }
-}
+function loadDoadores(...args){return AmorApp.loadDoadores(...args);}
 
-function renderDoadores(){
-  const tbody = g('doadores-body');
-  if(!tbody) return;
-  const busca = (g('fd-busca')?.value||'').toLowerCase();
-  const pgStatus = g('fd-pgstatus')?.value||'';
-  const mesAtual = getMesAtual();
-  const hoje = new Date();
-  const meses = Array.from({length:3},(_,i)=>{ const d=new Date(hoje.getFullYear(),hoje.getMonth()-2+i,1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; });
-
-  let filtered = doadores;
-  if(busca) filtered = filtered.filter(d=>(d.nome||'').toLowerCase().includes(busca)||(d.email||'').toLowerCase().includes(busca)||(d.telefone||'').includes(busca));
-  if(pgStatus==='pendente') filtered = filtered.filter(d=>(pagamentosDoadores[d.id]||[]).some(p=>p.mes_referencia===mesAtual&&p.status==='pendente'));
-  if(pgStatus==='em_dia') filtered = filtered.filter(d=>(pagamentosDoadores[d.id]||[]).some(p=>p.mes_referencia===mesAtual&&p.status==='pago'));
-
-  const countEl = g('count-badge-doadores'); if(countEl) countEl.textContent = filtered.length;
-
-  tbody.innerHTML = filtered.map(d=>{
-    const pags = pagamentosDoadores[d.id]||[];
-    const payChips = meses.map(m=>{
-      const p = pags.find(x=>x.mes_referencia===m);
-      const mesLabel = m.slice(5)+'/'+m.slice(2,4);
-      if(!p||p.status==='pendente'){
-        const isOverdue = m<mesAtual;
-        return `<span class="pay-chip ${isOverdue?'overdue':'pending'}" onclick="togglePayDoador('${d.id}','${m}')" title="Confirmar pagamento de ${mesLabel}">${mesLabel} ○</span>`;
-      }
-      return `<span class="pay-chip paid" onclick="togglePayDoador('${d.id}','${m}')" title="Pago - clique para reverter">${mesLabel} ✓</span>`;
-    }).join('');
-    return `<tr>
-      <td><span class="td-name">${d.nome}</span></td>
-      <td>${d.telefone||'—'}</td>
-      <td style="font-size:.8rem">${d.email||'—'}</td>
-      <td><strong>Dia ${d.dia_pagamento||10}</strong></td>
-      <td style="font-weight:700;color:var(--navy)">R$ ${(d.valor_contribuicao||30).toFixed(2).replace('.',',')}</td>
-      <td>${d.forma_pagamento||'PIX'}</td>
-      <td><div class="pay-month-row">${payChips}</div></td>
-      <td><div class="actions-cell">
-        <button class="btn-sm btn-sm-warn" onclick="openCobrancaDoador('${d.id}')"><i class="fas fa-paper-plane"></i> Cobrar</button>
-        <button class="btn-sm btn-sm-red" onclick="confirmDeleteDoador('${d.id}')"><i class="fas fa-trash"></i></button>
-      </div></td>
-    </tr>`;
-  }).join('')||'<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--gray-400)"><i class="fas fa-search"></i> Nenhum doador encontrado</td></tr>';
-}
+function renderDoadores(...args){return AmorApp.renderDoadores(...args);}
 
 function clearDoadorFilters(){ g('fd-busca').value=''; g('fd-pgstatus').value=''; renderDoadores(); }
 
-async function togglePayDoador(did, mes){
-  const pags = pagamentosDoadores[did]||[];
-  const p = pags.find(x=>x.mes_referencia===mes);
-  const newStatus = (!p||p.status==='pendente')?'pago':'pendente';
-  if(p){
-    await sb.from('pagamentos_doadores').update({status:newStatus,data_pagamento:newStatus==='pago'?new Date().toISOString().slice(0,10):null,confirmado_por:'ongadmin'}).eq('id',p.id);
-    p.status=newStatus;
-  } else {
-    const d = doadores.find(x=>x.id===did);
-    const novoPag = {doador_id:did,mes_referencia:mes,valor:d?.valor_contribuicao||30,status:newStatus,data_vencimento:`${mes}-${String(d?.dia_pagamento||10).padStart(2,'0')}`,confirmado_por:newStatus==='pago'?'ongadmin':null,data_pagamento:newStatus==='pago'?new Date().toISOString().slice(0,10):null,email:d?.email||null};
-    const {data} = await sb.from('pagamentos_doadores').insert([novoPag]).select();
-    if(data?.[0]){ if(!pagamentosDoadores[did]) pagamentosDoadores[did]=[]; pagamentosDoadores[did].push(data[0]); }
-  }
-  toast(newStatus==='pago'?'✓ Pagamento confirmado!':'Pagamento marcado como pendente');
-  renderDoadores();
-}
+function togglePayDoador(...args){return AmorApp.togglePayDoador(...args);}
 
-async function openCobrancaDoador(did){
-  const d = doadores.find(x=>x.id===did);
-  if(!d) return;
-  const mesAtual = getMesAtual();
-  const [ano,mes] = mesAtual.split('-');
-  const mesNome = new Date(+ano,+mes-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-  const valor = d.valor_contribuicao||30;
-  const msg = `Olá, ${d.nome.split(' ')[0]}! 😊\n\nPassamos para lembrar da sua doação mensal à *ONG Por Amor*.\n\n💰 *Valor:* R$ ${valor.toFixed(2).replace('.',',')}\n📅 *Vencimento:* Todo dia ${d.dia_pagamento||10}\n\nPIX: (83) 98231-5427 (ONG Por Amor)\n\nObrigado pela sua contribuição! ❤️\n— ONG Por Amor`;
-  const waNum = (d.telefone||'').replace(/\D/g,'');
-  window.open(`https://wa.me/55${waNum}?text=${encodeURIComponent(msg)}`,'_blank');
-}
+function openCobrancaDoador(...args){return AmorApp.openCobrancaDoador(...args);}
 
 let deleteDoadorId = null;
-function confirmDeleteDoador(did){ deleteDoadorId=did; const d=doadores.find(x=>x.id===did); if(confirm(`Excluir doador ${d?.nome}? Esta ação não pode ser desfeita.`)){ doDeleteDoador(); } }
-async function doDeleteDoador(){
-  if(!deleteDoadorId) return;
-  await sb.from('pagamentos_doadores').delete().eq('doador_id',deleteDoadorId);
-  await sb.from('doadores').delete().eq('id',deleteDoadorId);
-  doadores=doadores.filter(x=>x.id!==deleteDoadorId); delete pagamentosDoadores[deleteDoadorId];
-  deleteDoadorId=null; toast('Doador removido.'); renderDoadores();
-}
+function confirmDeleteDoador(did){ deleteDoadorId=did; const d=doadores.find(x=>x.id===did); if(confirm(`Desativar doador ${d?.nome}? O histórico financeiro será preservado.`)){ doDeleteDoador(); } }
+function doDeleteDoador(...args){return AmorApp.doDeleteDoador(...args);}
 
 // ═══════════════════════════════════════════
 //  ADIANTAMENTO DE PAGAMENTOS
@@ -4817,38 +3046,10 @@ function toggleAdiantamento(mes, valor){
 
 function fecharAdiantamento(){ g('modal-adiantamento').classList.remove('open'); }
 
-async function pagarAdiantamentoMP(){
-  const ctx = adiantamentoContext;
-  const ficha = ctx==='doador' ? fichaDoador : fichaAssociado;
-  const usuario = ctx==='doador' ? doadorLogado : associadoLogado;
-  if(!ficha || adiantamentoSelecionados.size===0) return;
-  const meses = [...adiantamentoSelecionados].sort();
-  const valor = ficha.valor_contribuicao||30;
-  const total = meses.length * valor;
-  const titulo = meses.length===1
-    ? `Contribuição ONG Por Amor — ${new Date(meses[0]+'-15').toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}`
-    : `Contribuição ONG Por Amor — ${meses.length} meses adiantados`;
-  const extRef = `${ctx}-${ficha.id}-adiant-${meses.join('_')}`;
-  toast('Gerando link de pagamento...');
-  try {
-    const payload = {
-      items:[{title:titulo,quantity:1,currency_id:'BRL',unit_price:total}],
-      payer:{name:ficha.nome||usuario?.nome, email:ficha.email||usuario?.email},
-      back_urls:{success:window.location.href,failure:window.location.href,pending:window.location.href},
-      auto_return:'approved', statement_descriptor:'ONG Por Amor', external_reference: extRef
-    };
-    const resp = await fetch('https://api.mercadopago.com/checkout/preferences',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+MP_ACCESS_TOKEN},body:JSON.stringify(payload)});
-    const data = await resp.json();
-    if(data.init_point){
-      window.open(data.init_point,'_blank');
-      fecharAdiantamento();
-      toast('Checkout aberto! Aguardando confirmação dos '+meses.length+' meses... ⏳');
-    } else throw new Error(data.message||'Erro ao gerar link');
-  } catch(e){ toast('Erro Mercado Pago: '+e.message,'err'); }
-}
+function pagarAdiantamentoMP(...args){return AmorApp.pagarAdiantamentoMP(...args);}
 
 // Inicialização: verifica modo admin na URL e restaura sessão
-checkAdminMode();
+
 
 // Event listeners — com guards para não quebrar quando elemento não existe
 const _admSenha = g('adm-senha');
@@ -4878,77 +3079,9 @@ if(_mDelete) _mDelete.addEventListener('click', function(e){ if(e.target===this)
 let _pollingInterval = null;
 let _pollingAtivo = false;
 
-function iniciarPolling(){
-  if(_pollingInterval) return; // já rodando
-  _pollingAtivo = true;
-  _pollingInterval = setInterval(async () => {
-    if(!_pollingAtivo) return;
-    const viewAdmin  = document.querySelector('#view-admin.active');
-    const viewAssoc  = document.querySelector('#view-associado.active');
-    const viewDoador = document.querySelector('#view-doador.active');
-    if(viewAdmin){
-      // Admin: recarrega dados silenciosamente e atualiza UI
-      try{
-        const {data: novosAssoc} = await sb.from('associados').select('*').order('created_at',{ascending:false});
-        if(novosAssoc) associados = novosAssoc;
-        const ids = associados.map(a=>a.id);
-        if(ids.length > 0){
-          const {data: novosPags} = await sb.from('pagamentos').select('*').in('associado_id',ids).order('mes_referencia',{ascending:false});
-          pagamentos = {};
-          (novosPags||[]).forEach(p=>{ if(!pagamentos[p.associado_id]) pagamentos[p.associado_id]=[]; pagamentos[p.associado_id].push(p); });
-        }
-        renderTable(); updateKPIs(); renderPendencias();
-        // Atualiza indicador de sync
-        const syncDot = g('rt-sync-dot');
-        if(syncDot){ syncDot.style.background='var(--success)'; syncDot.title='Atualizado: '+new Date().toLocaleTimeString('pt-BR'); setTimeout(()=>{ if(syncDot) syncDot.style.background='var(--teal-light)'; },800); }
-      }catch(e){ console.warn('Polling admin:', e.message); }
-    }
-    if(viewAssoc && associadoLogado){
-      try{
-        if(fichaAssociado){
-          // 1) Lê Supabase (fonte da verdade)
-          const novosPags = await _buscarTodosPagamentosAssociado();
-          const novosPagsStr = JSON.stringify(novosPags);
-          const anteriorStr  = JSON.stringify(pagamentosAssociado);
+function iniciarPolling(...args){return AmorApp.iniciarPolling(...args);}
 
-          if(novosPagsStr !== anteriorStr){
-            const listAnterior = [...pagamentosAssociado];
-            pagamentosAssociado = novosPags;
-            renderPagamentosAssociado();
-            renderAreaAssociado();
-            pagamentosAssociado.forEach(p => {
-              const ant = listAnterior.find(x => x.mes_referencia === p.mes_referencia);
-              if(p.status==='pago' && (!ant || ant.status!=='pago')){
-                const [a,m] = p.mes_referencia.split('-');
-                const nomeMes = new Date(+a,+m-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-                toast(`✅ Pagamento de ${nomeMes} confirmado! Obrigado! ❤️`);
-              }
-            });
-          }
-
-
-        }
-        const syncDotA = g('rt-sync-dot-assoc');
-        if(syncDotA){ syncDotA.style.background='var(--success)'; setTimeout(()=>{ if(syncDotA) syncDotA.style.background='var(--teal-light)'; },800); }
-      }catch(e){ console.warn('Polling assoc:', e.message); }
-    }
-    if(viewDoador && doadorLogado && fichaDoador){
-      try{
-        const novosPags = await _buscarPagamentosDoador();
-        if(JSON.stringify(novosPags)!==JSON.stringify(pagamentosDoador)){
-          pagamentosDoador=novosPags; renderPagamentosDoador(); renderAreaDoador();
-        }
-        const syncDotD=g('rt-sync-dot-doador');
-        if(syncDotD){syncDotD.style.background='var(--success)';setTimeout(()=>{if(syncDotD)syncDotD.style.background='var(--teal-light)';},800);}
-      }catch(e){ console.warn('Polling doador:', e.message); }
-    }
-  }, 5000);
-}
-
-function pararPolling(){
-  _pollingAtivo = false;
-  if(_pollingInterval){ clearInterval(_pollingInterval); _pollingInterval = null; }
-}
+function pararPolling(...args){return AmorApp.pararPolling(...args);}
 
 // Inicia polling quando a página carrega
 window.addEventListener('load', () => setTimeout(iniciarPolling, 2000));
@@ -4957,5 +3090,6 @@ document.addEventListener('visibilitychange', () => {
   if(document.hidden){ pararPolling(); } else { iniciarPolling(); }
 });
 </script>
+<script src="app.js"></script>
 </body>
 </html>
