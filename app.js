@@ -2,6 +2,7 @@
 const AmorApp=(()=>{
   const D=AmorDomain, E=D.escapeHTML, money=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   let currentUser=null, admin=false, timer=null, refreshing=false, requestedPayments=false;
+  let lastReconcile=0,reconciling=null;
   const pending=new Set();
   const tableState={associado:{page:0,key:''},doador:{page:0,key:''}};
   async function checked(query){const r=await query;if(r.error)throw r.error;return r.data;}
@@ -18,7 +19,7 @@ const AmorApp=(()=>{
     if(donor?.length){doadorLogado=safeSession(currentUser);associadoLogado=null;await carregarDadosDoador();showView('view-doador');}
     else{associadoLogado=safeSession(currentUser);doadorLogado=null;await carregarDadosAssociado();if(fichaAssociado)_redirecionarAposLogin(false);else{showView('view-admin-login');abrirTipoSelect();}}
     if(requestedPayments)openPayments();
-    await syncNative();iniciarPolling();
+    await syncNative();iniciarPolling();refresh().catch(fail);
   }
   async function openAdmin(){
     admin=await isAdmin();if(!admin)throw Error('Acesso restrito');
@@ -45,7 +46,7 @@ const AmorApp=(()=>{
     await openAdmin();
   });}
   async function logout(){
-    pararPolling();currentUser=null;admin=false;associadoLogado=null;doadorLogado=null;fichaAssociado=null;fichaDoador=null;pagamentosAssociado=[];pagamentosDoador=[];
+    pararPolling();lastReconcile=0;currentUser=null;admin=false;associadoLogado=null;doadorLogado=null;fichaAssociado=null;fichaDoador=null;pagamentosAssociado=[];pagamentosDoador=[];
     if(window.AmorAndroid)AmorAndroid.clear();
     for(const key of ['assoc_sessao','doador_sessao','assoc_ultima_aba'])localStorage.removeItem(key);
     await sb.auth.signOut({scope:'local'});showView('view-admin-login');switchLoginTab('tab-login');
@@ -187,8 +188,14 @@ const AmorApp=(()=>{
     const u=new URL(url);if(u.protocol!=='https:'||!/(^|\.)(mercadopago\.com\.br|mercadopago\.com)$/.test(u.hostname))throw Error('Link de pagamento inválido');
     if(window.AmorAndroid)AmorAndroid.openExternal(u.href);else location.assign(u.href);
   }
-  async function pay(kind,id,months){return busy('payment',async()=>{toast('Preparando seu pagamento…');const r=await gateway('/criar-preferencia',{kind,id,months});external(r.init_point);});}
-  async function sincronizar(){return busy('sync-payments',async()=>{const result=await gateway('/sincronizar');await refresh();toast(result.reviews?'Há pagamento aguardando conferência da gestão.':'Extrato atualizado com as confirmações recebidas.');});}
+  async function pay(kind,id,months){return busy('payment',async()=>{toast('Preparando seu pagamento…');const r=await gateway('/criar-preferencia',{kind,id,months});lastReconcile=0;external(r.init_point);});}
+  async function reconcile(force=false){
+    if(reconciling)return reconciling;
+    if(!currentUser||admin||!navigator.onLine||(!force&&Date.now()-lastReconcile<300000))return {processed:0,reviews:0};
+    lastReconcile=Date.now();reconciling=gateway('/sincronizar');
+    try{return await reconciling;}finally{reconciling=null;}
+  }
+  async function sincronizar(){return busy('sync-payments',async()=>{const result=admin?await gateway('/sincronizar'):await reconcile(true);await refresh();toast(result.reviews?'Há pagamento aguardando conferência da gestão.':'Extrato atualizado com as confirmações recebidas.');});}
   async function toggle(kind,id,month){return busy(`pay-${id}-${month}`,async()=>{
     if(!admin||!await isAdmin())throw Error('Acesso restrito');
     const rows=kind==='associado'?pagamentos[id]||[]:pagamentosDoadores[id]||[],old=rows.find(p=>p.mes_referencia===month);
@@ -238,7 +245,7 @@ const AmorApp=(()=>{
   }
   async function refresh(){
     if(refreshing||document.hidden||!navigator.onLine)return;refreshing=true;
-    try{if(admin&&g('view-admin').classList.contains('active'))await Promise.all([loadAssociados(),loadDoadores()]);else if(associadoLogado)await carregarDadosAssociado();else if(doadorLogado)await carregarDadosDoador();}
+    try{try{await reconcile();}catch{/* Still load confirmed database entries if the provider is unavailable. */}if(admin&&g('view-admin').classList.contains('active'))await Promise.all([loadAssociados(),loadDoadores()]);else if(associadoLogado)await carregarDadosAssociado();else if(doadorLogado)await carregarDadosDoador();}
     finally{refreshing=false;}
   }
   function iniciarPolling(){if(timer||!currentUser||document.hidden)return;timer=setInterval(()=>refresh().catch(fail),60000);}
