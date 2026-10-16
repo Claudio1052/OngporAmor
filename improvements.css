@@ -174,3 +174,5 @@ button:disabled{opacity:.65;cursor:wait}
   .bottom-nav .bnav-item span{display:none}
   .bottom-nav .bnav-item i{font-size:22px;line-height:1.1}
 }
+.privacy-links{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:8px 20px;margin:16px auto;padding:8px 16px;max-width:760px;font:13px/1.5 system-ui,sans-serif}
+.privacy-links a{display:inline-flex;align-items:center;min-height:44px;color:#067680;text-decoration:underline;text-underline-offset:3px}

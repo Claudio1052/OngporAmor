@@ -356,6 +356,14 @@ const AmorApp=(()=>{
   }
   function back(){if(closeEmailAccess){g('native-email-access')?.querySelector('[data-cancel]')?.click();return true;}if(g('minimum-settings')){g('minimum-settings').querySelector('[data-close]')?.click();return true;}if(g('reminder-prompt')){g('reminder-prompt').remove();return true;}const modal=document.querySelector('.modal-overlay.open');if(modal){modal.classList.remove('open');return true;}if(fichaAssociado&&g('view-associado').classList.contains('active')){if(!g('tab-assoc-inicio').classList.contains('active')){showAssocTab('tab-assoc-inicio');return true;}}if(fichaDoador&&g('view-doador').classList.contains('active')){if(!g('tab-doador-inicio').classList.contains('active')){showDoadorTab('tab-doador-inicio');return true;}}return false;}
   function init(){
+    for(const id of ['view-admin-login','view-associado','view-doador','view-admin']){
+      const links=document.createElement('nav');links.className='privacy-links';links.setAttribute('aria-label','Privacidade e conta');
+      for(const [file,label] of [['privacidade.html','Privacidade'],['excluir-conta.html','Solicitar exclusão da conta']]){
+        const link=document.createElement('a');link.href='https://www.ongporamor.top/'+file;link.textContent=label;
+        link.onclick=event=>{if(window.AmorAndroid){event.preventDefault();AmorAndroid.openExternal(link.href);}};links.append(link);
+      }
+      (id==='view-admin-login'?g(id).querySelector('.login-card')||g(id):g(id)).append(links);
+    }
     g('inp-valor').setAttribute('aria-describedby','minimum-contribution-hint');
     g('inp-valor').addEventListener('input',()=>{g('inp-valor').dataset.userEdited='true';});
     g('inp-valor').addEventListener('focus',()=>loadContributionSettings().catch(()=>{}));
