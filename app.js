@@ -157,6 +157,7 @@ const AmorApp=(()=>{
   }
   function printSheet(title,fields,signature){
     g('print-sheet')?.remove();const sheet=document.createElement('article');sheet.id='print-sheet';
+    const logo=document.createElement('img');logo.src='assets/por-amor-logo.png';logo.alt='Associação Por Amor';logo.className='print-logo';sheet.append(logo);
     const heading=document.createElement('h1');heading.textContent='ONG Por Amor — '+title;sheet.append(heading);
     const table=document.createElement('table');for(const [label,value] of fields){const row=document.createElement('tr'),th=document.createElement('th'),td=document.createElement('td');th.textContent=label;td.textContent=value||'________________________________';row.append(th,td);table.append(row);}sheet.append(table);
     if(typeof signature==='string'&&/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(signature)&&signature.length<=300000){const img=document.createElement('img');img.src=signature;img.alt='Assinatura registrada na ficha';img.style.maxWidth='300px';sheet.append(img);}

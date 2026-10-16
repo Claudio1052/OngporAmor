@@ -1,4 +1,10 @@
 :root{--gray-400:#64748b}
+.brand-logo{display:block;flex-shrink:0;width:96px;height:auto;max-width:100%;object-fit:contain;background:#fff;border-radius:50%}
+.login-brand-logo{width:112px;margin:0 auto 12px}
+.choice-brand-logo{width:72px;margin:0 auto 12px}
+.form-brand-logo{width:80px}
+.assoc-brand .brand-logo,.admin-brand .brand-logo{width:40px;height:auto;border-radius:50%}
+#print-sheet .print-logo{width:112px;height:auto;object-fit:contain;margin:0 0 12px}
 body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
 button,a,input,select{touch-action:manipulation}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #087f83;outline-offset:3px}
@@ -42,6 +48,9 @@ button:disabled{opacity:.65;cursor:wait}
   #view-admin-login{padding:16px 12px;min-height:100svh;overflow:visible}
   .login-card{max-width:440px;margin:auto}
   .login-card-top{padding:24px 16px 0}
+  .login-brand-logo{width:88px}
+  .assoc-brand .brand-logo,.admin-brand .brand-logo{width:36px}
+  .assoc-topbar{height:auto;min-height:56px;padding:6px 12px;gap:8px}
   .login-body{padding:24px 20px}
   .login-tabs .login-tab{font-size:13px;padding:12px 6px;white-space:nowrap}
   .login-tab i{margin-right:3px}
