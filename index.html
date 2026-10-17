@@ -853,7 +853,7 @@ tr:hover td{background:var(--gray-50)}
 }
 
 </style>
-<link rel="stylesheet" href="improvements.css?v=b0ce7867231b">
+<link rel="stylesheet" href="improvements.css?v=f72063161236">
 <script src="domain.js?v=1d8daa23769d"></script>
 </head>
 <body>
@@ -1920,6 +1920,7 @@ const g = id => document.getElementById(id);
 //  VIEW MANAGER
 // ═══════════════════════════════════════════
 function showView(id){
+  if(id!=='view-patrocinador')window.AmorSponsors?.stop();
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   const el = g(id);
   if(el){ el.classList.add('active'); }
@@ -2871,9 +2872,11 @@ function selecionarTipo(tipo){
 }
 
 function continuarTipo(){
-  if(!tipoSelecionado){ toast('Escolha uma opção: Associado ou Doador','err'); return; }
+  if(!tipoSelecionado){ toast('Escolha uma opção: Associado, Doador ou Patrocinador','err'); return; }
   fecharTipoSelect();
-  if(tipoSelecionado === 'associado'){
+  if(tipoSelecionado === 'patrocinador'){
+    AmorSponsors.begin().catch(()=>toast('Não foi possível abrir o cadastro de patrocínio. Tente novamente.','err'));return;
+  } else if(tipoSelecionado === 'associado'){
     // Fluxo normal: abre formulário completo
     showView('view-form');
     goPage(1);
@@ -3118,7 +3121,8 @@ document.addEventListener('visibilitychange', () => {
   if(document.hidden){ pararPolling(); } else { iniciarPolling(); }
 });
 </script>
-<script src="review-workspace.js?v=36e6db4855b6"></script>
-<script src="app.js?v=ec90206be618"></script>
+<script src="review-workspace.js?v=3f8954ca35aa"></script>
+<script src="sponsors.js?v=dca80fffa3c0"></script>
+<script src="app.js?v=328fbaa14540"></script>
 </body>
 </html>

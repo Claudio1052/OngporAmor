@@ -13,7 +13,9 @@ window.AmorReview=(()=>{
     const a={...person,id:'00000000-0000-4000-8000-000000000001',numero_associado:1};
     const d={...person,id:'00000000-0000-4000-8000-000000000002',nome:'Doador de Teste'};
     const ledger=(p,key)=>[month,next].map((m,i)=>({id:p.id.slice(0,-1)+(i+3),[key]:p.id,mes_referencia:m,valor:p.valor_contribuicao,data_vencimento:m+'-10',status:'pendente',data_pagamento:null}));
-    return {associados:[a],doadores:[d],pagamentos:ledger(a,'associado_id'),pagamentos_doadores:ledger(d,'doador_id'),settings:{minimum_associado:35,version:1}};
+    const plans=[['diamante','Diamante',1500,1],['ouro','Ouro',800,2],['prata','Prata',400,4],['bronze','Bronze',200,6],['ferro','Ferro',100,10]].map(([id,name,monthly,count])=>({id,name,monthly,count,annual:monthly*10.8}));
+    const sponsor={user:uid,email,company:'Empresa Fictícia de Teste',trade_name:'Patrocinador de Teste',contact:'Responsável Fictício',document:'00000000000000',phone:'00000000000',city:'Campina Grande',state:'PB',slot:'ouro-1',tier:'ouro',logo:'review-logo',paid_until:Date.now()+30*86400000};
+    return {associados:[a],doadores:[d],pagamentos:ledger(a,'associado_id'),pagamentos_doadores:ledger(d,'doador_id'),settings:{minimum_associado:35,version:1},sponsors:{version:1,plans,profile:sponsor}};
   }
   function canRead(table){return role==='gestao'||!((role==='associado'&&['doadores','pagamentos_doadores'].includes(table))||(role==='doador'&&['associados','pagamentos'].includes(table)));}
   function query(table){
@@ -76,7 +78,7 @@ window.AmorReview=(()=>{
     const text=document.createElement('p');text.textContent='Conta de teste · Dados fictícios · Sem cobranças. Alterações são descartadas ao sair.';
     const label=document.createElement('label');label.textContent='Área para testar ';
     const select=document.createElement('select');select.setAttribute('aria-label','Área para testar');
-    for(const [value,name] of [['associado','Associado'],['doador','Doador'],['gestao','Gestão']]){const o=document.createElement('option');o.value=value;o.textContent=name;if(value===role)o.setAttribute('selected','');select.append(o);}
+    for(const [value,name] of [['associado','Associado'],['doador','Doador'],['patrocinador','Patrocinador'],['gestao','Gestão']]){const o=document.createElement('option');o.value=value;o.textContent=name;if(value===role)o.setAttribute('selected','');select.append(o);}
     select.onchange=async()=>{select.disabled=true;role=select.value;try{await change?.();}finally{select.disabled=false;}};
     label.append(select);bar.append(text,label);document.body.prepend(bar);
   }
@@ -88,8 +90,18 @@ window.AmorReview=(()=>{
     if(checked.error||verified?.id!==uid||verified?.email?.toLowerCase()!==email||!verified?.email_confirmed_at){disable();throw Error('Conta de teste não verificada');}
     decorate(sb);state??=seed();active=true;change=onChange;banner();return true;
   }
-  async function gateway(path){
+  async function gateway(path,args={}){
     if(!active)throw Error('Conta de teste não ativa');
+    const sponsors=state.sponsors;
+    if(path==='/patrocinadores/painel')return clone({version:sponsors.version,plans:sponsors.plans,slots:sponsors.plans.flatMap(p=>Array.from({length:p.count},(_,i)=>{const id=p.id+'-'+(i+1),occupied=id===sponsors.profile.slot&&!sponsors.profile.hidden;return {id,tier:p.id,status:occupied?'occupied':'available',...(occupied?{name:sponsors.profile.trade_name,logo:'/review/logo.png'}:{})};}))});
+    if(path==='/patrocinadores/minha-area')return clone({profile:role==='patrocinador'?sponsors.profile:null,intents:[]});
+    if(path==='/patrocinadores/cadastro'){sponsors.profile={...sponsors.profile,...clone(args.profile),slot:args.slot,tier:args.slot.split('-')[0]};sponsors.version++;role='patrocinador';const selector=document.querySelector('#review-workspace select');if(selector)selector.value=role;return clone(sponsors.profile);}
+    if(path==='/patrocinadores/logo')return {saved:true};
+    if(role==='gestao'){
+      if(path==='/patrocinadores/admin/listar')return clone({version:sponsors.version,plans:sponsors.plans,profiles:[sponsors.profile],intents:[]});
+      if(path==='/patrocinadores/admin/planos'){if(args.version!==sponsors.version)throw Error('Atualize os planos fictícios antes de salvar.');for(const p of sponsors.plans)if(!Number.isFinite(args.prices?.[p.id])||args.prices[p.id]<1||args.prices[p.id]>100000)throw Error('Valor inválido.');for(const p of sponsors.plans){p.monthly=args.prices[p.id];p.annual=p.monthly*10.8;}sponsors.version++;return {saved:true};}
+      if(path==='/patrocinadores/admin/visibilidade'){sponsors.profile.hidden=Boolean(args.hidden);sponsors.version++;return {saved:true};}
+    }
     if(path==='/sincronizar')return {processed:0,reviews:0};
     if(path==='/financeiro'&&role==='gestao')return {results:[{id:100001,status:'approved',transaction_amount:30,date_created:new Date().toISOString(),date_approved:new Date().toISOString(),payment_method_id:'pix',payer:{email:'exemplo@review.invalid'}}]};
     const error=Error('Esta é uma conta de teste. Não são criadas cobranças reais.');error.code='REVIEW_PAYMENT';throw error;

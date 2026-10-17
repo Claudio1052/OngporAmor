@@ -57,6 +57,7 @@ const AmorApp=(()=>{
     await window.AmorReview?.activate(currentUser,sb,async()=>{pararPolling();associadoLogado=null;doadorLogado=null;fichaAssociado=null;fichaDoador=null;reminderPromptOffered=false;lastReconcile=0;await route();});
     if(wasReview||window.AmorReview?.active){contributionSettingsReady=false;await loadContributionSettings();}admin=await isAdmin();
     if(admin)return openAdmin();
+    if(window.AmorSponsors&&await window.AmorSponsors.route(currentUser)){await syncNative();return;}
     const donor=await checked(sb.from('doadores').select('*').ilike('email',currentUser.email.replace(/[%_\\]/g,'\\$&')).limit(2));
     if(donor?.length>1)throw Error('Cadastro duplicado: revisão necessária');
     if(donor?.length){doadorLogado=safeSession(currentUser);associadoLogado=null;await carregarDadosDoador();showView('view-doador');}
@@ -90,6 +91,7 @@ const AmorApp=(()=>{
   });}
   async function logout(){
     if(!confirm('Deseja sair do aplicativo?'))return;
+    window.AmorSponsors?.reset();
     window.AmorReview?.disable();reminderPromptOffered=false;g('reminder-prompt')?.remove();
     pararPolling();lastReconcile=0;currentUser=null;admin=false;associadoLogado=null;doadorLogado=null;fichaAssociado=null;fichaDoador=null;pagamentosAssociado=[];pagamentosDoador=[];
     if(window.AmorAndroid)AmorAndroid.clear();
@@ -440,6 +442,7 @@ const AmorApp=(()=>{
       }
       (id==='view-admin-login'?g(id).querySelector('.login-card')||g(id):g(id)).append(links);
     }
+    window.AmorSponsors?.install({gateway,session:()=>checked(sb.auth.getSession()),logout,isAdmin:()=>admin,showView,toast});
     g('inp-valor').setAttribute('aria-describedby','minimum-contribution-hint');
     g('inp-valor').addEventListener('input',()=>{g('inp-valor').dataset.userEdited='true';});
     g('inp-valor').addEventListener('focus',()=>loadContributionSettings().catch(()=>{}));
