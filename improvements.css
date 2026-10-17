@@ -176,3 +176,9 @@ button:disabled{opacity:.65;cursor:wait}
 }
 .privacy-links{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:8px 20px;margin:16px auto;padding:8px 16px;max-width:760px;font:13px/1.5 system-ui,sans-serif}
 .privacy-links a{display:inline-flex;align-items:center;min-height:44px;color:#067680;text-decoration:underline;text-underline-offset:3px}
+/* Visible only for the authenticated private test account. */
+#review-workspace{background:#fff5ce;color:#26354a;padding:10px 16px;font:14px/1.45 system-ui;border-bottom:1px solid #d2b45c;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+#review-workspace p{margin:0;flex:1 1 260px}
+#review-workspace label{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#review-workspace select{font:inherit;min-height:44px;max-width:100%;border:1px solid #687482;border-radius:8px;padding:8px;background:white;color:#142b3c}
+@media print{#review-workspace{display:block!important}#review-workspace label{display:none}}

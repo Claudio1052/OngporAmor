@@ -9,7 +9,7 @@ const AmorApp=(()=>{
   const pending=new Set();
   const tableState={associado:{page:0,key:''},doador:{page:0,key:''}};
   async function checked(query){const r=await query;if(r.error)throw r.error;return r.data;}
-  function fail(e){console.error('Operação não concluída:',e.code||e.name||'erro');toast(e.code==='PAYMENT_UNAVAILABLE'?'O pagamento online está temporariamente indisponível. Aguarde a liberação pela ONG.':navigator.onLine?'Não foi possível concluir. Seus dados não foram alterados. Tente novamente.':'Sem conexão. Reconecte-se para confirmar esta operação.','err');}
+  function fail(e){console.error('Operação não concluída:',e.code||e.name||'erro');toast(e.code==='REVIEW_PAYMENT'?'Conta de teste: não são criadas cobranças reais. Confira os pagamentos fictícios na área de gestão.':e.code==='PAYMENT_UNAVAILABLE'?'O pagamento online está temporariamente indisponível. Aguarde a liberação pela ONG.':navigator.onLine?'Não foi possível concluir. Seus dados não foram alterados. Tente novamente.':'Sem conexão. Reconecte-se para confirmar esta operação.','err');}
   async function busy(key,fn){if(pending.has(key))return;pending.add(key);const b=g(key);if(b)b.disabled=true;try{return await fn();}catch(e){fail(e);}finally{pending.delete(key);if(b)b.disabled=false;}}
   async function user(){const data=await checked(sb.auth.getUser());if(!data?.user)throw Error('Sem sessão');return data.user;}
   async function isAdmin(){return Boolean(await checked(sb.rpc('amor_is_admin')));}
@@ -52,7 +52,9 @@ const AmorApp=(()=>{
   }
   function safeSession(u){return {id:u.id,email:u.email,nome:u.user_metadata?.nome||u.email.split('@')[0]};}
   async function route(){
-    currentUser=await user();admin=await isAdmin();
+    const wasReview=Boolean(window.AmorReview?.active);currentUser=await user();
+    await window.AmorReview?.activate(currentUser,sb,async()=>{pararPolling();associadoLogado=null;doadorLogado=null;fichaAssociado=null;fichaDoador=null;reminderPromptOffered=false;lastReconcile=0;await route();});
+    if(wasReview||window.AmorReview?.active){contributionSettingsReady=false;await loadContributionSettings();}admin=await isAdmin();
     if(admin)return openAdmin();
     const donor=await checked(sb.from('doadores').select('*').ilike('email',currentUser.email.replace(/[%_\\]/g,'\\$&')).limit(2));
     if(donor?.length>1)throw Error('Cadastro duplicado: revisão necessária');
@@ -87,7 +89,7 @@ const AmorApp=(()=>{
   });}
   async function logout(){
     if(!confirm('Deseja sair do aplicativo?'))return;
-    reminderPromptOffered=false;g('reminder-prompt')?.remove();
+    window.AmorReview?.disable();reminderPromptOffered=false;g('reminder-prompt')?.remove();
     pararPolling();lastReconcile=0;currentUser=null;admin=false;associadoLogado=null;doadorLogado=null;fichaAssociado=null;fichaDoador=null;pagamentosAssociado=[];pagamentosDoador=[];
     if(window.AmorAndroid)AmorAndroid.clear();
     for(const key of ['assoc_sessao','doador_sessao','assoc_ultima_aba'])localStorage.removeItem(key);
@@ -223,6 +225,7 @@ const AmorApp=(()=>{
     fecharDonorForm();doadorLogado=safeSession(currentUser);associadoLogado=null;await carregarDadosDoador();showView('view-doador');maybeOfferReminders();toast('Cadastro salvo. Obrigado por fazer parte!');
   });}
   async function gateway(path,body){
+    if(window.AmorReview?.active)return window.AmorReview.gateway(path,body);
     if(!navigator.onLine)throw Error('Sem conexão');
     const {session}=await checked(sb.auth.getSession());if(!session)throw Error('Sem sessão');
     const r=await fetch(`${MP_PROXY_URL}${path}`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${session.access_token}`},body:JSON.stringify(body||{}),signal:AbortSignal.timeout(20000)});
@@ -246,7 +249,7 @@ const AmorApp=(()=>{
     const next=old?.status==='pago'?'pendente':'pago';
     if(!confirm(`${next==='pago'?'Confirmar recebimento':'Reabrir contribuição'} de ${month}? Esta alteração ficará no histórico da gestão.`))return;
     await checked(sb.rpc('amor_set_payment_status',{p_kind:kind,p_id:id,p_month:month,p_status:next}));
-    if(kind==='associado')await loadAssociados();else await loadDoadores();toast('Alteração confirmada pelo banco.');
+    if(kind==='associado')await loadAssociados();else await loadDoadores();toast(window.AmorReview?.active?'Alteração registrada apenas nos dados fictícios.':'Alteração confirmada pelo banco.');
   });}
   async function saveEdit(){return busy('save-edit',async()=>{
     if(!admin||!editingId)throw Error('Acesso restrito');
@@ -259,6 +262,7 @@ const AmorApp=(()=>{
   });}
   async function archive(kind,id){return busy('archive',async()=>{if(!admin)throw Error('Acesso restrito');await checked(sb.from(kind==='associado'?'associados':'doadores').update({status:'inativo'}).eq('id',id).select('id').single());closeDelete();await refresh();toast('Cadastro desativado. O histórico continua disponível.');});}
   async function cobrar(kind,id){
+    if(window.AmorReview?.active)return toast('Conta de teste: nenhum lembrete é enviado a pessoas reais.');
     const profile=(kind==='associado'?associados:doadores).find(p=>p.id===id);if(!profile)return;
     const rows=D.canonical(kind==='associado'?pagamentos[id]||[]:pagamentosDoadores[id]||[]).filter(p=>!['pago','cancelado'].includes(p.status)&&D.dueDate(p,profile.dia_pagamento)<=D.today());
     if(!rows.length)return toast('Não há contribuição vencida ou com vencimento hoje.');
@@ -395,7 +399,7 @@ const AmorApp=(()=>{
     }
     if(window.AmorAndroid)notificationStateChanged();
     document.addEventListener('visibilitychange',()=>{if(document.hidden){pararPolling();if(window.AmorAndroid)sb.auth.stopAutoRefresh();}else{(async()=>{if(window.AmorAndroid){await restoreNative(JSON.parse(AmorAndroid.getSession()||'null'));sb.auth.startAutoRefresh();}await refresh();iniciarPolling();})().catch(fail);}});
-    sb.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY')showRecovery();if(event==='SIGNED_OUT'){currentUser=null;pararPolling();if(window.AmorAndroid)AmorAndroid.clear();}if(event==='TOKEN_REFRESHED')setTimeout(()=>syncNative().catch(()=>{}),0);});
+    sb.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY')showRecovery();if(event==='SIGNED_OUT'){window.AmorReview?.disable();currentUser=null;pararPolling();if(window.AmorAndroid)AmorAndroid.clear();}if(event==='TOKEN_REFRESHED')setTimeout(()=>syncNative().catch(()=>{}),0);});
     startup=(async()=>{
       if(window.AmorAndroid){
         const native=JSON.parse(AmorAndroid.getSession()||'null');
