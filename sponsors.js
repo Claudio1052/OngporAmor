@@ -80,11 +80,21 @@ window.AmorSponsors=(()=>{
  async function pay(period){
   if(paymentBusy)return;paymentBusy=true;try{
    const intent=await call('checkout',{period});const overlay=node('div',null,'modal-overlay open');overlay.id='sponsor-checkout';overlay.innerHTML='<section class="modal checkout-dialog" role="dialog" aria-modal="true" aria-labelledby="sponsor-pay-title"><div class="modal-hdr"><h2 id="sponsor-pay-title">Contribuição de patrocínio</h2></div><div class="modal-body"><strong>'+E(money(intent.amount))+'</strong><p role="status">Gerando Pix…</p><div data-pix></div><div class="modal-actions"><button type="button" data-check>Já paguei · conferir</button><button type="button" data-close>Voltar</button></div></div></section>';document.body.append(overlay);
-   const st=overlay.querySelector('[role=status]');const close=()=>{clearInterval(timer);timer=null;overlay.remove();paymentBusy=false;};overlay.querySelector('[data-close]').onclick=close;
-   const update=async result=>{if(!overlay.isConnected)return;if(result.status==='approved'){st.textContent='Pagamento aprovado! Sua marca já está no painel.';clearInterval(timer);await loadMine();await publicBoard();showOwn();return;}if(result.pix?.code){st.textContent='Pix gerado. Confirme o valor antes de pagar.';const area=overlay.querySelector('[data-pix]');if(!area.querySelector('textarea')){if(result.pix.image){const img=node('img',null,'checkout-qr');img.src='data:image/png;base64,'+result.pix.image;img.alt='QR Code do Pix de patrocínio';area.append(img);}const code=node('textarea');code.readOnly=true;code.value=result.pix.code;code.setAttribute('aria-label','Código Pix copia e cola');const copy=node('button','Copiar código Pix');copy.type='button';copy.onclick=()=>task(async()=>{await navigator.clipboard.writeText(code.value);st.textContent='Código copiado.';});area.append(code,copy);}}else st.textContent='Situação: '+result.status;};
-   const check=async()=>{if(document.hidden||!overlay.isConnected)return;try{await update(await call('consultar',{intent:intent.id}));}catch{st.textContent='Não foi possível consultar agora. Confira o extrato antes de tentar novamente.';}};
+   const st=overlay.querySelector('[role=status]'),checkButton=overlay.querySelector('[data-check]');let closed=false,checking=false;
+   const close=()=>{if(closed)return;closed=true;clearInterval(timer);timer=null;overlay.remove();paymentBusy=false;};overlay.querySelector('[data-close]').onclick=close;
+   const update=async result=>{
+    if(closed||!overlay.isConnected)return;
+    if(result.status==='approved'){
+     close();status('Pagamento aprovado! Obrigado pelo patrocínio. Atualizando sua área…');
+     try{await loadMine();await publicBoard();if(stopped)return;showOwn();status('Pagamento aprovado! Obrigado pelo patrocínio. Confira os detalhes em Contribuições e comprovantes.');const heading=g('sponsor-details').querySelector('h2');heading?.setAttribute('tabindex','-1');heading?.focus?.({preventScroll:true});g('sponsor-details').scrollIntoView?.({behavior:'smooth',block:'start'});}
+     catch{if(!stopped)status('Pagamento aprovado! Toque em Atualizar para conferir os detalhes do seu patrocínio.');}
+     return;
+    }
+    if(result.pix?.code){st.textContent='Pix gerado. Confirme o valor antes de pagar.';const area=overlay.querySelector('[data-pix]');if(!area.querySelector('textarea')){if(result.pix.image){const img=node('img',null,'checkout-qr');img.src='data:image/png;base64,'+result.pix.image;img.alt='QR Code do Pix de patrocínio';area.append(img);}const code=node('textarea');code.readOnly=true;code.value=result.pix.code;code.setAttribute('aria-label','Código Pix copia e cola');const copy=node('button','Copiar código Pix');copy.type='button';copy.onclick=()=>task(async()=>{await navigator.clipboard.writeText(code.value);st.textContent='Código copiado.';});area.append(code,copy);}}else st.textContent='Situação: '+result.status;
+   };
+   const check=async()=>{if(checking||closed||document.hidden||!overlay.isConnected)return;checking=true;checkButton.disabled=true;try{await update(await call('consultar',{intent:intent.id}));}catch{if(!closed)st.textContent='Não foi possível consultar agora. Confira o extrato antes de tentar novamente.';}finally{checking=false;if(!closed)checkButton.disabled=false;}};
    overlay.querySelector('[data-check]').onclick=check;
-   try{const result=await call('pix',{intent:intent.id});await update(result);if(result.status!=='approved')timer=setInterval(check,12000);}catch{st.textContent='Não foi possível mostrar o Pix. Confira o pagamento na sua área antes de gerar outro.';}
+   try{const result=await call('pix',{intent:intent.id});await update(result);if(!closed&&result.status!=='approved')timer=setInterval(check,12000);}catch{if(!closed)st.textContent='Não foi possível mostrar o Pix. Confira o pagamento na sua área antes de gerar outro.';}
   }catch(e){paymentBusy=false;throw e;}
  }
  async function openAdmin(){
