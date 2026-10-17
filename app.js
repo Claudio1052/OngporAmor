@@ -359,7 +359,7 @@ const AmorApp=(()=>{
     if(!window.AmorAndroid)return;
     const {session}=await checked(sb.auth.getSession());if(!session)return;
     const snapshot=await checked(sb.rpc('amor_reminder_snapshot'));
-    AmorAndroid.sync(JSON.stringify({snapshot,access_token:session.access_token,refresh_token:session.refresh_token,expires_at:session.expires_at}));
+    AmorAndroid.sync(JSON.stringify({snapshot,user_id:session.user?.id,access_token:session.access_token,refresh_token:session.refresh_token,expires_at:session.expires_at}));
   }
   async function refresh(){
     if(refreshing||document.hidden||!navigator.onLine)return;refreshing=true;
@@ -395,7 +395,9 @@ const AmorApp=(()=>{
     const state=reminderState();
     for(const card of document.querySelectorAll('[data-reminder-control]')){
       const status=card.querySelector('[role=status]');status.textContent=state.enabled?'Lembretes ativados neste celular.':'Ative para receber os lembretes neste celular.';
+      if(state.enabled&&state.push_status)status.textContent+=' '+state.push_status;
       card.querySelector('[data-enable]').hidden=state.enabled;card.querySelector('[data-disable]').hidden=!state.enabled;
+      for(const b of card.querySelectorAll('[data-test-push],[data-test-local]'))b.hidden=!state.enabled;
     }
     const prompt=g('reminder-prompt');if(prompt){if(state.enabled)prompt.remove();else prompt.querySelector('[role=status]').textContent='Se a permissão não aparecer, toque em Ativar para abrir os ajustes de notificações do celular.';}
   }
@@ -404,7 +406,7 @@ const AmorApp=(()=>{
     notificationStateChanged();if(reminderState().enabled)return;
     reminderPromptOffered=true;
     const overlay=document.createElement('div');overlay.id='reminder-prompt';overlay.className='modal-overlay open';
-    overlay.innerHTML='<section class="modal reminder-prompt" role="dialog" aria-modal="true" aria-labelledby="reminder-prompt-title"><div class="modal-body"><div class="reminder-prompt-icon" aria-hidden="true"><i class="fas fa-bell"></i></div><h2 id="reminder-prompt-title">Quer receber lembretes?</h2><p>Avisamos quando sua contribuição estiver próxima do vencimento ou em atraso. Um aviso por dia, mesmo sem internet, usando a última atualização do aplicativo.</p><p role="status" aria-live="polite">Você pode ativar ou desativar quando quiser.</p><div class="modal-actions"><button type="button" data-activate>Ativar notificações</button><button type="button" data-later>Agora não</button></div></div></section>';
+    overlay.innerHTML='<section class="modal reminder-prompt" role="dialog" aria-modal="true" aria-labelledby="reminder-prompt-title"><div class="modal-body"><div class="reminder-prompt-icon" aria-hidden="true"><i class="fas fa-bell"></i></div><h2 id="reminder-prompt-title">Quer receber lembretes?</h2><p>Avisamos quando sua contribuição estiver próxima do vencimento ou em atraso. Um aviso por dia. Com conexão, o celular também pode receber push do servidor; sem internet, os lembretes locais usam a última atualização.</p><p role="status" aria-live="polite">Ao ativar, este aparelho será vinculado à sua conta para receber os avisos. Você pode desativar quando quiser.</p><div class="modal-actions"><button type="button" data-activate>Ativar notificações</button><button type="button" data-later>Agora não</button></div></div></section>';
     overlay.querySelector('[data-activate]').onclick=activateReminders;
     overlay.querySelector('[data-later]').onclick=()=>overlay.remove();
     overlay.addEventListener('keydown',event=>{if(event.key==='Escape')overlay.remove();});
@@ -482,10 +484,13 @@ const AmorApp=(()=>{
     for(const id of ['view-associado','view-doador']){
       const card=document.createElement('section');card.className='reminder-control';card.innerHTML='<strong>Lembretes de contribuição</strong><p>Um aviso por dia perto das 9h (Brasília), a partir de três dias antes do vencimento. Após o pagamento confirmado e sincronizado, os avisos param. Sem internet, vale a última atualização disponível.</p>';
       if(window.AmorAndroid){card.dataset.reminderControl='true';const status=document.createElement('p');status.setAttribute('role','status');card.append(status);const b=document.createElement('button');b.dataset.enable='true';b.textContent='Ativar notificações';b.onclick=activateReminders;card.append(b);const off=document.createElement('button');off.dataset.disable='true';off.textContent='Desativar';off.onclick=()=>{AmorAndroid.disableNotifications();notificationStateChanged();};card.append(off);}
-      else card.insertAdjacentHTML('beforeend','<p>Os avisos com o aplicativo fechado estão disponíveis no APK Android.</p>');
+      if(window.AmorAndroid?.testPushNotification){for(const [attr,label,fn] of [['testPush','Testar push neste celular',()=>AmorAndroid.testPushNotification()],['testLocal','Testar aviso local',()=>AmorAndroid.testLocalNotification()]]){const b=document.createElement('button');b.dataset[attr]='true';b.textContent=label;b.onclick=()=>{fn();toast(attr==='testPush'?'Teste solicitado ao servidor. Confira a notificação e o status nesta área.':'Teste local solicitado. Confira as notificações do celular.');};card.append(b);}}
+      if(!window.AmorAndroid)card.insertAdjacentHTML('beforeend','<p>Os avisos com o aplicativo fechado estão disponíveis no APK Android.</p>');
       g(id).append(card);
     }
     if(window.AmorAndroid)notificationStateChanged();
+    const pushAdmin=document.createElement('section');pushAdmin.className='reminder-control';pushAdmin.innerHTML='<h3>Notificações no celular</h3><p>Envie um teste aos aparelhos que ativaram notificações nesta conta. O aceite do provedor não confirma a exibição no celular.</p><label for="push-admin-email">E-mail da conta</label><input id="push-admin-email" class="fi" type="email" autocomplete="off"><button type="button">Enviar notificação de teste</button><p role="status" aria-live="polite"></p>';
+    pushAdmin.querySelector('button').onclick=()=>busy('push-admin-send',async()=>{if(!admin)return;const input=pushAdmin.querySelector('input'),status=pushAdmin.querySelector('[role=status]');if(!input.value.trim()||!input.checkValidity())return status.textContent='Informe um e-mail válido.';const b=pushAdmin.querySelector('button');b.disabled=true;try{const r=await gateway('/push/admin/testar',{email:input.value.trim()});status.textContent=r.accepted>0?'Teste aceito pelo serviço de entrega para '+r.accepted+' aparelho(s). Confira o recebimento no celular.':'Nenhum envio foi aceito. Confira o registro e a conexão dos aparelhos.';}catch(e){status.textContent=e.message||'Não foi possível enviar o teste.';}finally{b.disabled=false;}});g('tab-financeiro')?.append(pushAdmin);
     document.addEventListener('visibilitychange',()=>{if(document.hidden){pararPolling();if(window.AmorAndroid)sb.auth.stopAutoRefresh();}else{(async()=>{if(window.AmorAndroid){await restoreNative(JSON.parse(AmorAndroid.getSession()||'null'));sb.auth.startAutoRefresh();}await refresh();iniciarPolling();})().catch(fail);}});
     sb.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY')showRecovery();if(event==='SIGNED_OUT'){window.AmorReview?.disable();currentUser=null;pararPolling();if(window.AmorAndroid)AmorAndroid.clear();}if(event==='TOKEN_REFRESHED')setTimeout(()=>syncNative().catch(()=>{}),0);});
     startup=(async()=>{
