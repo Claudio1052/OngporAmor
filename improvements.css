@@ -187,3 +187,19 @@ button:disabled{opacity:.65;cursor:wait}
 @media print{#review-workspace{display:block!important}#review-workspace label{display:none}}
 /* Checkout uses the same safe viewport as the member's statement. */
 .checkout-dialog{max-width:520px}.checkout-dialog button{min-height:48px;padding:12px 18px;border-radius:10px;border:1px solid #ccd5dc;background:#087f83;color:white;cursor:pointer}.checkout-dialog button:disabled{opacity:.5;cursor:default}.checkout-dialog [data-close]{background:#fff;color:#0b1f31}.checkout-dialog .modal-actions{display:flex;flex-wrap:wrap;gap:10px}.checkout-dialog [data-content]{display:grid;gap:12px}.checkout-dialog textarea{width:100%;box-sizing:border-box;min-height:100px;padding:12px;border:1px solid #ccd5dc;border-radius:8px;resize:vertical}.checkout-qr{width:240px;max-width:100%;height:auto;justify-self:center}.checkout-dialog [role=status]{line-height:1.5}
+.password-reset-dialog{width:100%;max-width:480px;max-height:calc(100dvh - 32px);overflow:auto}
+.password-reset-dialog .modal-body{display:grid;gap:12px}
+.password-reset-dialog label{font-weight:700;color:#163450}
+.password-reset-dialog p{line-height:1.5;color:#475569;margin:0}
+.password-reset-dialog #recovery-help{font-size:13px;margin-top:-6px}
+.password-reset-field{display:flex;align-items:stretch;min-width:0;border:1px solid #b9cbd3;border-radius:12px;background:white}
+.password-reset-field:focus-within{outline:3px solid #087f83;outline-offset:2px}
+.password-reset-field .fi{flex:1;min-width:0;width:0;border:0;background:transparent;box-shadow:none;outline:0}
+.password-reset-field .fi:focus{box-shadow:none;outline:0}
+.password-reset-field button{flex:none;width:48px;min-height:48px;border:0;border-radius:0 12px 12px 0;background:transparent;color:#075f62;cursor:pointer}
+.password-reset-dialog .modal-actions{display:grid;grid-template-columns:1fr;gap:10px}
+.password-reset-dialog .modal-actions button{min-height:48px;border:1px solid #b9d5d3;border-radius:12px;font:600 15px system-ui;padding:12px 16px;cursor:pointer}
+.password-reset-dialog [data-save]{background:#087f83;color:white}
+.password-reset-dialog [data-cancel]{background:white;color:#163450}
+.password-reset-dialog button:disabled{opacity:.6;cursor:default}
+.balance-help{font-size:13px;line-height:1.55;color:#475569;margin-top:12px;max-width:50ch}

@@ -311,7 +311,17 @@ const AmorApp=(()=>{
     wa.onclick=()=>{const url='https://wa.me/'+phone+'?text='+encodeURIComponent(g('msg-template').textContent);if(window.AmorAndroid)AmorAndroid.openExternal(url);else window.open(url,'_blank','noopener,noreferrer');};
     email.disabled=!communicationsAllowed||!profile.email;email.onclick=()=>busy('btn-email-send',async()=>{const result=await gateway('/lembrar',{kind,id});toast(result.already_sent?'Já há um lembrete registrado hoje. Ele não será duplicado.':'Lembrete registrado para envio por e-mail.');});
   }
-  async function loadMPFinanceiro(){return busy('finance',async()=>{if(!admin)throw Error('Acesso restrito');const r=await gateway('/financeiro');mpPayments=r.results||[];mpBalance=r.balance;const balance=g('mp-saldo');if(balance){balance.textContent=r.balance?.available!==null&&Number.isFinite(r.balance?.available)?money(r.balance.available):'Indisponível';balance.title=r.balance?.available==null?'O Mercado Pago não liberou a consulta de saldo para esta integração. Confira o saldo no aplicativo Mercado Pago.':'Saldo disponível informado pelo Mercado Pago em '+new Date(r.balance.checked_at).toLocaleString('pt-BR');}renderMPPayments();});}
+  async function loadMPFinanceiro(){return busy('finance',async()=>{
+    if(!admin)throw Error('Acesso restrito');const r=await gateway('/financeiro');mpPayments=r.results||[];mpBalance=r.balance;
+    const balance=g('mp-saldo');if(balance){
+      const available=Number.isFinite(r.balance?.available);balance.textContent=available?money(r.balance.available):'Não consultado';
+      let help=g('mp-balance-help');if(!help){help=document.createElement('p');help.id='mp-balance-help';help.className='balance-help';balance.parentElement.append(help);}
+      help.textContent=available?'Saldo disponível informado pelo Mercado Pago em '+new Date(r.balance.checked_at).toLocaleString('pt-BR'):
+        r.balance?.reason==='provider_403'?'O Mercado Pago recusou a consulta de saldo (HTTP 403). Os pagamentos continuam funcionando. Solicite ao suporte do Mercado Pago a confirmação de acesso ao saldo por API para esta integração.':
+        r.balance?.reason==='provider_401'?'O Mercado Pago não autorizou a consulta de saldo. A gestão precisa conferir a credencial da integração.':'A consulta de saldo está temporariamente indisponível. Confira o saldo no Mercado Pago e tente atualizar novamente.';
+      balance.title=help.textContent;
+    }renderMPPayments();
+  });}
   function renderPayments(kind){
     const profile=kind==='associado'?fichaAssociado:fichaDoador,rows=D.canonical(kind==='associado'?pagamentosAssociado:pagamentosDoador);
     const box=g(kind==='associado'?'assoc-pay-list':'doador-pay-list');if(!box)return;
@@ -342,7 +352,24 @@ const AmorApp=(()=>{
   }
   function iniciarPolling(){if(timer||!currentUser||document.hidden)return;timer=setInterval(()=>refresh().catch(fail),60000);}
   function pararPolling(){if(timer)clearInterval(timer);timer=null;}
-  function showRecovery(){if(g('recovery-password'))return;const panel=document.createElement('section');panel.className='reminder-control';panel.innerHTML='<h2>Definir nova senha</h2><label for="recovery-password">Nova senha (mínimo 10 caracteres)</label><input id="recovery-password" type="password" autocomplete="new-password" minlength="10" class="fi"><button type="button">Salvar nova senha</button>';panel.querySelector('button').onclick=()=>busy('recover-password',async()=>{const password=panel.querySelector('input').value;if(password.length<10)return toast('Use pelo menos 10 caracteres.','err');await checked(sb.auth.updateUser({password}));panel.remove();toast('Senha atualizada.');await route();});document.body.prepend(panel);}
+  function showRecovery(){
+    if(g('recovery-password'))return;
+    const overlay=document.createElement('div');overlay.id='password-recovery';overlay.className='modal-overlay open';
+    overlay.innerHTML='<section class="modal password-reset-dialog" role="dialog" aria-modal="true" aria-labelledby="recovery-title"><div class="modal-hdr"><h2 class="modal-title" id="recovery-title">Definir nova senha</h2></div><form class="modal-body"><p>Digite a nova senha duas vezes para confirmar.</p><label for="recovery-password">Nova senha</label><div class="password-reset-field"><input id="recovery-password" type="password" autocomplete="new-password" minlength="10" required class="fi" aria-describedby="recovery-help"><button type="button" data-toggle="recovery-password" aria-label="Mostrar nova senha" aria-pressed="false"><i class="fas fa-eye" aria-hidden="true"></i></button></div><p id="recovery-help">Use pelo menos 10 caracteres.</p><label for="recovery-confirm">Repetir nova senha</label><div class="password-reset-field"><input id="recovery-confirm" type="password" autocomplete="new-password" minlength="10" required class="fi"><button type="button" data-toggle="recovery-confirm" aria-label="Mostrar confirmação da senha" aria-pressed="false"><i class="fas fa-eye" aria-hidden="true"></i></button></div><p role="status" aria-live="polite"></p><div class="modal-actions"><button type="submit" data-save>Salvar nova senha</button><button type="button" data-cancel>Agora não</button></div></form></section>';
+    const password=gIn('recovery-password'),confirmation=gIn('recovery-confirm'),status=overlay.querySelector('[role=status]'),save=overlay.querySelector('[data-save]'),cancel=overlay.querySelector('[data-cancel]');
+    function gIn(id){return overlay.querySelector('#'+id);}
+    const clear=()=>{password.value='';confirmation.value='';overlay.remove();};cancel.onclick=clear;
+    for(const button of overlay.querySelectorAll('[data-toggle]'))button.onclick=()=>{const input=gIn(button.dataset.toggle),visible=input.type==='password';input.type=visible?'text':'password';button.setAttribute('aria-pressed',String(visible));button.setAttribute('aria-label',(visible?'Ocultar ':'Mostrar ')+(input===password?'nova senha':'confirmação da senha'));button.querySelector('i').className=visible?'fas fa-eye-slash':'fas fa-eye';};
+    overlay.querySelector('form').onsubmit=event=>{event.preventDefault();return busy('recover-password',async()=>{
+      if(password.value.length<10){status.textContent='Use pelo menos 10 caracteres na nova senha.';password.focus?.();return;}
+      if(password.value!==confirmation.value){status.textContent='As senhas não coincidem. Confira os dois campos.';confirmation.focus?.();return;}
+      save.disabled=true;cancel.disabled=true;status.textContent='Salvando nova senha…';
+      try{await checked(sb.auth.updateUser({password:password.value}));clear();toast('Senha atualizada.');await route();}
+      catch(error){status.textContent='Não foi possível alterar a senha. Tente novamente.';throw error;}
+      finally{save.disabled=false;cancel.disabled=false;}
+    });};
+    document.body.append(overlay);password.focus?.();
+  }
   async function recover(){return busy('recover-access',async()=>{const email=g('assoc-email-login').value.trim().toLowerCase();if(!email||!g('assoc-email-login').checkValidity())return toast('Preencha o e-mail acima.','err');await checked(sb.auth.resetPasswordForEmail(email,{redirectTo:'https://www.ongporamor.top/?type=recovery'}));toast('Se a conta existir, você receberá as instruções por e-mail.');});}
   function openPayments(){requestedPayments=true;if(fichaAssociado){showAssocTab('tab-assoc-pagamentos');requestedPayments=false;}else if(fichaDoador){showDoadorTab('tab-doador-pagamentos');requestedPayments=false;}}
   function reminderState(){try{return window.AmorAndroid?.getNotificationState?JSON.parse(AmorAndroid.getNotificationState()):{enabled:false,system_allowed:true};}catch{return {enabled:false,system_allowed:false};}}
@@ -399,7 +426,7 @@ const AmorApp=(()=>{
     };
     document.body.append(overlay);next.focus?.();return true;
   }
-  function back(){if(closeEmailAccess){g('native-email-access')?.querySelector('[data-cancel]')?.click();return true;}if(g('transparent-checkout')){g('transparent-checkout').querySelector('[data-close]')?.click();return true;}if(g('minimum-settings')){g('minimum-settings').querySelector('[data-close]')?.click();return true;}if(g('reminder-prompt')){g('reminder-prompt').remove();return true;}const modal=document.querySelector('.modal-overlay.open');if(modal){modal.classList.remove('open');return true;}if(fichaAssociado&&g('view-associado').classList.contains('active')){if(!g('tab-assoc-inicio').classList.contains('active')){showAssocTab('tab-assoc-inicio');return true;}}if(fichaDoador&&g('view-doador').classList.contains('active')){if(!g('tab-doador-inicio').classList.contains('active')){showDoadorTab('tab-doador-inicio');return true;}}return false;}
+  function back(){if(g('password-recovery')){g('password-recovery').querySelector('[data-cancel]').click();return true;}if(closeEmailAccess){g('native-email-access')?.querySelector('[data-cancel]')?.click();return true;}if(g('transparent-checkout')){g('transparent-checkout').querySelector('[data-close]')?.click();return true;}if(g('minimum-settings')){g('minimum-settings').querySelector('[data-close]')?.click();return true;}if(g('reminder-prompt')){g('reminder-prompt').remove();return true;}const modal=document.querySelector('.modal-overlay.open');if(modal){modal.classList.remove('open');return true;}if(fichaAssociado&&g('view-associado').classList.contains('active')){if(!g('tab-assoc-inicio').classList.contains('active')){showAssocTab('tab-assoc-inicio');return true;}}if(fichaDoador&&g('view-doador').classList.contains('active')){if(!g('tab-doador-inicio').classList.contains('active')){showDoadorTab('tab-doador-inicio');return true;}}return false;}
   function init(){
     for(const id of ['view-admin-login','view-associado','view-doador','view-admin']){
       const links=document.createElement('nav');links.className='privacy-links';links.setAttribute('aria-label','Privacidade e conta');

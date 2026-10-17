@@ -853,7 +853,7 @@ tr:hover td{background:var(--gray-50)}
 }
 
 </style>
-<link rel="stylesheet" href="improvements.css?v=ad3f2e315ebf">
+<link rel="stylesheet" href="improvements.css?v=b0ce7867231b">
 <script src="domain.js?v=1d8daa23769d"></script>
 </head>
 <body>
@@ -2761,9 +2761,9 @@ function renderMPPayments(){
     const statusLabel = {approved:'✓ Aprovado',pending:'⏳ Pendente',rejected:'✗ Recusado',cancelled:'Cancelado'}[p.status]||p.status;
     // Identifica associado via helper (ext_ref → email → nome)
     const { assoc: assocMP } = identificarAssociadoMP(p, associados);
-    let assocNome = assocMP ? assocMP.nome : '—';
+    let assocNome = p.contributor?.nome || (assocMP ? assocMP.nome : '—');
     const payerDisplay = assocNome !== '—'
-      ? `<strong style="color:var(--teal)">${esc(assocNome)}</strong><br><span style="font-size:.72rem;color:var(--gray-400)">${esc(p.payer?.email||'')}</span>`
+      ? `<strong style="color:var(--teal)">${esc(assocNome)}</strong><br><span style="font-size:.72rem;color:var(--gray-400)">${esc(p.contributor?.email||p.payer?.email||'')}</span>`
       : `<span style="color:var(--gray-600)">${esc(p.payer?.first_name||'')} ${esc(p.payer?.last_name||'')}</span><br><span style="font-size:.72rem;color:var(--gray-400)">${esc(p.payer?.email||'')}</span>`;
     return `<tr>
       <td style="font-size:.78rem;color:var(--gray-600);white-space:nowrap">${dtStr}</td>
@@ -3119,6 +3119,6 @@ document.addEventListener('visibilitychange', () => {
 });
 </script>
 <script src="review-workspace.js?v=36e6db4855b6"></script>
-<script src="app.js?v=2fcf6dff672b"></script>
+<script src="app.js?v=5d2bac202985"></script>
 </body>
 </html>
