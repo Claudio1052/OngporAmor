@@ -52,6 +52,17 @@ const AmorApp=(()=>{
     catch{status.textContent='Não foi possível consultar o mínimo. Feche esta janela e tente novamente.';}
   }
   function safeSession(u){return {id:u.id,email:u.email,nome:u.user_metadata?.nome||u.email.split('@')[0]};}
+  async function myAssociate(u){
+    const rows=await checked(sb.from('associados').select('id').ilike('email',u.email.replace(/[%_\\]/g,'\\$&')).limit(2));
+    if(rows.length>1)throw Error('Mais de uma ficha: revisão administrativa necessária');
+    return rows[0]||null;
+  }
+  async function openAssociateArea(){return busy('switch-associate-area',async()=>{
+    const u=await user();if(!await myAssociate(u))return toast('Esta conta não possui cadastro de associado.','err');
+    currentUser=u;associadoLogado=safeSession(u);doadorLogado=null;
+    await carregarDadosAssociado();showView('view-associado');showAssocTab('tab-assoc-inicio');
+    maybeOfferReminders();iniciarPolling();
+  });}
   async function route(){
     const wasReview=Boolean(window.AmorReview?.active);currentUser=await user();
     await window.AmorReview?.activate(currentUser,sb,async()=>{pararPolling();associadoLogado=null;doadorLogado=null;fichaAssociado=null;fichaDoador=null;reminderPromptOffered=false;lastReconcile=0;await route();});
@@ -442,7 +453,7 @@ const AmorApp=(()=>{
       }
       (id==='view-admin-login'?g(id).querySelector('.login-card')||g(id):g(id)).append(links);
     }
-    window.AmorSponsors?.install({gateway,session:()=>checked(sb.auth.getSession()),logout,isAdmin:()=>admin,showView,toast});
+    window.AmorSponsors?.install({gateway,session:()=>checked(sb.auth.getSession()),logout,isAdmin:()=>admin,showView,toast,hasAssociate:async()=>Boolean(await myAssociate(await user())),openAssociate:openAssociateArea});
     g('inp-valor').setAttribute('aria-describedby','minimum-contribution-hint');
     g('inp-valor').addEventListener('input',()=>{g('inp-valor').dataset.userEdited='true';});
     g('inp-valor').addEventListener('focus',()=>loadContributionSettings().catch(()=>{}));
@@ -495,7 +506,7 @@ const AmorApp=(()=>{
     pagarAssinaturaMP:()=>toast('Use o pagamento por contribuição. A cobrança automática será disponibilizada após a validação da integração.'),
     criarPagamentoMP:()=>toast('Abra seu extrato para escolher a contribuição.'),checkDoadorLogin:async()=>false,
     sincronizarPagamentosAssociado:sincronizar,sincronizarPagamentosDoador:sincronizar,forceSincronizacaoTotal:sincronizar,
-    sincronizarPagamentosMP:async()=>{},sincronizarMPBackground:async()=>{},refresh,syncNative,openPayments,restoreNative,openEmailAccess,maybeOfferReminders,notificationStateChanged,minimumContribution:()=>contributionSettings.minimum_associado,loadContributionSettings,openMinimumSettings,back,init};
+    sincronizarPagamentosMP:async()=>{},sincronizarMPBackground:async()=>{},refresh,syncNative,openPayments,openAssociateArea,restoreNative,openEmailAccess,maybeOfferReminders,notificationStateChanged,minimumContribution:()=>contributionSettings.minimum_associado,loadContributionSettings,openMinimumSettings,back,init};
   return api;
 })();
 window.AmorApp=AmorApp;

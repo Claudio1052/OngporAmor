@@ -1,7 +1,7 @@
 'use strict';
 window.AmorSponsors=(()=>{
  const API='https://ong-mp-proxy.ongporamoradmin.workers.dev',E=AmorDomain.escapeHTML,money=n=>Number(n).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
- let hooks,board,mine,user,selected,ws,reconnect,timer,paymentBusy=false,adminMode=false,stopped=true;
+ let hooks,board,mine,user,selected,ws,reconnect,timer,paymentBusy=false,adminMode=false,stopped=true,associateAvailable=false;
  const g=id=>document.getElementById(id),node=(tag,text,className)=>{const e=document.createElement(tag);if(text)e.textContent=text;if(className)e.className=className;return e;};
  const benefits={diamante:['Destaque central no painel','Certificado Empresa Amiga da Por Amor','Marcação nas publicações','Agradecimento exclusivo mensal','Relatório mensal de alcance e fotos','Logo na camiseta do projeto','Nome em faixas e troféus','Exclusividade no segmento e ação em evento'],ouro:['Logo grande no painel','Certificado Empresa Amiga da Por Amor','Marcação nas publicações','Agradecimento exclusivo bimestral','Relatório mensal de alcance e fotos','Logo na camiseta do projeto','Nome em faixas e troféus'],prata:['Logo média no painel','Certificado Empresa Amiga da Por Amor','Marcação nas publicações','Agradecimento exclusivo trimestral','Relatório mensal de alcance e fotos'],bronze:['Logo pequena no painel','Certificado Empresa Amiga da Por Amor','Marcação nas publicações','Agradecimento exclusivo semestral'],ferro:['Logo na faixa inferior do painel','Certificado Empresa Amiga da Por Amor']};
  const call=(path,body)=>hooks.gateway('/patrocinadores/'+path,body);
@@ -12,6 +12,8 @@ window.AmorSponsors=(()=>{
   const view=node('section',null,'view');view.id='view-patrocinador';
   view.innerHTML='<header class="sponsor-topbar"><div><img src="assets/por-amor-logo.png" alt="Associação Por Amor"><span>Parceiros Por Amor</span></div><button type="button" data-exit>Sair</button></header><main class="sponsor-main"><div class="sponsor-heading"><div><p class="sponsor-eyebrow">ESPORTE QUE TRANSFORMA</p><h1>Seu lugar nessa história</h1><p>Escolha onde sua marca vai apoiar as aulas e aparecer no painel da ONG.</p></div><button type="button" data-refresh>Atualizar</button></div><p id="sponsor-status" role="status" aria-live="polite"></p><div class="sponsor-tabs" role="group" aria-label="Área de patrocínio"><button type="button" data-panel>Ver painel</button><button type="button" data-own>Meu patrocínio</button><button type="button" data-admin hidden>Gestão dos planos</button></div><div id="sponsor-board-region"></div><div id="sponsor-details"></div></main>';
   document.getElementById('app').append(view);view.querySelector('[data-exit]').onclick=()=>{if(user||hooks.isAdmin())return hooks.logout();stop();hooks.showView('view-admin-login');};view.querySelector('[data-refresh]').onclick=()=>task(refresh);
+  view.querySelector('.sponsor-main').prepend(areaSwitcher('patrocinio'));
+  g('view-associado').querySelector('.assoc-topbar').after(areaSwitcher('associado'));
   view.querySelector('[data-panel]').onclick=()=>{g('sponsor-board-region').hidden=false;g('sponsor-details').hidden=true;};
   view.querySelector('[data-own]').onclick=()=>task(async()=>{if(!user)return begin();await loadMine();showOwn();});
   view.querySelector('[data-admin]').onclick=()=>task(openAdmin);
@@ -24,13 +26,20 @@ window.AmorSponsors=(()=>{
   for(const id of ['view-associado','view-doador']){const b=node('button','Patrocinar com minha empresa','recovery-button');b.type='button';b.onclick=()=>task(()=>begin());g(id)?.querySelector('.privacy-links')?.before(b);}
   document.addEventListener('visibilitychange',()=>{if(document.hidden)closeSocket();else if(!stopped)connect();});
  }
- function show(){hooks.showView('view-patrocinador');g('sponsor-details').hidden=false;g('sponsor-board-region').hidden=false;g('view-patrocinador').querySelector('[data-admin]').hidden=!hooks.isAdmin();g('view-patrocinador').querySelector('.sponsor-back').hidden=!hooks.isAdmin();g('view-patrocinador').querySelector('[data-exit]').textContent=user||hooks.isAdmin()?'Sair':'Entrar';stopped=false;connect();}
+ function areaSwitcher(active){
+  const nav=node('nav',null,'member-area-switcher');nav.setAttribute('aria-label','Alternar áreas da conta');
+  for(const [id,label] of [['associado','Área do associado'],['patrocinio','Patrocínio da empresa']]){const b=node('button',label);b.type='button';b.dataset.memberArea=id;if(id===active){b.setAttribute('aria-current','page');b.disabled=true;}else b.onclick=()=>task(async()=>{b.disabled=true;try{if(id==='associado')await hooks.openAssociate();else await begin();}finally{b.disabled=false;}});nav.append(b);}
+  if(active==='patrocinio')nav.hidden=true;
+  return nav;
+ }
+ async function loadAssociateAccess(){try{associateAvailable=Boolean(await hooks.hasAssociate?.());}catch{associateAvailable=false;}}
+ function show(){hooks.showView('view-patrocinador');g('sponsor-details').hidden=false;g('sponsor-board-region').hidden=false;g('view-patrocinador').querySelector('.member-area-switcher').hidden=!associateAvailable||adminMode;g('view-patrocinador').querySelector('[data-admin]').hidden=!hooks.isAdmin();g('view-patrocinador').querySelector('.sponsor-back').hidden=!hooks.isAdmin();g('view-patrocinador').querySelector('[data-exit]').textContent=user||hooks.isAdmin()?'Sair':'Entrar';stopped=false;connect();}
  async function publicBoard(){if(window.AmorReview?.active){board=await window.AmorReview.gateway('/patrocinadores/painel');renderBoard();return board;}const r=await fetch(API+'/patrocinadores/painel',{signal:AbortSignal.timeout(15000)});const result=await r.json();if(!r.ok)throw Error(result.error);board=result;renderBoard();return board;}
  async function openPublic(){adminMode=false;show();g('sponsor-details').replaceChildren();await publicBoard();status('Painel público · logos publicadas após a confirmação da contribuição inicial.');}
- async function route(u){user=u;try{mine=await call('minha-area');}catch{return false;}if(!mine.profile)return false;adminMode=false;show();await publicBoard();showOwn();return true;}
+ async function route(u){user=u;try{mine=await call('minha-area');}catch{return false;}if(!mine.profile)return false;await loadAssociateAccess();adminMode=false;show();await publicBoard();showOwn();return true;}
  async function begin(){
   adminMode=false;const session=(await hooks.session())?.session;if(!session){hooks.showView('view-admin-login');hooks.toast('Entre ou crie sua conta para cadastrar o patrocínio.');return;}
-  user=session.user||user;mine=await call('minha-area');show();await publicBoard();if(mine.profile)showOwn();else showForm();
+  user=session.user||user;mine=await call('minha-area');await loadAssociateAccess();show();await publicBoard();if(mine.profile)showOwn();else showForm();
  }
  async function loadMine(){mine=await call('minha-area');}
  async function refresh(){await publicBoard();if(user&&!adminMode){await loadMine();showOwn();}else if(adminMode)await openAdmin();status('Painel atualizado.');}
@@ -110,6 +119,6 @@ window.AmorSponsors=(()=>{
  function connect(){if(ws||stopped||document.hidden||window.AmorReview?.active)return;try{ws=new WebSocket(API.replace('https:','wss:')+'/patrocinadores/ao-vivo');ws.onmessage=event=>{try{const message=JSON.parse(event.data);if(message.event==='board'&&message.version>=(board?.version||0)){board=message;renderBoard();}}catch{}};ws.onclose=()=>{ws=null;if(!stopped)reconnect=setTimeout(connect,15000);};ws.onerror=()=>ws?.close();}catch{reconnect=setTimeout(connect,15000);}}
  function closeSocket(){clearTimeout(reconnect);if(ws){ws.onclose=null;ws.close();ws=null;}}
  function stop(){stopped=true;closeSocket();clearInterval(timer);timer=null;paymentBusy=false;g('sponsor-checkout')?.remove();}
- function reset(){stop();user=null;mine=null;selected=null;adminMode=false;}
+ function reset(){stop();user=null;mine=null;selected=null;adminMode=false;associateAvailable=false;g('view-patrocinador')?.querySelector('.member-area-switcher')?.setAttribute('hidden','');}
  return {install,route,begin,openPublic,openAdmin,stop,reset,normalizeLogo};
 })();
