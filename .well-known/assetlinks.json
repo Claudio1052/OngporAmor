@@ -1,11 +1,16 @@
 [
   {
-    "relation": ["delegate_permission/common.handle_all_urls"],
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
     "target": {
       "namespace": "android_app",
       "package_name": "br.org.ongporamor",
       "sha256_cert_fingerprints": [
-        "1A:72:DD:44:D3:4F:16:DD:59:7D:13:9B:13:AF:0F:41:B3:DD:C9:0D:B0:97:96:9B:8D:B9:C6:AC:3E:00:92:DF"
+        "1A:72:DD:44:D3:4F:16:DD:59:7D:13:9B:13:AF:0F:41:B3:DD:C9:0D:B0:97:96:9B:8D:B9:C6:AC:3E:00:92:DF",
+        "C3:30:5C:CC:C0:E9:23:BD:D2:7D:DC:17:2B:B7:43:0D:18:E8:58:C2:4D:2B:EC:D2:5B:2D:40:21:E3:0C:C7:F3",
+        "CC:2F:12:D2:0B:FE:20:44:99:CA:C4:86:27:40:BA:E8:19:94:C9:F2:BA:AA:B7:42:36:7E:F5:D3:D0:CB:13:DB",
+        "1F:E6:D4:CC:6C:97:E3:93:72:E7:47:17:60:06:66:95:A7:39:AC:E7:F0:7A:D4:A1:39:C0:43:BE:02:3A:04:15"
       ]
     }
   }
