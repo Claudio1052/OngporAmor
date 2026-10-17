@@ -208,7 +208,11 @@ const AmorApp=(()=>{
     if(typeof signature==='string'&&/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(signature)&&signature.length<=300000){const img=document.createElement('img');img.src=signature;img.alt='Assinatura registrada na ficha';img.style.maxWidth='300px';sheet.append(img);}
     document.body.append(sheet);document.body.classList.add('print-mode');if(window.AmorAndroid)AmorAndroid.printPage();else window.print();
   }
-  function printBlank(){printSheet('Ficha para preenchimento',[['Nome',''],['CPF',''],['Nascimento',''],['Telefone',''],['E-mail',''],['Endereço',''],['Contribuição',''],['Vencimento',''],['Assinatura','']]);}
+  function printBlank(){
+    if(!admin)return toast('Acesso restrito à gestão.','err');
+    const url='https://www.ongporamor.top/assets/ficha-associacao.pdf?v=20261017';
+    if(window.AmorAndroid)AmorAndroid.openExternal(url);else window.open(url,'_blank','noopener,noreferrer');
+  }
   function printCurrent(){document.body.classList.remove('print-mode');if(window.AmorAndroid)AmorAndroid.printPage();else window.print();}
   async function submitForm(){return busy('submit-ficha',async()=>{
     await loadContributionSettings();

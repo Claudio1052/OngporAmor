@@ -1560,7 +1560,7 @@ tr:hover td{background:var(--gray-50)}
         <div class="filter-group"><label class="filter-label"><i class="fas fa-circle-dot"></i> Status</label><select class="filter-input" id="f-status" onchange="renderTable()"><option value="">Todos</option><option value="ativo">Ativo</option><option value="inativo">Inativo</option><option value="suspenso">Suspenso</option></select></div>
         <div class="filter-group"><label class="filter-label"><i class="fas fa-money-bill-wave"></i> Pagamento</label><select class="filter-input" id="f-pgstatus" onchange="renderTable()"><option value="">Todos</option><option value="pendente">Com pendentes</option><option value="em_dia">Em dia</option></select></div>
         <button class="btn-filter-clear" onclick="clearFilters()"><i class="fas fa-times"></i> Limpar</button>
-        <button class="btn-next" style="margin-left:auto;padding:.55rem 1.2rem;font-size:.82rem;background:linear-gradient(135deg,var(--gray-600),var(--gray-700))" onclick="printFichaEmBranco()"><i class="fas fa-file-alt"></i> Ficha em Branco</button>
+        <button class="btn-next" style="margin-left:auto;padding:.55rem 1.2rem;font-size:.82rem;background:linear-gradient(135deg,var(--gray-600),var(--gray-700))" onclick="printFichaEmBranco()" title="Abrir ficha completa de associado em PDF"><i class="fas fa-file-pdf" aria-hidden="true"></i> Ficha em Branco · PDF</button>
         <button class="btn-next" style="padding:.55rem 1.2rem;font-size:.82rem" onclick="printTable()"><i class="fas fa-print"></i> Imprimir</button>
       </div>
 
@@ -3119,6 +3119,6 @@ document.addEventListener('visibilitychange', () => {
 });
 </script>
 <script src="review-workspace.js?v=36e6db4855b6"></script>
-<script src="app.js?v=5d2bac202985"></script>
+<script src="app.js?v=ec90206be618"></script>
 </body>
 </html>
