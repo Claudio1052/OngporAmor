@@ -8,12 +8,12 @@ window.AmorReview=(()=>{
   const denied=()=>({data:null,error:{code:'42501',message:'Operação indisponível na conta de teste'}});
   function seed(){
     const now=new Date(),month=now.toLocaleDateString('sv-SE',{timeZone:'America/Sao_Paulo'}).slice(0,7);
-    const before=new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5))-2,15)).toISOString().slice(0,7);
-    const person={nome:'Associado de Teste',email,cpf:'52998224725',telefone:'00000000000',profissao:'Cadastro fictício',cidade:'João Pessoa',uf:'PB',bairro:'Centro',logradouro:'Rua de Exemplo',numero:'100',cep:'58000-000',status:'ativo',valor_contribuicao:30,dia_pagamento:10,forma_pagamento:'PIX',created_at:before+'-05T12:00:00Z',data_nascimento:'1990-01-01'};
+    const next=new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5)),15)).toISOString().slice(0,7);
+    const person={nome:'Associado de Teste',email,cpf:'52998224725',telefone:'00000000000',profissao:'Cadastro fictício',cidade:'João Pessoa',uf:'PB',bairro:'Centro',logradouro:'Rua de Exemplo',numero:'100',cep:'58000-000',status:'ativo',valor_contribuicao:35,dia_pagamento:10,forma_pagamento:'PIX',created_at:month+'-05T12:00:00Z',data_nascimento:'1990-01-01'};
     const a={...person,id:'00000000-0000-4000-8000-000000000001',numero_associado:1};
-    const d={...person,id:'00000000-0000-4000-8000-000000000002',nome:'Doador de Teste',valor_contribuicao:20};
-    const ledger=(p,key)=>[before,month].map((m,i)=>({id:p.id.slice(0,-1)+(i+3),[key]:p.id,mes_referencia:m,valor:p.valor_contribuicao,data_vencimento:m+'-10',status:i?'pendente':'pago',data_pagamento:i?null:before+'-10'}));
-    return {associados:[a],doadores:[d],pagamentos:ledger(a,'associado_id'),pagamentos_doadores:ledger(d,'doador_id'),settings:{minimum_associado:30,version:1}};
+    const d={...person,id:'00000000-0000-4000-8000-000000000002',nome:'Doador de Teste'};
+    const ledger=(p,key)=>[month,next].map((m,i)=>({id:p.id.slice(0,-1)+(i+3),[key]:p.id,mes_referencia:m,valor:p.valor_contribuicao,data_vencimento:m+'-10',status:'pendente',data_pagamento:null}));
+    return {associados:[a],doadores:[d],pagamentos:ledger(a,'associado_id'),pagamentos_doadores:ledger(d,'doador_id'),settings:{minimum_associado:35,version:1}};
   }
   function canRead(table){return role==='gestao'||!((role==='associado'&&['doadores','pagamentos_doadores'].includes(table))||(role==='doador'&&['associados','pagamentos'].includes(table)));}
   function query(table){
@@ -49,7 +49,11 @@ window.AmorReview=(()=>{
     if(name==='amor_set_minimum_contribution'){
       if(args.p_expected_version!==state.settings.version)return {data:null,error:{code:'40001'}};
       if(!Number.isFinite(args.p_minimum)||args.p_minimum<0.01||args.p_minimum>100000)return denied();
-      state.settings={minimum_associado:args.p_minimum,version:state.settings.version+1};return {data:clone(state.settings),error:null};
+      state.settings={minimum_associado:args.p_minimum,version:state.settings.version+1};
+      const month=new Date().toLocaleDateString('sv-SE',{timeZone:'America/Sao_Paulo'}).slice(0,7);
+      for(const table of ['associados','doadores'])for(const person of state[table])person.valor_contribuicao=Math.max(person.valor_contribuicao,args.p_minimum);
+      for(const table of ['pagamentos','pagamentos_doadores'])for(const payment of state[table])if(payment.mes_referencia>month&&!['pago','cancelado'].includes(payment.status))payment.valor=Math.max(payment.valor,args.p_minimum);
+      return {data:clone(state.settings),error:null};
     }
     if(name==='amor_set_payment_status'){
       const table=args.p_kind==='associado'?'pagamentos':args.p_kind==='doador'?'pagamentos_doadores':null;

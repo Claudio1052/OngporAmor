@@ -185,3 +185,5 @@ button:disabled{opacity:.65;cursor:wait}
 #review-workspace label{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 #review-workspace select{font:inherit;min-height:44px;max-width:100%;border:1px solid #687482;border-radius:8px;padding:8px;background:white;color:#142b3c}
 @media print{#review-workspace{display:block!important}#review-workspace label{display:none}}
+/* Checkout uses the same safe viewport as the member's statement. */
+.checkout-dialog{max-width:520px}.checkout-dialog button{min-height:48px;padding:12px 18px;border-radius:10px;border:1px solid #ccd5dc;background:#087f83;color:white;cursor:pointer}.checkout-dialog button:disabled{opacity:.5;cursor:default}.checkout-dialog [data-close]{background:#fff;color:#0b1f31}.checkout-dialog .modal-actions{display:flex;flex-wrap:wrap;gap:10px}.checkout-dialog [data-content]{display:grid;gap:12px}.checkout-dialog textarea{width:100%;box-sizing:border-box;min-height:100px;padding:12px;border:1px solid #ccd5dc;border-radius:8px;resize:vertical}.checkout-qr{width:240px;max-width:100%;height:auto;justify-self:center}.checkout-dialog [role=status]{line-height:1.5}

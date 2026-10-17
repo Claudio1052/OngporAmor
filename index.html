@@ -7,8 +7,8 @@
 <link rel="icon" type="image/png" href="assets/por-amor-logo.png">
 <link rel="apple-touch-icon" href="assets/por-amor-logo.png">
 
-<link rel="stylesheet" href="vendor/fontawesome.css">
-<script src="vendor/chart-4.4.1.js"></script>
+<link rel="stylesheet" href="vendor/fontawesome.css?v=c880eb3d25c7">
+<script src="vendor/chart-4.4.1.js?v=81ffafe13c37"></script>
 
 <script>
 window.__APP_CONFIG__ = {
@@ -835,8 +835,8 @@ tr:hover td{background:var(--gray-50)}
 }
 
 </style>
-<link rel="stylesheet" href="improvements.css">
-<script src="domain.js"></script>
+<link rel="stylesheet" href="improvements.css?v=ad3f2e315ebf">
+<script src="domain.js?v=1d8daa23769d"></script>
 </head>
 <body>
 <div id="app">
@@ -1192,7 +1192,8 @@ tr:hover td{background:var(--gray-50)}
           </select>
         </div>
         <div class="field"><label class="fl"><i class="fas fa-coins"></i> Valor da Contribuição Mensal <span class="req">*</span></label>
-          <div class="ai-wrap" style="background:var(--white);border:1.5px solid var(--gray-200)"><span class="ai-cur">R$</span><input class="ai-input" id="df-valor" type="text" value="30,00" style="font-size:1.2rem"></div>
+          <div class="ai-wrap" style="background:var(--white);border:1.5px solid var(--gray-200)"><span class="ai-cur">R$</span><input class="ai-input" id="df-valor" type="text" value="" style="font-size:1.2rem"></div>
+          <small>Mínimo: <span data-minimum-doador>Conferindo…</span></small>
           <span style="font-size:.75rem;color:var(--gray-400);margin-top:.3rem">Mínimo: <strong style="color:var(--teal)">R$ 10,00</strong></span>
         </div>
       </div>
@@ -1530,8 +1531,8 @@ tr:hover td{background:var(--gray-50)}
   </div>
 
   <div class="admin-content">
-    <section class="admin-minimum-summary" aria-label="Contribuição mínima dos associados">
-      <div><span>Mínimo para novos associados</span><strong data-minimum-associado>Conferindo…</strong></div>
+    <section class="admin-minimum-summary" aria-label="Contribuição mínima">
+      <div><span>Mínimo de associados e doadores</span><strong data-minimum-associado>Conferindo…</strong></div>
       <button type="button" class="recovery-button" id="open-minimum-settings" onclick="AmorApp.openMinimumSettings()"><i class="fas fa-sliders-h" aria-hidden="true"></i> Alterar mínimo</button>
     </section>
     <div class="admin-view active" id="tab-associados">
@@ -1704,7 +1705,7 @@ tr:hover td{background:var(--gray-50)}
           <div class="kpi-icon"><i class="fas fa-wallet"></i></div>
           <div class="kpi-label">Saldo Disponível</div>
           <div class="kpi-value" id="mp-saldo">—</div>
-          <div class="kpi-sub">Conta Mercado Pago</div>
+          <div class="kpi-sub">Conta Mercado Pago · <a href="https://www.mercadopago.com.br/balance" target="_blank" rel="noopener noreferrer">Consultar no Mercado Pago</a></div>
         </div>
         <div class="kpi green" style="cursor:default">
           <div class="kpi-icon"><i class="fas fa-check-circle"></i></div>
@@ -1886,7 +1887,7 @@ tr:hover td{background:var(--gray-50)}
 
 <div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toast-msg"></span></div>
 
-<script src="vendor/supabase-2.118.0.js"></script>
+<script src="vendor/supabase-2.118.0.js?v=ee3be8de192b"></script>
 
 <script>
 // ═══════════════════════════════════════════
@@ -2716,6 +2717,7 @@ function filtrarPorPeriodo(payments){
 }
 
 function renderMPPayments(){
+  const esc = AmorDomain.escapeHTML;
   const tbody = g('mp-pay-tbody');
   const statusEl = g('mp-fin-status');
   if(!tbody) return;
@@ -2743,15 +2745,15 @@ function renderMPPayments(){
     const { assoc: assocMP } = identificarAssociadoMP(p, associados);
     let assocNome = assocMP ? assocMP.nome : '—';
     const payerDisplay = assocNome !== '—'
-      ? `<strong style="color:var(--teal)">${assocNome}</strong><br><span style="font-size:.72rem;color:var(--gray-400)">${p.payer?.email||''}</span>`
-      : `<span style="color:var(--gray-600)">${p.payer?.first_name||''} ${p.payer?.last_name||''}</span><br><span style="font-size:.72rem;color:var(--gray-400)">${p.payer?.email||''}</span>`;
+      ? `<strong style="color:var(--teal)">${esc(assocNome)}</strong><br><span style="font-size:.72rem;color:var(--gray-400)">${esc(p.payer?.email||'')}</span>`
+      : `<span style="color:var(--gray-600)">${esc(p.payer?.first_name||'')} ${esc(p.payer?.last_name||'')}</span><br><span style="font-size:.72rem;color:var(--gray-400)">${esc(p.payer?.email||'')}</span>`;
     return `<tr>
       <td style="font-size:.78rem;color:var(--gray-600);white-space:nowrap">${dtStr}</td>
       <td>${payerDisplay}</td>
       <td style="font-weight:700;color:var(--navy);white-space:nowrap">R$ ${val}</td>
-      <td style="font-size:.8rem">${p.payment_method_id||'—'}</td>
-      <td><span style="color:${statusColor};font-weight:700;font-size:.82rem">${statusLabel}</span></td>
-      <td style="font-size:.72rem;color:var(--gray-400)">${p.id}</td>
+      <td style="font-size:.8rem">${esc(p.payment_method_id||'—')}</td>
+      <td><span style="color:${statusColor};font-weight:700;font-size:.82rem">${esc(statusLabel)}</span></td>
+      <td style="font-size:.72rem;color:var(--gray-400)">${esc(p.id)}</td>
     </tr>`;
   }).join('');
 }
@@ -3098,7 +3100,7 @@ document.addEventListener('visibilitychange', () => {
   if(document.hidden){ pararPolling(); } else { iniciarPolling(); }
 });
 </script>
-<script src="review-workspace.js"></script>
-<script src="app.js"></script>
+<script src="review-workspace.js?v=36e6db4855b6"></script>
+<script src="app.js?v=2fcf6dff672b"></script>
 </body>
 </html>

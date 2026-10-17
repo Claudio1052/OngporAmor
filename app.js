@@ -9,7 +9,7 @@ const AmorApp=(()=>{
   const pending=new Set();
   const tableState={associado:{page:0,key:''},doador:{page:0,key:''}};
   async function checked(query){const r=await query;if(r.error)throw r.error;return r.data;}
-  function fail(e){console.error('Operação não concluída:',e.code||e.name||'erro');toast(e.code==='REVIEW_PAYMENT'?'Conta de teste: não são criadas cobranças reais. Confira os pagamentos fictícios na área de gestão.':e.code==='PAYMENT_UNAVAILABLE'?'O pagamento online está temporariamente indisponível. Aguarde a liberação pela ONG.':navigator.onLine?'Não foi possível concluir. Seus dados não foram alterados. Tente novamente.':'Sem conexão. Reconecte-se para confirmar esta operação.','err');}
+  function fail(e){console.error('Operação não concluída:',e.code||e.name||'erro');toast(e.code==='REVIEW_PAYMENT'?'Conta de teste: não são criadas cobranças reais. Confira os pagamentos fictícios na área de gestão.':e.code==='EMAIL_UNAVAILABLE'?'O envio de e-mail aguarda a configuração da chave Resend no servidor.':e.code==='PAYMENT_UNAVAILABLE'?'O pagamento online está temporariamente indisponível. Aguarde a liberação pela ONG.':navigator.onLine?'Não foi possível concluir. Confira a atualização antes de tentar novamente.':'Sem conexão. Reconecte-se para confirmar esta operação.','err');}
   async function busy(key,fn){if(pending.has(key))return;pending.add(key);const b=g(key);if(b)b.disabled=true;try{return await fn();}catch(e){fail(e);}finally{pending.delete(key);if(b)b.disabled=false;}}
   async function user(){const data=await checked(sb.auth.getUser());if(!data?.user)throw Error('Sem sessão');return data.user;}
   async function isAdmin(){return Boolean(await checked(sb.rpc('amor_is_admin')));}
@@ -19,7 +19,8 @@ const AmorApp=(()=>{
     if(contributionSettingsReady&&version<contributionSettings.version)return contributionSettings;
     contributionSettings={minimum_associado:amount,version};contributionSettingsReady=true;
     for(const label of document.querySelectorAll('[data-minimum-associado]'))label.textContent=money(amount);
-    const input=g('inp-valor');if(input&&!input.dataset.userEdited&&!g('view-form')?.classList.contains('active'))input.value=amount.toFixed(2).replace('.',',');
+    for(const id of ['inp-valor','df-valor']){const input=g(id),editing=id==='inp-valor'?g('view-form')?.classList.contains('active'):g('donor-form-overlay')?.classList.contains('active');if(input&&!input.dataset.userEdited&&(!editing||!input.value.trim()))input.value=amount.toFixed(2).replace('.',',');}
+    for(const label of document.querySelectorAll('[data-minimum-doador]'))label.textContent=money(amount);
     return contributionSettings;
   }
   async function loadContributionSettings(){return applyContributionSettings(await checked(sb.rpc('amor_contribution_settings')));}
@@ -27,7 +28,7 @@ const AmorApp=(()=>{
     if(!admin)return toast('Esta configuração é exclusiva da gestão.','err');
     if(g('minimum-settings'))return;
     const overlay=document.createElement('div');overlay.id='minimum-settings';overlay.className='modal-overlay open';
-    overlay.innerHTML='<section class="modal minimum-settings-dialog" role="dialog" aria-modal="true" aria-labelledby="minimum-settings-title"><div class="modal-hdr"><h2 class="modal-title" id="minimum-settings-title">Contribuição mínima dos associados</h2></div><div class="modal-body"><p id="minimum-settings-scope">Vale para novas adesões e futuras alterações do valor. Não reajusta automaticamente as contribuições dos associados atuais nem os pagamentos já registrados.</p><label for="minimum-contribution-value">Novo mínimo (R$)</label><input id="minimum-contribution-value" class="fi" type="text" inputmode="decimal" autocomplete="off" maxlength="12" aria-describedby="minimum-settings-scope" disabled><p class="minimum-settings-status" role="status" aria-live="polite">Consultando o valor atual…</p><div class="modal-actions"><button type="button" data-save disabled>Salvar mínimo</button><button type="button" data-close>Cancelar</button></div></div></section>';
+    overlay.innerHTML='<section class="modal minimum-settings-dialog" role="dialog" aria-modal="true" aria-labelledby="minimum-settings-title"><div class="modal-hdr"><h2 class="modal-title" id="minimum-settings-title">Contribuição mínima</h2></div><div class="modal-body"><p id="minimum-settings-scope">Vale para novos associados e doadores. A partir do próximo mês, contribuições abaixo do mínimo serão reajustadas. Valores maiores, o mês atual e pagamentos confirmados serão preservados.</p><label for="minimum-contribution-value">Novo mínimo (R$)</label><input id="minimum-contribution-value" class="fi" type="text" inputmode="decimal" autocomplete="off" maxlength="12" aria-describedby="minimum-settings-scope" disabled><p class="minimum-settings-status" role="status" aria-live="polite">Consultando o valor atual…</p><div class="modal-actions"><button type="button" data-save disabled>Salvar mínimo</button><button type="button" data-close>Cancelar</button></div></div></section>';
     document.body.append(overlay);
     const input=overlay.querySelector('input'),save=overlay.querySelector('[data-save]'),close=overlay.querySelector('[data-close]'),status=overlay.querySelector('[role=status]');
     let revision=null,saving=false;
@@ -39,7 +40,7 @@ const AmorApp=(()=>{
       input.removeAttribute('aria-invalid');saving=true;save.disabled=true;close.disabled=true;status.textContent='Salvando o novo mínimo…';
       try{
         applyContributionSettings(await checked(sb.rpc('amor_set_minimum_contribution',{p_minimum:amount,p_expected_version:revision})));
-        overlay.remove();toast('Mínimo salvo: '+money(contributionSettings.minimum_associado)+'.');
+        overlay.remove();toast('Mínimo salvo: '+money(contributionSettings.minimum_associado)+'.');await Promise.all([loadAssociados(),loadDoadores()]);
       }catch(error){
         if(error.code==='40001'){
           try{const latest=await loadContributionSettings();revision=latest.version;status.textContent='O mínimo foi alterado para '+money(latest.minimum_associado)+'. Revise o valor digitado e salve novamente.';}
@@ -125,7 +126,7 @@ const AmorApp=(()=>{
   async function pages(table,columns='*',filter=q=>q){
     const all=[];for(let start=0;;start+=500){const rows=await checked(filter(sb.from(table).select(columns)).order('id').range(start,start+499));all.push(...rows);if(rows.length<500)return all;}
   }
-  const listFields='id,numero_associado,nome,cpf,telefone,email,valor_contribuicao,dia_pagamento,forma_pagamento,status,cidade,profissao,created_at';
+  const listFields='id,numero_associado,nome,cpf,telefone,email,valor_contribuicao,dia_pagamento,forma_pagamento,status,cidade,profissao,created_at,autoriza_comunicacoes';
   async function loadAssociados(){
     if(!admin)throw Error('Acesso restrito');
     const [people,rows]=await Promise.all([pages('associados',listFields),pages('pagamentos')]);
@@ -219,8 +220,9 @@ const AmorApp=(()=>{
     await carregarDadosAssociado();showView('view-associado');maybeOfferReminders();toast('Ficha salva! Sua contribuição já está disponível.');
   });}
   async function submitDonorForm(){return busy('btn-donor-submit',async()=>{
-    currentUser=await user();const valor=Number(g('df-valor').value.replace(',','.')),day=Number(g('df-dia').value);
-    if(g('df-nome').value.trim().length<3||g('df-tel').value.replace(/\D/g,'').length<10||!Number.isFinite(valor)||valor<10||day<1||day>28)throw Error('Dados inválidos');
+    currentUser=await user();await loadContributionSettings();const valor=D.parseMoney(g('df-valor').value),day=Number(g('df-dia').value);
+    if(valor===null||valor<contributionSettings.minimum_associado)return toast('A contribuição mínima é '+money(contributionSettings.minimum_associado)+'.','err');
+    if(g('df-nome').value.trim().length<3||g('df-tel').value.replace(/\D/g,'').length<10||day<1||day>28)throw Error('Dados inválidos');
     await checked(sb.from('doadores').insert({nome:g('df-nome').value.trim(),email:currentUser.email,telefone:g('df-tel').value,dia_pagamento:day,forma_pagamento:g('df-pgto').value||'PIX',valor_contribuicao:valor,status:'ativo'}).select('id').single());
     fecharDonorForm();doadorLogado=safeSession(currentUser);associadoLogado=null;await carregarDadosDoador();showView('view-doador');maybeOfferReminders();toast('Cadastro salvo. Obrigado por fazer parte!');
   });}
@@ -229,13 +231,48 @@ const AmorApp=(()=>{
     if(!navigator.onLine)throw Error('Sem conexão');
     const {session}=await checked(sb.auth.getSession());if(!session)throw Error('Sem sessão');
     const r=await fetch(`${MP_PROXY_URL}${path}`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${session.access_token}`},body:JSON.stringify(body||{}),signal:AbortSignal.timeout(20000)});
-    const data=await r.json();if(!r.ok){const error=Error(data.error||'Pagamento indisponível');if(r.status===503)error.code='PAYMENT_UNAVAILABLE';throw error;}return data;
+    const data=await r.json();if(!r.ok){const error=Error(data.error||'Operação indisponível');if(r.status===503)error.code=path==='/lembrar'?'EMAIL_UNAVAILABLE':'PAYMENT_UNAVAILABLE';throw error;}return data;
   }
   function external(url){
     const u=new URL(url);if(u.protocol!=='https:'||!/(^|\.)(mercadopago\.com\.br|mercadopago\.com)$/.test(u.hostname))throw Error('Link de pagamento inválido');
     if(window.AmorAndroid)AmorAndroid.openExternal(u.href);else location.assign(u.href);
   }
-  async function pay(kind,id,months){return busy('payment',async()=>{toast('Preparando seu pagamento…');const r=await gateway('/criar-preferencia',{kind,id,months});lastReconcile=0;external(r.init_point);});}
+  async function pay(kind,id,months){return busy('payment',async()=>{
+    if(g('transparent-checkout'))return;
+    const details=await gateway('/checkout/iniciar',{kind,id,months});let intent=details.intent,poll=null,closed=false;
+    const overlay=document.createElement('div');overlay.id='transparent-checkout';overlay.className='modal-overlay open';
+    overlay.innerHTML='<section class="modal checkout-dialog" role="dialog" aria-modal="true" aria-labelledby="checkout-title"><div class="modal-hdr"><h2 class="modal-title" id="checkout-title">Pagar contribuição</h2></div><div class="modal-body"><p data-summary></p><p role="status" aria-live="polite">Escolha como deseja contribuir.</p><div data-methods class="modal-actions"><button type="button" data-pix>Pix</button><button type="button" data-card>Cartão de crédito à vista</button></div><div data-content></div><div class="modal-actions"><button type="button" data-close>Voltar ao extrato</button></div></div></section>';
+    const status=overlay.querySelector('[role=status]'),content=overlay.querySelector('[data-content]'),methods=overlay.querySelector('[data-methods]');
+    overlay.querySelector('[data-summary]').textContent=money(details.amount)+' · '+months.map(m=>m.split('-').reverse().join('/')).join(', ');
+    function close(){closed=true;if(poll)clearInterval(poll);overlay.remove();}
+    overlay.querySelector('[data-close]').onclick=close;
+    overlay.addEventListener('keydown',event=>{if(event.key==='Escape')close();});
+    async function update(result){
+      if(closed)return;
+      if(result.intent)intent=result.intent;
+      if(result.status==='approved'){status.textContent='Pagamento confirmado. Obrigado pelo apoio! O comprovante será enviado por e-mail.';methods.hidden=true;content.textContent='';if(poll)clearInterval(poll);lastReconcile=0;await refresh();return;}
+      if(['rejected','cancelled'].includes(result.status)){status.textContent='Pagamento não aprovado. Volte ao extrato para escolher outra forma de pagamento.';if(poll)clearInterval(poll);return;}
+      status.textContent='Aguardando pagamento. A confirmação será conferida no servidor.';
+      if(result.pix&&content.querySelector('textarea')?.value!==result.pix.code){
+        methods.hidden=true;content.textContent='';
+        if(/^[A-Za-z0-9+/=]+$/.test(result.pix.image||'')){const img=document.createElement('img');img.alt='QR Code Pix desta contribuição';img.src='data:image/png;base64,'+result.pix.image;img.className='checkout-qr';content.append(img);}
+        const label=document.createElement('label');label.htmlFor='checkout-pix-code';label.textContent='Pix Copia e Cola';content.append(label);
+        const code=document.createElement('textarea');code.id='checkout-pix-code';code.readOnly=true;code.value=result.pix.code||'';content.append(code);
+        const copy=document.createElement('button');copy.type='button';copy.textContent='Copiar código Pix';copy.onclick=async()=>{try{await navigator.clipboard.writeText(code.value);toast('Código Pix copiado.');}catch{code.select();if(document.execCommand('copy'))toast('Código Pix copiado.');else toast('Selecione e copie o código acima.');}};content.append(copy);
+        if(result.expires_at){const expiry=document.createElement('p');expiry.textContent='Válido até '+new Date(result.expires_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'. Pague pelo aplicativo do seu banco.';content.append(expiry);}
+      }
+    }
+    const consult=async()=>{if(!overlay.isConnected){close();return;}if(closed||document.hidden||!navigator.onLine)return;try{await update(await gateway('/checkout/consultar',{intent}));}catch{if(!closed)status.textContent='Não foi possível consultar agora. Seu pagamento pode estar em processamento. Atualize o extrato antes de tentar novamente.';}};
+    overlay.querySelector('[data-pix]').onclick=async()=>{
+      const buttons=[...methods.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);status.textContent='Gerando seu Pix…';
+      try{await update(await gateway('/checkout/pagar',{intent,method:'pix'}));const check=document.createElement('button');check.textContent='Já paguei · conferir';check.type='button';check.onclick=consult;content.append(check);poll=setInterval(consult,10000);}
+      catch{status.textContent='Não foi possível gerar o Pix. Confira seu extrato antes de tentar novamente.';buttons.forEach(b=>b.disabled=b.hasAttribute('data-card')&&!details.public_key);}
+    };
+    const card=overlay.querySelector('[data-card]');card.disabled=!details.public_key;
+    if(!details.public_key)card.title='Pagamento com cartão aguardando configuração pela ONG.';
+    card.onclick=()=>{if(window.AmorAndroid){if(!AmorAndroid.startCardPayment)return toast('Atualize o aplicativo para usar o cartão dentro do app.','err');AmorAndroid.startCardPayment(intent);close();}else location.assign('cartao.html#intent='+encodeURIComponent(intent));};
+    document.body.append(overlay);overlay.querySelector('[data-pix]').focus?.();
+  });}
   async function reconcile(force=false){
     if(reconciling)return reconciling;
     if(!currentUser||admin||!navigator.onLine||(!force&&Date.now()-lastReconcile<300000))return {processed:0,reviews:0};
@@ -268,9 +305,13 @@ const AmorApp=(()=>{
     if(!rows.length)return toast('Não há contribuição vencida ou com vencimento hoje.');
     const title=g('modal-cobranca').querySelector('.modal-title');if(title)title.textContent='Contribuição a conferir';g('modal-cobranca').classList.add('open');
     g('msg-template').textContent=`Olá, ${profile.nome.split(' ')[0]}! Há ${rows.length} contribuição(ões) a conferir na ONG Por Amor. Consulte seu extrato em https://www.ongporamor.top/ . Se já pagou, atualize a confirmação no aplicativo. Obrigado pelo apoio!`;
-    const a=g('modal-cobranca').querySelector('a[href*="wa.me"]');if(a){a.href=`https://wa.me/55${String(profile.telefone||'').replace(/\D/g,'')}?text=${encodeURIComponent(g('msg-template').textContent)}`;a.rel='noopener noreferrer';}
+    let phone=String(profile.telefone||'').replace(/\D/g,'');if(phone.length===10||phone.length===11)phone='55'+phone;
+    const wa=g('btn-wa-send'),email=g('btn-email-send'),communicationsAllowed=profile.autoriza_comunicacoes!==false;wa.disabled=!communicationsAllowed||!/^55\d{10,11}$/.test(phone);
+    if(!communicationsAllowed)g('msg-template').textContent='Este associado optou por não receber comunicados por WhatsApp e e-mail. Respeite a preferência registrada no cadastro.';
+    wa.onclick=()=>{const url='https://wa.me/'+phone+'?text='+encodeURIComponent(g('msg-template').textContent);if(window.AmorAndroid)AmorAndroid.openExternal(url);else window.open(url,'_blank','noopener,noreferrer');};
+    email.disabled=!communicationsAllowed||!profile.email;email.onclick=()=>busy('btn-email-send',async()=>{const result=await gateway('/lembrar',{kind,id});toast(result.already_sent?'Já há um lembrete registrado hoje. Ele não será duplicado.':'Lembrete registrado para envio por e-mail.');});
   }
-  async function loadMPFinanceiro(){return busy('finance',async()=>{if(!admin)throw Error('Acesso restrito');const r=await gateway('/financeiro');mpPayments=r.results||[];mpBalance=r.balance;renderMPPayments();});}
+  async function loadMPFinanceiro(){return busy('finance',async()=>{if(!admin)throw Error('Acesso restrito');const r=await gateway('/financeiro');mpPayments=r.results||[];mpBalance=r.balance;const balance=g('mp-saldo');if(balance){balance.textContent=r.balance?.available!==null&&Number.isFinite(r.balance?.available)?money(r.balance.available):'Indisponível';balance.title=r.balance?.available==null?'O Mercado Pago não liberou a consulta de saldo para esta integração. Confira o saldo no aplicativo Mercado Pago.':'Saldo disponível informado pelo Mercado Pago em '+new Date(r.balance.checked_at).toLocaleString('pt-BR');}renderMPPayments();});}
   function renderPayments(kind){
     const profile=kind==='associado'?fichaAssociado:fichaDoador,rows=D.canonical(kind==='associado'?pagamentosAssociado:pagamentosDoador);
     const box=g(kind==='associado'?'assoc-pay-list':'doador-pay-list');if(!box)return;
@@ -358,7 +399,7 @@ const AmorApp=(()=>{
     };
     document.body.append(overlay);next.focus?.();return true;
   }
-  function back(){if(closeEmailAccess){g('native-email-access')?.querySelector('[data-cancel]')?.click();return true;}if(g('minimum-settings')){g('minimum-settings').querySelector('[data-close]')?.click();return true;}if(g('reminder-prompt')){g('reminder-prompt').remove();return true;}const modal=document.querySelector('.modal-overlay.open');if(modal){modal.classList.remove('open');return true;}if(fichaAssociado&&g('view-associado').classList.contains('active')){if(!g('tab-assoc-inicio').classList.contains('active')){showAssocTab('tab-assoc-inicio');return true;}}if(fichaDoador&&g('view-doador').classList.contains('active')){if(!g('tab-doador-inicio').classList.contains('active')){showDoadorTab('tab-doador-inicio');return true;}}return false;}
+  function back(){if(closeEmailAccess){g('native-email-access')?.querySelector('[data-cancel]')?.click();return true;}if(g('transparent-checkout')){g('transparent-checkout').querySelector('[data-close]')?.click();return true;}if(g('minimum-settings')){g('minimum-settings').querySelector('[data-close]')?.click();return true;}if(g('reminder-prompt')){g('reminder-prompt').remove();return true;}const modal=document.querySelector('.modal-overlay.open');if(modal){modal.classList.remove('open');return true;}if(fichaAssociado&&g('view-associado').classList.contains('active')){if(!g('tab-assoc-inicio').classList.contains('active')){showAssocTab('tab-assoc-inicio');return true;}}if(fichaDoador&&g('view-doador').classList.contains('active')){if(!g('tab-doador-inicio').classList.contains('active')){showDoadorTab('tab-doador-inicio');return true;}}return false;}
   function init(){
     for(const id of ['view-admin-login','view-associado','view-doador','view-admin']){
       const links=document.createElement('nav');links.className='privacy-links';links.setAttribute('aria-label','Privacidade e conta');
@@ -371,6 +412,8 @@ const AmorApp=(()=>{
     g('inp-valor').setAttribute('aria-describedby','minimum-contribution-hint');
     g('inp-valor').addEventListener('input',()=>{g('inp-valor').dataset.userEdited='true';});
     g('inp-valor').addEventListener('focus',()=>loadContributionSettings().catch(()=>{}));
+    g('df-valor').addEventListener('input',()=>{g('df-valor').dataset.userEdited='true';});
+    g('df-valor').addEventListener('focus',()=>loadContributionSettings().catch(()=>{}));
     loadContributionSettings().catch(()=>{if(!contributionSettingsReady)for(const label of document.querySelectorAll('[data-minimum-associado]'))label.textContent='Indisponível';});
     const banner=document.createElement('div');banner.className='app-network';banner.setAttribute('role','status');banner.id='network-status';document.body.prepend(banner);
     function network(){banner.hidden=navigator.onLine;banner.textContent='Você está sem internet. Os lembretes continuam no Android. Pagamentos e atualizações precisam de conexão.';}
