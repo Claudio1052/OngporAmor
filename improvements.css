@@ -203,6 +203,7 @@ button:disabled{opacity:.65;cursor:wait}
 .password-reset-dialog [data-cancel]{background:white;color:#163450}
 .password-reset-dialog button:disabled{opacity:.6;cursor:default}
 .balance-help{font-size:13px;line-height:1.55;color:#475569;margin-top:12px;max-width:50ch}
+.push-composer{max-width:760px;margin:24px auto}.push-composer [data-compose]{display:grid;gap:12px}.push-composer [hidden]{display:none!important}.push-composer label{font-weight:600}.push-composer .fi{width:100%;max-width:100%;min-width:0;min-height:48px;font-size:16px}.push-message-preview{display:grid;gap:10px;padding:20px;background:white;border:1px solid #ccd9de;border-radius:16px;box-shadow:0 4px 16px #0b1f3108}.push-message-preview small{color:#466170;letter-spacing:.08em;font-size:11px}.push-message-preview strong{color:#0b1f31;font-size:18px}.push-message-preview p{margin:0}.push-composer-actions{display:flex;flex-wrap:wrap;gap:12px}.push-composer-actions button{flex:1;min-width:170px}.push-composer [data-send]{background:#087f83;color:white}.push-composer [role=status]{overflow-wrap:anywhere}.push-composer button:disabled{opacity:.55;cursor:default}
 /* Parceiros Por Amor */
 .sponsor-mobile-picker{display:none}
 @media(max-width:768px){.tier-bronze .sponsor-slot:not(.occupied)::after,.tier-ferro .sponsor-slot:not(.occupied)::after{content:attr(data-position);font:600 9px/1.4 system-ui}}
