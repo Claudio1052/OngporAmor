@@ -485,7 +485,12 @@ const AmorApp=(()=>{
       const card=document.createElement('section');card.className='reminder-control';card.innerHTML='<strong>Lembretes de contribuição</strong><p>Um aviso por dia perto das 9h (Brasília), a partir de três dias antes do vencimento. Após o pagamento confirmado e sincronizado, os avisos param. Sem internet, vale a última atualização disponível.</p>';
       if(window.AmorAndroid){card.dataset.reminderControl='true';const status=document.createElement('p');status.setAttribute('role','status');card.append(status);const b=document.createElement('button');b.dataset.enable='true';b.textContent='Ativar notificações';b.onclick=activateReminders;card.append(b);const off=document.createElement('button');off.dataset.disable='true';off.textContent='Desativar';off.onclick=()=>{AmorAndroid.disableNotifications();notificationStateChanged();};card.append(off);}
       if(window.AmorAndroid?.testPushNotification){for(const [attr,label,fn] of [['testPush','Testar push neste celular',()=>AmorAndroid.testPushNotification()],['testLocal','Testar aviso local',()=>AmorAndroid.testLocalNotification()]]){const b=document.createElement('button');b.dataset[attr]='true';b.textContent=label;b.onclick=()=>{fn();toast(attr==='testPush'?'Teste solicitado ao servidor. Confira a notificação e o status nesta área.':'Teste local solicitado. Confira as notificações do celular.');};card.append(b);}}
-      if(!window.AmorAndroid)card.insertAdjacentHTML('beforeend','<p>Os avisos com o aplicativo fechado estão disponíveis no APK Android.</p>');
+      if(!window.AmorAndroid){
+        card.insertAdjacentHTML('beforeend','<p>Ative as notificações no APK Android para receber os avisos com o aplicativo fechado.</p>');
+        const status=document.createElement('p');status.setAttribute('role','status');status.setAttribute('aria-live','polite');card.append(status);
+        const button=document.createElement('button');button.type='button';button.dataset.testOwnPush='true';button.textContent='Testar notificação no meu celular';
+        button.onclick=()=>busy('push-self-send',async()=>{button.disabled=true;status.textContent='Consultando os celulares desta conta…';try{const result=await gateway('/push/testar',{});status.textContent=result.accepted>0?'Teste aceito pelo serviço de entrega para '+result.accepted+' aparelho(s). Confira a notificação no celular.':'Nenhum envio foi aceito. Confira a conexão e ative novamente as notificações no APK.';}catch(error){status.textContent=error.message||'Não foi possível enviar o teste.';}finally{button.disabled=false;}});card.append(button);
+      }
       g(id).append(card);
     }
     if(window.AmorAndroid)notificationStateChanged();
