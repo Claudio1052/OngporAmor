@@ -152,6 +152,8 @@ const AmorApp=(()=>{
     doadores=people;pagamentosDoadores={};for(const p of D.canonical(rows))(pagamentosDoadores[p.doador_id]??=[]).push(p);
     renderDoadores();updateKPIs();renderPendencias();
   }
+  // Mobile card layout: each cell carries its column name.
+  function labelCells(tbody){const labels=[...tbody.closest('table').querySelectorAll('thead th')].map(th=>th.textContent.trim());for(const row of tbody.children){if(row.children.length<2)continue;[...row.children].forEach((cell,i)=>{if(labels[i])cell.dataset.label=labels[i];});}tbody.closest('.table-scroll')?.classList.add('mobile-cards');}
   function openRows(rows,day){return D.canonical(rows).filter(p=>!['pago','cancelado'].includes(p.status)&&D.dueDate(p,day)?.slice(0,7)<=D.month());}
   function renderPeople(kind){
     const assoc=kind==='associado',people=assoc?associados:doadores,ledger=assoc?pagamentos:pagamentosDoadores;
@@ -184,8 +186,9 @@ const AmorApp=(()=>{
       tbody.append(tr);
     }
     if(!filtered.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=9;td.textContent='Nenhum cadastro corresponde aos filtros.';tr.append(td);tbody.append(tr);}
+    labelCells(tbody);
     let nav=g(`pagination-${kind}`);if(!nav){nav=document.createElement('nav');nav.id=`pagination-${kind}`;nav.className='table-pagination';nav.setAttribute('aria-label','Páginas de '+(assoc?'associados':'doadores'));tbody.closest('table').parentElement.after(nav);}
-    nav.textContent='';const prev=document.createElement('button'),next=document.createElement('button'),label=document.createElement('span');prev.textContent='Anterior';prev.disabled=state.page===0;prev.onclick=()=>{state.page--;renderPeople(kind);};next.textContent='Próxima';next.disabled=(state.page+1)*25>=filtered.length;next.onclick=()=>{state.page++;renderPeople(kind);};label.textContent=`Página ${state.page+1} de ${Math.max(1,Math.ceil(filtered.length/25))}`;nav.append(prev,label,next);
+    nav.textContent='';const prev=document.createElement('button'),next=document.createElement('button'),label=document.createElement('span');prev.textContent='Anterior';prev.disabled=state.page===0;prev.onclick=()=>{state.page--;renderPeople(kind);};next.textContent='Próxima';next.disabled=(state.page+1)*25>=filtered.length;next.onclick=()=>{state.page++;renderPeople(kind);};label.textContent=`Página ${state.page+1} de ${Math.max(1,Math.ceil(filtered.length/25))}`;nav.append(prev,label,next);nav.hidden=filtered.length<=25;
     const alert=g('pending-alert');if(assoc&&alert)alert.style.display='none';
   }
   function updateKPIs(){
@@ -206,6 +209,7 @@ const AmorApp=(()=>{
         const cell=document.createElement('td'),button=document.createElement('button');button.className='btn-sm btn-sm-warn';button.textContent='Preparar lembrete';button.onclick=()=>cobrar(kind,p.id);cell.append(button);row.append(cell);tbody.append(row);
       }
       if(!entries.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=5;cell.textContent='Nenhuma contribuição vencida ou com vencimento hoje.';row.append(cell);tbody.append(row);}
+      labelCells(tbody);
     }
   }
   function printProfile(id){
@@ -491,7 +495,7 @@ const AmorApp=(()=>{
         const button=document.createElement('button');button.type='button';button.dataset.testOwnPush='true';button.textContent='Testar notificação no meu celular';
         button.onclick=()=>busy('push-self-send',async()=>{button.disabled=true;status.textContent='Consultando os celulares desta conta…';try{const result=await gateway('/push/testar',{});status.textContent=result.accepted>0?'Teste aceito pelo serviço de entrega para '+result.accepted+' aparelho(s). Confira a notificação no celular.':'Nenhum envio foi aceito. Confira a conexão e ative novamente as notificações no APK.';}catch(error){status.textContent=error.message||'Não foi possível enviar o teste.';}finally{button.disabled=false;}});card.append(button);
       }
-      g(id).append(card);
+      const footer=[...g(id).children].find(el=>el.classList.contains('privacy-links')||el.classList.contains('recovery-button'));if(footer)footer.before(card);else g(id).append(card);
     }
     if(window.AmorAndroid)notificationStateChanged();
     const composer=document.createElement('section');composer.className='reminder-control push-composer';composer.id='push-composer';

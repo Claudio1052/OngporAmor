@@ -853,8 +853,8 @@ tr:hover td{background:var(--gray-50)}
 }
 
 </style>
-<link rel="stylesheet" href="improvements.css?v=b1d1630a9941">
-<script src="domain.js?v=1d8daa23769d"></script>
+<link rel="stylesheet" href="improvements.css?v=57b1b7bb6923">
+<script src="domain.js?v=4875c5ce46f0"></script>
 </head>
 <body>
 <div id="app">
@@ -900,10 +900,10 @@ tr:hover td{background:var(--gray-50)}
           </div>
           <div class="sep"><div class="sep-line"></div><span class="sep-lbl"><i class="fas fa-map-marker-alt"></i> Endereço</span><div class="sep-line"></div></div>
           <div class="fg g2">
-            <div class="field"><label class="fl"><i class="fas fa-mail-bulk"></i> CEP</label><div class="cep-row"><input class="fi" id="inp-cep" type="text" placeholder="58407-490" maxlength="9"><button class="btn-cep" id="btn-cep"><i class="fas fa-search"></i> Buscar</button></div></div>
+            <div class="field"><label class="fl"><i class="fas fa-mail-bulk"></i> CEP</label><div class="cep-row"><input class="fi" id="inp-cep" type="text" placeholder="58407-490" maxlength="9" autocomplete="postal-code" aria-describedby="cep-hint"><button class="btn-cep" id="btn-cep" type="button"><i class="fas fa-search" aria-hidden="true"></i> Buscar</button></div><small class="cep-hint" id="cep-hint">O endereço é preenchido automaticamente ao digitar o CEP.</small></div>
             <div class="field"><label class="fl"><i class="fas fa-city"></i> Cidade / UF</label><input class="fi" id="inp-cidade" type="text" placeholder="Campina Grande / PB" readonly></div>
             <div class="field s2"><label class="fl"><i class="fas fa-road"></i> Logradouro</label><input class="fi" id="inp-log" type="text" placeholder="Rua, Avenida..."></div>
-            <div class="field"><label class="fl"><i class="fas fa-hashtag"></i> Número</label><input class="fi" id="inp-num" type="text" placeholder="1148"></div>
+            <div class="field"><label class="fl"><i class="fas fa-hashtag"></i> Número</label><input class="fi" id="inp-num" type="text" placeholder="Ex.: 120 ou S/N" maxlength="20"></div>
             <div class="field"><label class="fl"><i class="fas fa-layer-group"></i> Complemento</label><input class="fi" id="inp-comp" type="text" placeholder="Apto, bloco..."></div>
             <div class="field"><label class="fl"><i class="fas fa-map"></i> Bairro</label><input class="fi" id="inp-bairro" type="text" placeholder="Bairro"></div>
           </div>
@@ -1292,10 +1292,10 @@ tr:hover td{background:var(--gray-50)}
           <div style="display:flex;align-items:center;justify-content:space-between">
             <span style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gray-400)">Situação</span>
             <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--success),#047857);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(5,150,105,.3)">
-              <i class="fas fa-shield-check" style="color:#fff;font-size:.85rem"></i>
+              <i class="fas fa-shield-halved" style="color:#fff;font-size:.85rem"></i>
             </div>
           </div>
-          <div style="font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--success);line-height:1">✅ Ativo</div>
+          <div id="doador-status" style="font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--success);line-height:1">✅ Ativo</div>
           <div style="font-size:.78rem;color:var(--gray-500)">Cadastro confirmado</div>
           <div id="doador-desde" style="font-size:.75rem;color:var(--gray-400);margin-top:.2rem"></div>
         </div>
@@ -1618,7 +1618,7 @@ tr:hover td{background:var(--gray-50)}
         <div class="kpi teal"><div class="kpi-icon"><i class="fas fa-users"></i></div><div class="kpi-label">Total Associados</div><div class="kpi-value" id="kpi-total">0</div><div class="kpi-sub"><span class="kpi-up"><i class="fas fa-arrow-up"></i></span> <span id="kpi-ativos">0 ativos</span></div></div>
         <div class="kpi green"><div class="kpi-icon"><i class="fas fa-dollar-sign"></i></div><div class="kpi-label">Previsão mensal</div><div class="kpi-value" id="kpi-receita">R$ 0</div><div class="kpi-sub"><span id="kpi-rcpt">projeção confirmada</span></div></div>
         <div class="kpi warn"><div class="kpi-icon"><i class="fas fa-clock"></i></div><div class="kpi-label">Pendentes</div><div class="kpi-value" id="kpi-pend">R$ 0</div><div class="kpi-sub"><span id="kpi-npend">0 associados</span></div></div>
-        <div class="kpi navy"><div class="kpi-icon"><i class="fas fa-chart-trending-up"></i></div><div class="kpi-label">Ticket Médio</div><div class="kpi-value" id="kpi-ticket">R$ 0</div><div class="kpi-sub"><span id="kpi-proj">por associado/mês</span></div></div>
+        <div class="kpi navy"><div class="kpi-icon"><i class="fas fa-arrow-trend-up"></i></div><div class="kpi-label">Ticket Médio</div><div class="kpi-value" id="kpi-ticket">R$ 0</div><div class="kpi-sub"><span id="kpi-proj">por associado/mês</span></div></div>
       </div>
 
       <!-- ── SEPARADOR: DOADORES ── -->
@@ -1998,63 +1998,30 @@ mask('inp-nasc', v=>{ v=v.replace(/\D/g,'').slice(0,8); if(v.length>4) return v.
 mask('inp-tel', v=>{ v=v.replace(/\D/g,'').slice(0,11); if(v.length>10) return v.replace(/(\d{2})(\d{5})(\d{0,4})/,'($1) $2-$3'); if(v.length>6) return v.replace(/(\d{2})(\d{4})(\d{0,4})/,'($1) $2-$3'); if(v.length>2) return v.replace(/(\d{2})(\d{0,5})/,'($1) $2'); return v; });
 mask('inp-cep', v=>{ v=v.replace(/\D/g,'').slice(0,8); if(v.length>5) return v.replace(/(\d{5})(\d{0,3})/,'$1-$2'); return v; });
 
-// ── CEP ──
-g('btn-cep').addEventListener('click', async function(e) {
-  e.preventDefault();
-  const cep = g('inp-cep').value.replace(/\D/g, '');
-  if (cep.length !== 8) { toast('CEP inválido (deve ter 8 dígitos)', 'err'); return; }
-  this.classList.add('ld');
-  const originalText = this.innerHTML;
-  this.innerHTML = '<i class="fas fa-spinner"></i> Buscando...';
-  try {
-    const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    const data = await response.json();
-    if (data.erro) { toast('CEP não encontrado na base dos Correios', 'err'); return; }
-    g('inp-log').value = data.logradouro || '';
-    g('inp-bairro').value = data.bairro || '';
-    g('inp-cidade').value = `${data.localidade} / ${data.uf}`;
-    toast('Endereço preenchido com sucesso!');
-  } catch (error) {
-    try {
-      const fallbackResponse = await fetch(`https://brasilapi.com.br/api/cep/v1/${cep}`);
-      if (!fallbackResponse.ok) throw new Error(`Fallback HTTP error!`);
-      const fallbackData = await fallbackResponse.json();
-      g('inp-log').value = fallbackData.street || '';
-      g('inp-bairro').value = fallbackData.neighborhood || '';
-      g('inp-cidade').value = `${fallbackData.city} / ${fallbackData.state}`;
-      toast('Endereço preenchido com sucesso!');
-    } catch (fallbackError) {
-      try {
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          const callbackName = `viacep_callback_${Date.now()}`;
-          window[callbackName] = function(data) {
-            if (data.erro) { reject(new Error('CEP não encontrado')); }
-            else {
-              g('inp-log').value = data.logradouro || '';
-              g('inp-bairro').value = data.bairro || '';
-              g('inp-cidade').value = `${data.localidade} / ${data.uf}`;
-              resolve();
-            }
-            delete window[callbackName];
-            document.body.removeChild(script);
-          };
-          script.src = `https://viacep.com.br/ws/${cep}/json/?callback=${callbackName}`;
-          script.onerror = () => { delete window[callbackName]; document.body.removeChild(script); reject(new Error('Falha JSONP')); };
-          document.body.appendChild(script);
-          setTimeout(() => { if (window[callbackName]) { delete window[callbackName]; document.body.removeChild(script); reject(new Error('Timeout')); } }, 5000);
-        });
-        toast('Endereço preenchido!');
-      } catch (jsonpError) {
-        toast('Não foi possível buscar o CEP. Preencha manualmente.', 'err');
-      }
-    }
-  } finally {
-    this.classList.remove('ld');
-    this.innerHTML = originalText;
+// ── CEP ── (busca automática ao completar 8 dígitos; botão mantido para repetir a consulta)
+let _cepLooked='',_cepSeq=0;
+async function buscarCEP(force){
+  const btn=g('btn-cep'),cep=g('inp-cep').value.replace(/\D/g,'');
+  if(cep.length!==8){ if(force) toast('CEP inválido (deve ter 8 dígitos)','err'); return; }
+  if(cep===_cepLooked&&!force) return;
+  _cepLooked=cep;const seq=++_cepSeq;
+  btn.classList.add('ld');btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner" aria-hidden="true"></i> Buscando...';
+  try{
+    const a=await AmorDomain.lookupCEP(cep);if(seq!==_cepSeq)return;
+    if(a.street) g('inp-log').value=a.street;
+    if(a.district) g('inp-bairro').value=a.district;
+    g('inp-cidade').value=a.city+' / '+a.state;
+    toast('Endereço preenchido pelo CEP. Informe o número.');
+    (a.street?g('inp-num'):g('inp-log')).focus();
+  }catch(error){
+    if(seq!==_cepSeq)return;_cepLooked='';
+    toast(error.code==='CEP_NOT_FOUND'?'CEP não encontrado. Confira ou preencha o endereço manualmente.':'Não foi possível buscar o CEP. Preencha manualmente.','err');
+  }finally{
+    if(seq===_cepSeq){btn.classList.remove('ld');btn.disabled=false;btn.innerHTML='<i class="fas fa-search" aria-hidden="true"></i> Buscar';}
   }
-});
+}
+g('btn-cep').addEventListener('click',e=>{e.preventDefault();buscarCEP(true);});
+g('inp-cep').addEventListener('input',()=>buscarCEP(false));
 
 // ── PIX / MP TOGGLE ──
 document.querySelectorAll('input[name="pag"]').forEach(r=>{
@@ -2957,7 +2924,9 @@ function renderAreaDoador(){
     const vencEl = g('doador-venc-sub');
     if(vencEl) vencEl.textContent = 'Vence todo dia '+(f.dia_pagamento||10);
     const pgtoEl = g('doador-pgto-tipo');
-    if(pgtoEl) pgtoEl.innerHTML = '<i class="fas fa-wallet"></i> '+(f.forma_pagamento||'PIX');
+    if(pgtoEl) pgtoEl.innerHTML = '<i class="fas fa-wallet" aria-hidden="true"></i> '+AmorDomain.escapeHTML(f.forma_pagamento||'PIX');
+    const stDoador = g('doador-status');
+    if(stDoador){ const ativo=(f.status||'ativo')==='ativo'; stDoador.textContent = ativo?'✅ Ativo':'⏸️ '+(f.status.charAt(0).toUpperCase()+f.status.slice(1)); stDoador.style.color = ativo?'var(--success)':'var(--warn)'; }
     const desdeEl = g('doador-desde');
     if(desdeEl && f.created_at){
       const dt = new Date(f.created_at);
@@ -3122,7 +3091,7 @@ document.addEventListener('visibilitychange', () => {
 });
 </script>
 <script src="review-workspace.js?v=3f8954ca35aa"></script>
-<script src="sponsors.js?v=7ed680e52f6b"></script>
-<script src="app.js?v=cc8564c0bc0e"></script>
+<script src="sponsors.js?v=c95a79bcf86e"></script>
+<script src="app.js?v=6eaf532a5e61"></script>
 </body>
 </html>

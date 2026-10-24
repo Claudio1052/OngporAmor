@@ -59,5 +59,44 @@
     if(open.some(p=>dueDate(p,day)>date&&dueDate(p,day)<=end)) return 'Está próxima a data da sua contribuição. Abra o app para conferir.';
     return null;
   }
-  root.AmorDomain={today,month,dueDate,status,canonical,escapeHTML,validCPF,validDate,parseMoney,reminder};
+  function formatCEP(value){const n=String(value??'').replace(/\D/g,'').slice(0,8);return n.length>5?n.slice(0,5)+'-'+n.slice(5):n;}
+  function formatPhone(value){
+    const n=String(value??'').replace(/\D/g,'').slice(0,11);
+    if(n.length>10)return n.replace(/(\d{2})(\d{5})(\d{0,4})/,'($1) $2-$3');
+    if(n.length>6)return n.replace(/(\d{2})(\d{4})(\d{0,4})/,'($1) $2-$3');
+    return n.length>2?n.replace(/(\d{2})(\d{0,5})/,'($1) $2'):n;
+  }
+  // CPF (11 digits) or CNPJ (14 characters; the 2026 alphanumeric CNPJ keeps numeric check digits).
+  function formatDocument(value){
+    const n=String(value??'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,14);
+    if(/^\d{0,11}$/.test(n)){
+      if(n.length>9)return n.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/,'$1.$2.$3-$4');
+      if(n.length>6)return n.replace(/(\d{3})(\d{3})(\d{0,3})/,'$1.$2.$3');
+      return n.length>3?n.replace(/(\d{3})(\d{0,3})/,'$1.$2'):n;
+    }
+    return n.replace(/^(.{2})(.{0,3})(.{0,3})(.{0,4})(.{0,2})$/,(_,a,b,c,d,e)=>a+(b?'.'+b:'')+(c?'.'+c:'')+(d?'/'+d:'')+(e?'-'+e:''));
+  }
+  // Address lookup by CEP: ViaCEP first, BrasilAPI as fallback. Only JSON fetches; no third-party scripts.
+  async function lookupCEP(value,{fetch:request=root.fetch?.bind(root),timeout=8000}={}){
+    const cep=String(value??'').replace(/\D/g,'');
+    if(cep.length!==8){const error=Error('CEP deve ter 8 dígitos');error.code='CEP_INVALID';throw error;}
+    const providers=[
+      ['https://viacep.com.br/ws/'+cep+'/json/',d=>d.erro?null:{street:d.logradouro,district:d.bairro,city:d.localidade,state:d.uf}],
+      ['https://brasilapi.com.br/api/cep/v1/'+cep,d=>({street:d.street,district:d.neighborhood,city:d.city,state:d.state})]
+    ];
+    let notFound=false;
+    for(const [url,read] of providers){
+      try{
+        const response=await request(url,{signal:typeof AbortSignal!=='undefined'&&AbortSignal.timeout?AbortSignal.timeout(timeout):undefined});
+        if(response.status===400||response.status===404){notFound=true;continue;}
+        if(!response.ok)continue;
+        const address=read(await response.json());
+        if(!address){notFound=true;continue;}
+        const clean=v=>String(v??'').trim().slice(0,160),state=clean(address.state).toUpperCase();
+        if(clean(address.city)&&/^[A-Z]{2}$/.test(state))return {cep:formatCEP(cep),street:clean(address.street),district:clean(address.district),city:clean(address.city),state};
+      }catch{/* Try the next provider. */}
+    }
+    const error=Error(notFound?'CEP não encontrado':'Consulta de CEP indisponível');error.code=notFound?'CEP_NOT_FOUND':'CEP_UNAVAILABLE';throw error;
+  }
+  root.AmorDomain={today,month,dueDate,status,canonical,escapeHTML,validCPF,validDate,parseMoney,reminder,formatCEP,formatPhone,formatDocument,lookupCEP};
 })(typeof window==='undefined'?globalThis:window);
